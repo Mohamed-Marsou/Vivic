@@ -4,12 +4,24 @@ import { Swiper, SwiperSlide } from 'swiper/vue';
 // Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/pagination';
+import { defineProps } from 'vue';
 
+const props = defineProps({
+    smallHeader: String,
+    headerText: String,
+    productList: Array
+});
+
+
+const getCover = (p) => {
+    const coverImg = p.images.find(image => image.pivot.is_cover === true);
+    return coverImg.url
+}
 </script>
 <template>
     <div class="prds-crsl">
-        <h2>Most Popular Products</h2>
-        <p>Proponents of content strategy may shun of dummy copy designers</p>
+        <h2>{{ headerText }}</h2>
+        <p>{{ smallHeader }}</p>
         <swiper :slidesPerView="3" :spaceBetween="2" :pagination="{
             clickable: true,
         }" :breakpoints="{
@@ -30,27 +42,33 @@ import 'swiper/css/pagination';
         spaceBetween: 200,
     },
 }" class="mySwiper">
-            <swiper-slide v-for="i, index in 10" :key="index">
+            <swiper-slide v-for="p  in productList " :key="p.id">
                 <div class="prd-silde">
                     <div class="image-ctx">
-                        <img src="https://woodmart.xtemos.com/accessories/wp-content/uploads/sites/7/2022/04/w-accessories-product-15-430x491.jpg"
-                            alt="product-image">
-
-                        <div class="prd-link">
-                            <i class="fa-solid fa-eye"></i>
-                        </div>
+                        <RouterLink :to="{ name: 'product-page',  params: { slug: p.slug } }">
+                            <img :src="getCover(p)" alt="Product image">
+                        </RouterLink>
+                        <RouterLink :to="{ name: 'product-page',  params: { slug: p.slug } }">
+                            <div class="prd-link">
+                                <i class="fa-solid fa-eye"></i>
+                            </div>
+                        </RouterLink>
 
                         <div class="badge">
-                        -25%
+                            -25%
                         </div>
                     </div>
-                    <a>
-                        Product 2023 Brand X
-                    </a>
-                    <div class="stars">
-                        <i v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
+
+                    <div>
+
+                        <RouterLink :to="{ name: 'product-page' ,  params: { slug: p.slug }}">
+                            {{ p.name }}
+                        </RouterLink>
+                        <div class="stars">
+                            <i v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
+                        </div>
+
                     </div>
-                    
                 </div>
             </swiper-slide>
         </swiper>
@@ -65,25 +83,30 @@ import 'swiper/css/pagination';
     height: fit-content;
     margin: 2rem auto;
     padding: 1rem 0;
-    >h2{
+
+    >h2 {
         text-align: center;
-        margin-top: 3rem;
+        margin-top: 1rem;
         font-size: 2rem;
     }
-    >p{
+
+    >p {
         text-align: center;
         font-size: .8rem;
-        color:#555;
+        color: #555;
         padding: 2rem 1rem;
     }
+
     .mySwiper {
 
         .prd-silde {
-            width: 18rem;
-            height: 22rem;
+            width: 16rem;
+            height: 18rem;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: space-between;
+            text-align: center;
 
             a {
                 margin: 1rem 0 0 0;
@@ -92,21 +115,24 @@ import 'swiper/css/pagination';
             }
 
             .image-ctx {
-                width: 18rem;
-                height: 17rem;
+                width: 100%;
+                height:13rem;
                 position: relative;
                 overflow: hidden;
                 border-radius: 10px;
+
                 &:hover .prd-link {
                     transform: translateY(0);
-                    i{
+
+                    i {
                         transform: translateY(0);
                         transition-delay: 0.2s;
+                    }
                 }
-                }
-                >img {
-                    width: 18rem;
-                    height: 16rem;
+
+                > a > img {
+                    width: 100%;
+                    height: 100%;
                     object-fit: contain;
                 }
 
@@ -116,20 +142,25 @@ import 'swiper/css/pagination';
                     position: absolute;
                     bottom: 0;
                     right: 0;
-                    background: #2E6BC6;
+                    background: #5790e6;
                     cursor: pointer;
                     @include flex();
                     transition: .3s ease;
                     overflow: hidden;
                     transform: translateY(100%);
-                    i{
+                     i {
                         transform: translateY(150%);
                         color: #fff;
                         font-size: 1.3rem;
                         transition: .3s ease;
                     }
+                    &:hover{
+                    background: #2E6BC6;
+
+                    }
                 }
-                .badge{
+
+                .badge {
                     width: 2.5rem;
                     height: 2.5rem;
                     border-radius: 50%;
@@ -146,7 +177,7 @@ import 'swiper/css/pagination';
 
             }
 
-            >.stars {
+            .stars {
                 width: 15rem;
                 margin: 0 auto;
                 height: 2rem;
@@ -155,5 +186,4 @@ import 'swiper/css/pagination';
             }
         }
     }
-}
-</style>
+}</style>

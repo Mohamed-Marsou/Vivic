@@ -1,7 +1,10 @@
 <script setup>
 
 const goTop = () => {
-    document.querySelector('#main').scrollIntoView({ behavior: 'smooth' });
+    window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+});;
 }
 
 </script>

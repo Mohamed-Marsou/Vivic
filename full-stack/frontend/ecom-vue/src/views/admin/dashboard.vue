@@ -129,7 +129,8 @@ const toggleLightMode = () => {
                     </button>
                     <button class="app-content-headerButton">Add Product</button>
                 </div>
-                <!-- ! Top header  -->
+                       
+                <!-- ! Top header ! -->
 
                 <!-- ! search and filter  -->
                 <div class="app-content-actions">

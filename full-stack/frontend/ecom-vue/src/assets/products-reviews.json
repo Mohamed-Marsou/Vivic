@@ -2,7 +2,7 @@
     "reviews": [
       {
         "product-handle": "portable-mini-steam-dry-iron",
-        "rating": 4,
+        "rating": 4.4,
         "title": "Portable mini steam dry iron",
         "author": "John Doe",
         "email": "johndoe@example.com",
@@ -60,7 +60,7 @@
       },
       {
         "product-handle": "portable-mini-steam-dry-iron",
-        "rating": 1,
+        "rating": 1.5,
         "title": "Portable mini steam dry iron",
         "author": "Latif Griffin        ",
         "email": "stewie@Griffins.com",
@@ -88,7 +88,7 @@
       },
       {
         "product-handle": "portable-mini-steam-dry-iron",
-        "rating": 3.9,
+        "rating": 4.9,
         "title": "Portable mini steam dry iron",
         "author": "Pop Griffin        ",
         "email": "stewie@Griffins.com",
@@ -102,7 +102,7 @@
       },
       {
         "product-handle": "portable-mini-steam-dry-iron",
-        "rating": 2.3,
+        "rating": 4.4,
         "title": "Portable mini steam dry iron",
         "author": "Stewie Griffin        ",
         "email": "stewie@Griffins.com",

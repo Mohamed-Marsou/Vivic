@@ -6,15 +6,12 @@ use App\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class ProductImage extends Model
+class Image extends Model
 {
     use HasFactory;
-    protected $fillable = ['product_id','path','alt'];
-
-    public function product()
+    protected $fillable = ['url'];
+    public function products()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsToMany(Product::class)->withTimestamps();
     }
-
 }
-

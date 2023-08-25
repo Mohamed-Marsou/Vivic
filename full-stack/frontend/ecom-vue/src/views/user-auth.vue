@@ -1,12 +1,63 @@
 <script setup>
 import { ref } from 'vue'
+import api from '../http/api'; // Replace with your API module import
+import Cookies from 'js-cookie';
+import axios from 'axios'
+import {  useRouter } from 'vue-router';
+const router = useRouter();
+
 const isLoginVisible = ref(false)
 const heading = ref('Register')
-
-const toggole =() => {
+const clicked = ref(false)
+const errMsg = ref('')
+const toggole = () => {
     isLoginVisible.value = !isLoginVisible.value
-    heading.value = isLoginVisible.value ?  'Register' : 'Login' 
+    heading.value = isLoginVisible.value ? 'Register' : 'Login'
 }
+const registerPayload =  {
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    }
+const register = async () => {
+    // Destructure the values from the registerPayload
+    const { firstName , lastName , email, password, confirmPassword } = registerPayload;
+
+    // Create the payload object
+    const payload = {
+        name: ` ${firstName} ${lastName}`,
+        email,
+        password,
+        password_confirmation: confirmPassword,
+    };
+    console.log(payload);
+    try {
+        const res = await api.post('/user/register', payload);
+        console.log(res.data.user);
+        if (res.data.token) {
+          // Store the token in a cookie
+          Cookies.set('auth-token', res.data.token, { expires: 7 });
+          const userData = JSON.stringify(res.data.user);
+          Cookies.set('auth-user', userData, { expires: 7 });
+          setAuthorizationHeader()
+          // Redirect or perform other actions after successful registration
+          console.log('Registration successful:', res.data);
+          router.push('/')
+        }
+      } catch (error) {
+        console.error('Error during registration:', error);
+        errMsg.value = error.response.data.message
+      }
+}
+        async function setAuthorizationHeader() {
+        const token = Cookies.get('auth-token');
+        if (token) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+}
+    
 </script>
 <template>
     <div class="auth-container">
@@ -16,7 +67,7 @@ const toggole =() => {
             <p>REGISTER</p>
         </div>
         <div class="x-form">
-            <div class="login" :class="{hide : !isLoginVisible}">
+            <div class="login" :class="{ hide: !isLoginVisible }">
                 <h1>Login</h1>
                 <div class="inp-slot">
                     <label for="Email">Email address </label>
@@ -34,39 +85,42 @@ const toggole =() => {
                     <p>Forgot your Password ?</p>
                 </div>
 
-                <button type="submit">Login</button>
+                <button :disabled="clicked" type="submit">Login</button>
             </div>
-            <div class="register" :class="{hide : isLoginVisible}">
+            <div class="register" :class="{ hide: isLoginVisible }">
                 <h1>Register</h1>
+                <span v-if="errMsg" style="color: red; margin-left: 2vw;font-size: .9rem;">{{ errMsg }}</span>
                 <div class="inp-slot">
-                    <label for="firstName">First Name <small>*</small> :</label>
-                    <input type="text" id="firstName" name="firstName" placeholder="First name" required>
+                    <label for="register-firstName">First Name <small>*</small> :</label>
+                    <input type="text" id="register-firstName" name="register-firstName" placeholder="First name" v-model="registerPayload.firstName" required>
                 </div>
                 <div class="inp-slot">
-                    <label for="lastName">Last Name <small>*</small> :</label>
-                    <input type="text" id="lastName" name="lastName" placeholder="Last name" required>
+                    <label for="register-lastName">Last Name <small>*</small> :</label>
+                    <input type="text" id="register-lastName" name="register-lastName" v-model="registerPayload.lastName" placeholder="Last name" required>
                 </div>
                 <div class="inp-slot">
-                    <label for="email">Email <small>*</small> :</label>
-                    <input type="email" id="email" name="email" placeholder="Email address" required>
+                    <label for="register-email">Email <small>*</small> :</label>
+                    <input type="email" id="register-email" name="register-email" placeholder="Email address" v-model="registerPayload.email" required>
                 </div>
                 <div class="inp-slot">
-                    <label for="password">Password <small>*</small> :</label>
-                    <input type="password" id="password" name="password" placeholder="Password" required>
+                    <label for="register-password">Password <small>*</small> :</label>
+                    <input type="password" id="register-password" name="register-password" placeholder="Password" v-model="registerPayload.password" required>
                 </div>
                 <div class="inp-slot">
-                    <label for="confirmPassword">Confirm Password <small>*</small> :</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password"
-                        required>
+                    <label for="register-confirmPassword">Confirm Password <small>*</small> :</label>
+                    <input type="password" id="register-confirmPassword"  name="register-confirmPassword"
+                        placeholder="Confirm Password" v-model="registerPayload.confirmPassword" required>
                 </div>
-                <button type="submit">Register</button>
+                <button :disabled="clicked" @click="register" type="submit">Register</button>
             </div>
         </div>
 
         <div class="altr">
-            <h1>{{  heading }}</h1>
-            <p>Registering for this site allows you to access your order status and history. Just fill in the fields below, and we'll get a new account set up for you in no time. We will only ask you for inx-formation necessary to make the purchase process faster and easier</p>
-            <button @click="toggole">{{  heading }}</button>
+            <h1>{{ heading }}</h1>
+            <p>Registering for this site allows you to access your order status and history. Just fill in the fields below,
+                and we'll get a new account set up for you in no time. We will only ask you for inx-formation necessary to
+                make the purchase process faster and easier</p>
+            <button @click="toggole">{{ heading }}</button>
         </div>
     </div>
 </template>
@@ -110,10 +164,13 @@ const toggole =() => {
             text-transform: uppercase;
             cursor: pointer;
             transition: .3s ease-in;
-
             &:hover {
                 opacity: 1;
                 background: #0263f4;
+            }
+            &:has([disabled]) {
+                opacity: 0.5;
+                cursor: not-allowed;
             }
         }
 
@@ -142,27 +199,32 @@ const toggole =() => {
             }
 
         }
-        .opt{
+
+        .opt {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             height: 1.5rem;
-            >p{
+
+            >p {
                 font-size: .8rem;
                 color: #0263f4;
                 text-decoration: underline;
                 cursor: pointer;
             }
-            >div{
+
+            >div {
                 display: flex;
                 align-items: center;
                 gap: 15px;
-                >p{
+
+                >p {
                     color: #555;
                     font-size: .8rem;
                 }
-                >input{
-                    
+
+                >input {
+
                     display: flex;
                 }
             }
@@ -175,6 +237,7 @@ const toggole =() => {
         padding: 5rem 2vw;
         text-align: center;
         justify-content: flex-start;
+
         p {
             color: #555;
             font-size: .9rem;
@@ -226,36 +289,42 @@ const toggole =() => {
 }
 
 @media screen and (max-width : 1024px) {
-    .auth-container{
+    .auth-container {
         flex-direction: column-reverse;
         width: 100% !important;
         align-items: center;
     }
-    .auth-containe-banner{
+
+    .auth-containe-banner {
         display: none !important;
     }
+
     .x-form,
     .altr {
         width: 80% !important;
         min-height: fit-content !important;
         padding: 1rem 2vw !important;
     }
+
     .auth-container .x-form button {
         width: 95% !important;
     }
 }
+
 @media screen and (max-width : 450px) {
-    .auth-container{
+    .auth-container {
         flex-direction: column-reverse;
         width: 100% !important;
         align-items: center;
     }
+
     .x-form,
     .altr {
         width: 95% !important;
     }
-    .opt{
-        >div{
+
+    .opt {
+        >div {
             gap: 1vw !important;
         }
     }
@@ -267,5 +336,4 @@ const toggole =() => {
 
 .hide {
     display: none !important;
-}
-</style>
+}</style>

@@ -5,13 +5,13 @@ import { LMap, LTileLayer, LMarker } from "@vue-leaflet/vue-leaflet"
 import { useRouter } from 'vue-router';
 
 import api from '../http/api';
-const router = useRouter();
-const countdown = ref(4);
+
 const isNotValidName = ref(false)
 const isNotValidEmail = ref(false)
 const isNotValidMessage = ref(false)
 
-const formSent = ref(false)
+const showResponse = ref(false)
+
 let zoom = ref(10)
 const minZoom = ref(4);
 let center = ref([34.0522, -118.2437]) // Los Angeles coordinates
@@ -29,6 +29,7 @@ const submitForm = async () => {
     if (isNotValidName.value || isNotValidEmail.value || isNotValidMessage.value) {
         return;
     }
+    
     const formData = {
         name: name.value,
         email: email.value,
@@ -37,23 +38,23 @@ const submitForm = async () => {
 
 
     //* API CALL 
-    await api.post('/contact-us/submit', formData)
+    await api.post('/contact-us', formData)
         .then(res => {
-            document.querySelector('.vue-container').style.overflowY = 'hidden'
-            document.querySelector('#navigation_bar').scrollIntoView();
-            formSent.value = true
+        
 
             name.value = ""
             email.value = ""
             message.value = ""
+            
+            showResponse.value = true
+
         }).catch(err => {
-            router.push('/error');
             console.log(err)
         })
 };
 
 // Validation functions
-const isValidName = (value) => value.trim() !== '';
+const isValidName = (value) => value.trim() !== '' || value.lenght < 3;
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const isValidMessage = (value) => value.trim() !== '';
 
@@ -100,6 +101,11 @@ const mapOptions = {
     <div>
         <button @click="submitForm">SEND</button>
     </div>
+
+    <div v-if="showResponse" class="thanks-msg">
+        <i class="fa-solid fa-check"></i>
+    <p>Thank you for your message. It has been sent. </p>
+    </div>
 </div>
 <div class="store-details">
     <header>
@@ -127,6 +133,8 @@ const mapOptions = {
     </div>
 </div>
 </div>
+
+
     </div>
 </template>
 
@@ -137,6 +145,9 @@ const mapOptions = {
     width: 100%;
     min-height: 100%;
     font-family: $ff;
+
+ 
+
     .mapContainer {
         width: 100%;
         height: 70vh;
@@ -159,6 +170,7 @@ const mapOptions = {
             width: 70%;
             min-height: 60vh;
             
+
             >div {
                 width: 100%;
                 min-height: 5rem;
@@ -213,6 +225,25 @@ const mapOptions = {
                     }
                 }
             }
+
+            .thanks-msg{
+                width:76% ;
+                min-height:3rem;
+                background: green;
+                color: #fff;
+                border-radius: 10px;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: .5vw;
+                opacity: .7;
+                transition: .3s ease-in;
+                margin-left: 2vw;
+                user-select: none;
+                &:hover{
+                    opacity: 1;
+                }
+            }
         }
 
         .store-details {
@@ -252,6 +283,7 @@ header {
     >p {
         position: relative;
         padding-bottom: 3px;
+        text-transform: uppercase;
 
         &::after {
             position: absolute;
@@ -327,5 +359,9 @@ header {
             width: 100% !important;
         }
     }
+}
+
+.showErrMessage{
+    display: block !important;
 }
 </style>

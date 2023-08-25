@@ -3,35 +3,60 @@ import { defineProps } from 'vue';
 import { RouterLink } from 'vue-router';
 
 const props = defineProps({
-    headerText: String
+    smallHeader : String,
+    headerText: String,
+    productList : Array
 });
+
+
+const getCoverImg =(p) =>{
+    const coverImg =  p.images.find(image => image.pivot.is_cover === true);
+    return coverImg.url
+}
+// get discount %
+function getProductDiscount(product) {
+    if (!product.sale_price || !product.regular_price) {
+        return;
+    }
+
+    const regularPrice = parseFloat(product.regular_price);
+    const salePrice = parseFloat(product.sale_price);
+
+    const discountPercentage = ((regularPrice - salePrice) / regularPrice) * 100;
+    return discountPercentage.toFixed(0)
+}
+
 
 </script>
 <template>
     <div class="bg-box">
-        <h4>Hurry up to buy</h4>
+        <h4>{{ smallHeader }}</h4>
         <h1>{{ headerText }}</h1>
         <div class="prods-conatiner">
-            <div v-for="i in 12" :key="i" class="product-box">
+            <div v-for="p in productList" :key="p.id" class="product-box">
                 <div class="img-box">
-                <RouterLink :to="{ name: 'product-page' }">  
-                    <img src="https://woodmart.xtemos.com/accessories/wp-content/uploads/sites/7/2022/04/w-accessories-product-15-430x491.jpg" alt="product-image">
+                <RouterLink :to="{ name: 'product-page', params: { slug: p.slug }}">  
+                    <img :src="getCoverImg(p)" alt="Product image">
                 </RouterLink>
 
-                    <div class="badge">-24%</div>
+                    <div v-if="p.sale_price" class="badge">
+                        -{{ getProductDiscount(p) }}%
+                    </div>
                     <div class="actions">
                         <i class="fa-solid fa-cart-shopping"></i>
-                        <i class="fa-regular fa-eye"></i>
+                        <RouterLink :to="{ name: 'product-page', params: { slug: p.slug }}">  
+                            <i class="fa-regular fa-eye"></i>
+                        </RouterLink>
                         <i class="fa-regular fa-heart"></i>
                     </div>
                 </div>
-                <RouterLink :to="{ name: 'product-page' }">  
-                    <p>Iphone 12 Max Pro Case - Blue</p>
+                <RouterLink :to="{ name: 'product-page' , params: { slug: p.slug }}">  
+                    <p>{{ p.name }}</p>
                 </RouterLink>
                 <div class="reviews">
                     <i  v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
                 </div>
-                <h4>$195,99</h4>
+                <h4>${{ p.price }}</h4>
             </div>
         </div>
     </div>
@@ -59,32 +84,42 @@ const props = defineProps({
     }
 
     .prods-conatiner {
-        width: 85%;
+        width: 95%;
         min-height: 40vh;
         margin: 1rem auto;
         display: flex;
-        justify-content: flex-start;
+        justify-content: center;
+        gap: 2rem;
         padding:1rem 0;
-        flex-wrap: wrap;   
+        flex-wrap: wrap;  
         .product-box{
-            width: 18rem;
-            height: 25rem;
-            margin:1rem 0 1rem 3vw;
+            width: 20rem;
+            height: 22rem;
+            margin:1rem 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             overflow: hidden;
+
             .img-box{
-                width: 18rem;
-                height: 18rem;
+                width: 100%;
+                height: 14rem;
                 position: relative;
+
+
                 &:hover .actions{ 
                     transform: translateX(0);
                 }
                 >a > img{
                     width: 100%;
                     height: 100%;
-                    object-fit: cover;
+                    object-fit: contain;
+                    margin: auto;
+                    transition: .3s ease-in-out;
+                    &:hover{
+                        transform: scale(1.08);
+                    }
+
                 }
                 .badge{
                     position: absolute;
@@ -105,23 +140,31 @@ const props = defineProps({
                     color: #555;
                     width: 3.3rem;
                     height:8rem;
-                     @include flex($jc:flex-start);
+                    @include flex($jc:flex-start);
                     flex-direction: column;
                     padding: 1rem 0;
                     gap: 1rem;
                     transition: .3s ease-in;
                     transform: translateX(100px);
-                    >i{
+                    a{
+                        color: #555;
+                    }
+                    >a i , >i{
                         font-size: 1.3rem;
                         cursor: pointer;
                         z-index: 2;
+                        transition: .3s ease-in;
+                        &:hover{
+                            color: #2E6BC6;
+                        }
                     }
                 }
             }
             p{
-                margin-top: 1rem;
-                font-size: .9rem;
+                margin-top: 2rem;
+                font-size: .91rem;
                 color:#555;
+
             }
             .reviews{
                 width: 90%;
@@ -138,5 +181,33 @@ const props = defineProps({
             }
         }
     }
+}
+
+@media screen and (max-width:1024px) {
+    .bg-box {
+
+    .prods-conatiner {
+        gap: 2vw;
+    }
+}
+}
+@media screen and (max-width:630px) {
+    .bg-box {
+    .prods-conatiner {
+        width: 97%;
+        .product-box{
+            width: 14rem;
+        }
+    }
+}
+}
+@media screen and (max-width:350px) {
+    .bg-box {
+    .prods-conatiner {
+        .product-box{
+            width: 90%;
+        }
+    }
+}
 }
 </style>

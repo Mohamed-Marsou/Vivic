@@ -15,8 +15,13 @@ const router = createRouter({
       component: () => import('../views/collections.vue')
     },
     {
-      path: '/category',
+      path: '/category/:slug/:id',
       name: 'category',
+      component: () => import('../views/category-page.vue')
+    },
+    {
+      path: '/newset',
+      name: 'new',
       component: () => import('../views/category-page.vue')
     },
     {
@@ -30,9 +35,10 @@ const router = createRouter({
       component: () => import('../views/about.vue')
     },
     {
-      path: '/product',
+      path: '/product/:slug', 
       name: 'product-page',
-      component: () => import('../views/product-page.vue')
+      component: () => import('../views/product-page.vue'),
+      props: true
     },
     {
       path: '/user/auth',

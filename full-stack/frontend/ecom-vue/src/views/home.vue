@@ -3,19 +3,46 @@ import CategoryCarousel from "../components/build/category-carousel.vue"
 import Products from '../components/build/products.vue'
 import ProductsCarousel from "../components/build/products-carousel.vue";
 import Mail from "../components/build/mail-container.vue";
-import { ref,onMounted } from "vue";
+import { ref, onMounted } from "vue";
+import { useProductStore } from '../stores/product'
+
+const productStore = useProductStore()
+import api from '../http/api'
 
 const isLoaded = ref(false)
 
-onMounted(()=>{
+
+const categories = ref([])
+const newArrivals = ref([])
+const highRated = ref([])
+
+
+onMounted(() => {
     isLoaded.value = true
+    getNewArrivals()
+    getCategories()
+    getHighRatedProducts()
 })
+
+async function getNewArrivals() {
+    const res = await productStore.getNewArrivals()
+    newArrivals.value = res[0].data
+}
+async function getCategories() {
+    const res = await productStore.getCategories()
+    categories.value = res.data.response
+}
+async function getHighRatedProducts() {
+    const res = await productStore.getHighRated()
+    highRated.value = res.data.data
+}
+
 </script>
 <template>
     <div class="home-main">
         <div class="hero">
             <img src="../assets/images/hero.jpg" alt="hero-image">
-            <div class="ctx "  :class="{ 'animate-l-t-r' : isLoaded}">
+            <div class="ctx" :class="{ 'animate-l-t-r': isLoaded }">
                 <h2>
                     Get the best Products With best Offres !
                 </h2>
@@ -29,8 +56,10 @@ onMounted(()=>{
                 </button>
             </div>
         </div>
-        <CategoryCarousel />
-        <Products headerText="New Arrivals" />
+
+        <CategoryCarousel headerText="Popular Categories" :categoryList="categories" />
+
+        <Products smallHeader="Hurry up and Buy" headerText="New Arrivals" :productList="newArrivals" />
 
         <div class="qua-box">
             <h2>We Provide High Quality Goods</h2>
@@ -53,48 +82,45 @@ onMounted(()=>{
                 </div>
             </div>
         </div>
-        <Products headerText="Most Popular Products" />
+        <Products smallHeader="Only for you" headerText="Most wanted" :productList="newArrivals" />
 
         <div class="deals-wrapper">
             <div class="div1">
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/04/accessories-banner-2.jpg.webp"
-                    alt="cover">
-                    <div class="float">
-                        <h2>Category4</h2>
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing.</p>
+                <img src="../assets/images/accessories-banner-1.jpg.webp" alt="cover">
+                <div class="float">
+                    <h2>Category4</h2>
+                    <p>Lorem ipsum dolor sit amet consectetur adipisicing.</p>
                     <button>Shop now</button>
-                    </div>
+                </div>
             </div>
             <div class="div2">
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/08/accessories-banner-1.jpg.webp"
-                    alt="cover">
-                    <div class="float">
-                        <h2>Category4</h2>
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing.</p>
+                <img src="../assets/images/accessories-banner-2.jpg.webp" alt="cover">
+                <div class="float">
+                    <h2>Category4</h2>
+                    <p>Lorem ipsum dolor sit amet consectetur adipisicing.</p>
                     <button>Shop now</button>
-                    </div>
+                </div>
             </div>
             <div class="div3">
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/04/accessories-banner-3.jpg.webp"
-                    alt="cover">
-                    <div class="float">
-                        <h2>Category4</h2>
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing.</p>
+                <img src="../assets/images/accessories-banner-3.jpg.webp" alt="cover">
+                <div class="float">
+                    <h2>Category4</h2>
+                    <p>Lorem ipsum dolor sit amet consectetur adipisicing.</p>
                     <button>Shop now</button>
-                    </div>
+                </div>
             </div>
             <div class="div4">
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/04/accessories-slide-3.jpg"
-                    alt="cover">
-                    <div class="float">
-                        <h2>Category4</h2>
-                        <p>Lorem ipsum dolor sit amet consectetur adipisicing.</p>
+                <img src="../assets/images/accessories-slide-3.jpg" alt="cover">
+                <div class="float">
+                    <h2>Category4</h2>
+                    <p>Lorem ipsum dolor sit amet consectetur adipisicing.</p>
                     <button>Shop now</button>
-                    </div>
+                </div>
             </div>
         </div>
 
-        <ProductsCarousel />
+        <ProductsCarousel smallHeader="Hot Picks: Bestselling and Highly Popular Products Right Nows"
+            headerText="Most Popular Products" :productList="highRated" />
 
         <Mail />
 
@@ -126,7 +152,7 @@ onMounted(()=>{
             position: absolute;
             left: 5vw;
             top: 50%;
-            transform: translate(-110%,-50%);
+            transform: translate(-110%, -50%);
             @include flex($ai: flex-start);
             flex-direction: column;
             gap: 2rem;
@@ -166,7 +192,7 @@ onMounted(()=>{
 
         p {
             font-size: .9rem;
-            color: #555;
+            color: #2E6BC6;
             text-align: center;
             padding-bottom: 1rem;
 
@@ -220,35 +246,39 @@ onMounted(()=>{
             transition: .5s ease-in;
             border-radius: 10px;
             overflow: hidden;
-              box-shadow: 1px 1px 8px 3px #00000023;
+            box-shadow: 1px 1px 8px 3px #00000023;
 
-            &:hover{
+            &:hover {
                 z-index: 2;
                 transform: scale(1.02);
             }
+
             >img {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
             }
-            .float{
+
+            .float {
                 position: absolute;
                 top: 1rem;
                 left: 1vw;
                 width: 70%;
                 height: 70%;
-                @include flex($ai:flex-start,$jc:space-around);
+                @include flex($ai: flex-start, $jc: space-around);
                 flex-direction: column;
                 padding: 5px;
-                >button{
-                    width:6rem;
+
+                >button {
+                    width: 6rem;
                     height: 2.5rem;
                     border-radius: 5px;
                     border: none;
                     background: #2E6BC6;
                     color: #fff;
                 }
-                p{
+
+                p {
                     font-size: .9rem;
                     color: #555;
                 }
@@ -272,9 +302,134 @@ onMounted(()=>{
         }
     }
 }
-.animate-l-t-r
-{
-    transform: translate(0,-50%) !important;
-    opacity: 1 !important;
+
+@media screen and (max-width: 1024px) {
+    .home-main {
+
+        .hero {
+            .ctx {
+                width: 90vw;
+                height: 60vh;
+                left: 2vw;
+            }
+        }
+    }
+
+    .qua-box {
+        padding: 1rem;
+
+        >h2 {
+            padding: 1rem 1vw !important;
+        }
+
+        .main-box {
+            width: 95% !important;
+            height: fit-content !important;
+
+            >div {
+                width: 33% !important;
+                height: 16rem;
+            }
+        }
+    }
+    .deals-wrapper {
+        width: 95% !important;
+    }
 }
-</style>
+
+@media screen and (max-width: 768px) {
+
+    .qua-box {
+
+        >h2 {
+            font-size: 1.5rem !important;
+        }
+
+        p {
+            font-size: .8rem !important;
+        }
+
+        .main-box {
+            width: 95% !important;
+            flex-direction: column;
+            align-items: center;
+
+            >div {
+                width: 90% !important;
+            }
+        }
+    }
+
+    .home-main .deals-wrapper {
+        height: fit-content !important;
+        display: flex !important;
+        flex-direction: column  !important;
+        gap: 10px;
+
+        >div {
+            width: 100%;
+           height: 15rem !important;
+            &:hover {
+                z-index: 2;
+                transform: scale(1.01) !important;
+            }
+            .float {
+                width: 80% !important;
+                min-height: 70% !important;
+            }
+        }
+       
+    }
+}
+
+@media screen and (max-width: 550px) {
+    .home-main {
+
+        .hero {
+            .ctx {
+                width: 95vw;
+                height: 80vh;
+
+                >h2 {
+                    font-size: 2rem;
+                }
+
+                >p {
+                    font-size: .9rem;
+                }
+            }
+        }
+    }
+}
+
+@media screen and (max-width: 320px) {
+    .home-main {
+        .hero {
+            .ctx {
+                width: 95vw;
+                height: 80vh;
+
+                >h2 {
+                    font-size: 1.5rem;
+                }
+
+                >p {
+                    font-size: .8rem;
+                }
+            }
+        }
+    }
+
+    .qua-box {
+
+        >h2 {
+            font-size: 1.2rem !important;
+        }
+    }
+}
+
+
+.animate-l-t-r {
+    transform: translate(0, -50%) !important;
+    opacity: 1 !important;
+}</style>

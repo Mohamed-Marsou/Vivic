@@ -14,6 +14,25 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+require __DIR__.'/Api/Admin.php';
+
+require __DIR__.'/Api/Product.php';
+
+require __DIR__.'/Api/Subscribe.php';
+
+require __DIR__.'/Api/User.php';
+
+require __DIR__.'/Api/Order.php';
+
+require __DIR__.'/Api/Stripe.php';
+
+require __DIR__.'/Api/Paypal.php';
+
+require __DIR__.'/Api/Contact_us.php';
+
+require __DIR__.'/Api/Admin.php';
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });

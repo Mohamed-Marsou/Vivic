@@ -1,11 +1,16 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted,watch } from 'vue'
 import ProductsCarousel from '../components/build/products-carousel.vue';
+import api from '../http/api'
+import { useRoute } from 'vue-router'
+
 // Reviews DATA 
 import reviews from '../assets/products-reviews.json'
 
-const reviewsData = ref(reviews.reviews)
+// Reviews data
+const reviewsData = ref(reviews.reviews); 
 const averageRating = computed(() => {
+    // Calculate the average rating
     if (!Array.isArray(reviewsData.value) || reviewsData.value.length === 0) {
         return 0;
     }
@@ -15,58 +20,110 @@ const averageRating = computed(() => {
 
     // Round to 1 decimal place
     return parseFloat(averageRating.toFixed(1));
-    });
-    function getReviewCountByRating(rating) {
-        return reviewsData.value.filter(review => review.rating === rating).length;
-    }
-    function getPercentageByRating(rating) {
-        const totalReviews = reviewsData.value.length;
-        const reviewsWithRating = getReviewCountByRating(rating);
-        const percentage = (reviewsWithRating / totalReviews) * 100;
+});
 
-        return percentage.toFixed(2); // Return the percentage rounded to 2 decimal places
-    }
-
-    const fullStars = computed(() => {
-        let roundedAverage = Math.round(averageRating.value);
-        if (roundedAverage >= 5) {
-            return 5;
-        }
-        return roundedAverage;
-    });
-
-    const hasHalfStar = computed(() => {
-        if (averageRating.value >= 5) {
-            return false;
-        }
-        return averageRating.value - fullStars.value < 0.5 && averageRating.value - fullStars.value > 0;
-    });
-
-    let initialsBackgroundColors = [
-        "#FF5733", "#33FF9E", "#FFD633", "#339CFF", "#FF339C", "#9C33FF"
-    ]
-    function getColor(index) {
-        return initialsBackgroundColors[index % initialsBackgroundColors.length];
-    }
-// Reviews DATA 
-
-const showStickyNav = ref(false)
-
-const showSticky = ()=>{
-    showStickyNav.value = true
+// Functions to analyze review data
+function getReviewCountByRating(rating) {
+    return reviewsData.value.filter(review => Math.round(review.rating) === rating).length;
 }
-const hideSticky = ()=>{
-    showStickyNav.value =false
-    
+
+function getPercentageByRating(rating) {
+    const totalReviews = reviewsData.value.length;
+    const reviewsWithRating = getReviewCountByRating(rating);
+    const percentage = (reviewsWithRating / totalReviews) * 100;
+
+    return percentage.toFixed(2); // Return the percentage rounded to 2 decimal places
 }
-onMounted(() => {
-    //* Scroll to the top of the page
-    window.scrollTo({
+
+// Star ratings
+const fullStars = computed(() => {
+    let roundedAverage = Math.round(averageRating.value);
+    if (roundedAverage >= 5) {
+        return 5;
+    }
+    return roundedAverage;
+});
+
+const hasHalfStar = computed(() => {
+    if (averageRating.value >= 5) {
+        return false;
+    }
+    return averageRating.value - fullStars.value < 0.5 && averageRating.value - fullStars.value > 0.3;
+});
+
+// Initials background colors
+const initialsBackgroundColors = [
+    "#FF5733", "#33FF9E", "#FFD633", "#339CFF", "#FF339C", "#9C33FF"
+];
+function getColor(index) {
+    return initialsBackgroundColors[index % initialsBackgroundColors.length];
+}
+
+// Product data
+const product = ref([]);
+const productImages = ref([]);
+const productCover = ref('');
+const productDiscount = ref(0);
+const route = useRoute();
+
+
+// Props
+const props = defineProps({
+    slug: String,
+});
+
+// Fetch product data before mount
+onMounted(async () => {
+    // Scroll to the top of the page
+    scrollToTop()
+    await getProductData();
+    quantity.value = product.value.inStock
+    await getHighRatedProducts();
+
+});
+
+watch(() => route.params.slug, async (newSlug) => {
+    scrollToTop()
+    try {
+        const res = await api.get(`/product/${newSlug}`);
+        product.value = res.data;
+        const coverImg = product.value.images.find(image => image.pivot.is_cover === true);
+        productCover.value = coverImg.url;
+        productImages.value = product.value.images;
+    } catch (error) {
+        console.error('Error fetching product data:', error);
+    }
+    quantity.value = product.value.inStock
+    await getHighRatedProducts();
+});
+
+function scrollToTop()
+{window.scrollTo({
         top: 0,
         behavior: 'smooth'
     });
-});
-const ScrollToreviews = () => {
+
+}
+// Function to fetch product data
+async function getProductData() {
+    try {
+        const res = await api.get(`/product/${props.slug}`);
+        product.value = res.data;
+        const coverImg = product.value.images.find(image => image.pivot.is_cover === true);
+        productCover.value = coverImg.url;
+        productImages.value = product.value.images;
+    } catch (error) {
+        console.error('Error fetching product data:', error);
+    }
+}
+
+// Function to update cover image
+function updateCoverImage(src) {
+    productCover.value = src.url;
+}
+
+// Scroll to reviews section
+const scrollToReviews = () => {
     const productReviewsContainer = document.querySelector('.product-reviews');
     if (productReviewsContainer) {
         productReviewsContainer.scrollIntoView({
@@ -75,26 +132,118 @@ const ScrollToreviews = () => {
         });
     }
 }
+
+// Sticky navigation handling
+const showStickyNav = ref(false);
+
+const showSticky = () => {
+    showStickyNav.value = true;
+};
+
+const hideSticky = () => {
+    showStickyNav.value = false;
+};
+
+// get discount %
+function getProductDiscount() {
+    if (!product.value.sale_price || !product.value.regular_price) {
+        return;
+    }
+
+    const regularPrice = parseFloat(product.value.regular_price);
+    const salePrice = parseFloat(product.value.sale_price);
+
+    const discountPercentage = ((regularPrice - salePrice) / regularPrice) * 100;
+    return discountPercentage.toFixed(0)
+}
+
+// TODO CHANGE IT TO SIMILAR PRODUCTS ASAP
+import { useProductStore } from '../stores/product'
+const productStore = useProductStore()
+const highRated = ref([])
+async function getHighRatedProducts() {
+    const res = await productStore.getHighRated()
+    highRated.value = res.data.data
+}
+
+// Product Quantity Controllers 
+const count = ref(1)
+const quantity = ref(0)
+
+const increaseCount = () => {
+    if (count.value < quantity.value) count.value++
+}
+const decreaseCount = () => {
+    if (count.value != 1) count.value--
+}
+
+// Reviews Filters
+const reviewsFilter = ref('Filter reviews')
+const filterReviews = () => {
+    switch (reviewsFilter.value) {
+        case 'With Images':
+            // Separate reviews into two arrays: reviews with images and reviews without images
+            const reviewsWithImages = reviewsData.value.filter((review) => review.body_urls !== '');
+            const reviewsWithoutImages = reviewsData.value.filter((review) => review.body_urls === '');
+
+            // Combine the two arrays to show reviews with images first
+            reviewsData.value = [...reviewsWithImages, ...reviewsWithoutImages];
+            break;
+        case 'Newest':
+            // Apply your sorting logic to show newest reviews first
+            reviewsData.value.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            break;
+        case 'High Rating':
+            // Apply your sorting logic to show reviews based on rating
+            reviewsData.value.sort((a, b) => b.rating - a.rating);
+            break;
+        default:
+            // If no filter is selected or the filter is not recognized, show the original order of reviews
+            reviewsData.value = reviews.reviews;
+            break;
+    }
+
+};
+
+const currentReviewsLen = ref(8)
+const loading = ref(false)
+
+const visibleReviews = computed(() => {
+            return reviewsData.value.slice(0, currentReviewsLen.value);
+});
+const showMoreReviews = ()=> {
+    if(currentReviewsLen.value != visibleReviews.value){
+        loading.value = true
+        
+        setTimeout(()=>{
+            currentReviewsLen.value = currentReviewsLen.value +4
+            loading.value = false
+        },1500)
+    }
+}
 </script>
 <template>
     <div class="main-cls-wrapper">
 
-        <div  class="mobile-prod-pick" :class="{showBottomNav : showStickyNav}">
+        <div class="mobile-prod-pick" :class="{ showBottomNav: showStickyNav }">
             <div class="dtl">
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/09/green-case-front.jpg"
-                    alt="">
-
+                <img :src="productCover" alt="product-image">
                 <div>
-                    <p>iPhone 12 Pro Moment Case – Black </p>
+                    <p>{{ product.name }} </p>
                     <div>
-                        <i @click="ScrollToreviews" v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
+                        <i @click="scrollToReviews" v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
                     </div>
                 </div>
             </div>
             <div class="act">
                 <h3>
-                    <span>$24.5</span>
-                    $10.54
+                    <span v-if="product.regular_price">
+                        ${{ product.regular_price }}
+                    </span>
+                    ${{
+                        product.sale_price ?
+                        product.sale_price : product.price
+                    }}
                 </h3>
                 <button>Add to Cart</button>
                 <p>
@@ -108,61 +257,68 @@ const ScrollToreviews = () => {
             <div class="prd-details">
                 <div class="slider-main">
                     <div class="slider-main-top">
-                        <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/09/green-case-front.jpg"
-                            alt="product-image">
+                        <img :src="productCover" alt="product-image">
                     </div>
-                    <div class="slider-main-bottom">
+                    <div v-if="productImages.length > 1" class="slider-main-bottom">
                         <div>
-                            <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/09/green-case-front.jpg"
+                            <img :src="productImages[0].url" @click="updateCoverImage(productImages[0])"
                                 alt="product-image">
                         </div>
                         <div>
-                            <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/09/green-case-front.jpg"
+                            <img :src="productImages[1].url" @click="updateCoverImage(productImages[1])"
                                 alt="product-image">
                         </div>
                         <div>
-                            <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/09/green-case-front.jpg"
+                            <img :src="productImages[2].url" @click="updateCoverImage(productImages[2])"
                                 alt="product-image">
                         </div>
                         <div>
-                            <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/09/green-case-front.jpg"
+                            <img :src="productImages[3].url" @click="updateCoverImage(productImages[3])"
                                 alt="product-image">
                         </div>
                     </div>
-                    <div class="slider-main-badge">
-                        -21%
+                    <div v-if="product.sale_price" class="slider-main-badge">
+                        -{{ getProductDiscount() }}%
                     </div>
                 </div>
 
                 <div class="prd-spc">
                     <div class="slots">
-                        <h1>iPhone 12 Pro Moment Case – Black</h1>
+                        <h1>{{ product.name }}</h1>
                     </div>
 
                     <div class="slots">
                         <h3>
-                            <span>$199.99</span>
-                            $55.55
+                            <span v-if="product.regular_price">
+                                ${{ product.regular_price }}
+                            </span>
+                            ${{
+                                product.sale_price ?
+                                product.sale_price : product.price
+                            }}
                         </h3>
                     </div>
                     <div class="slots">
-                        <p>your iPhone 12 Pro with our sleek Moment Case in Black. Designed for both style and
-                            functionality,
-                            this case offers reliable protection and a comfortable grip. Elevate your mobile photography
-                            experience with its compatibility with Moment lenses. Get ready to capture stunning moments
-                            effortlessly</p>
+                        <p>{{ product.short_description }}</p>
+                    </div>
+                    <div v-if="quantity && quantity != count" class="slots stock">
+                        <i class="fa-solid fa-check"></i> {{ quantity }} in stock
+                    </div>
+
+                    <div v-else class="slots outStock">
+                        <i class="fa-solid fa-shop-slash"></i>Out of stock
                     </div>
                     <div class="slots">
-                        <i  class="fa-solid fa-check"></i> 15 in stock
+                        <i @click="scrollToReviews" v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
                     </div>
-                    <div class="slots">
-                        <i @click="ScrollToreviews"  v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
-                    </div>
+
                     <div class="slots container-ctl">
                         <div class="ctrls">
-                            <span>-</span>
-                            <p>1</p>
-                            <span>+</span>
+                            <span @click="decreaseCount" :class="{ disabled: count == 1 }"> - </span>
+
+                            <p>{{ count }}</p>
+
+                            <span @click="increaseCount" :class="{ disabled: quantity <= count }">+</span>
                         </div>
                         <button>
                             Add to cart
@@ -250,7 +406,17 @@ const ScrollToreviews = () => {
                 </div>
 
                 <div class="reviews-box">
-                    <div v-for="(reviewData, index) in reviewsData" :key="index">
+                    <div class="reviews-filters">
+                        <p>Showing {{ currentReviewsLen }} out of {{ reviewsData.length }}</p>
+                        <select @click="filterReviews" v-model="reviewsFilter">
+                            <option disabled> Filter reviews</option>
+                            <option>With Images</option>
+                            <option>Newset</option>
+                            <option>High Rating</option>
+                        </select>
+                    </div>
+
+                    <div v-for="(reviewData, index) in visibleReviews" :key="index">
                         <div class="img-bx">
                             <img v-if="reviewData.body_urls" :src="reviewData.body_urls" alt="review-image">
                             <div class="auther">
@@ -267,10 +433,24 @@ const ScrollToreviews = () => {
                             reviewData.body_text
                         }}</p>
                     </div>
+
+                    <div v-if="!loading && currentReviewsLen != reviewsData.length" class="reviews-pagination">
+                        <button @click="showMoreReviews">SHOW MORE</button>
+                    </div>
+                    <div  v-if="loading" class="reviews-pagination loader">
+                        <div class="lds-ring">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
-        <ProductsCarousel />
+        <ProductsCarousel smallHeader="Exploring Similar Delights? Start Here!" headerText="SIMILAR PRODUCTS"
+            :productList="highRated" />
     </div>
 </template>
 
@@ -298,49 +478,55 @@ const ScrollToreviews = () => {
         transition: .5s ease-in-out;
         display: none;
         transform: translateY(100%);
-        .dtl{
+
+        .dtl {
             height: 100%;
             display: flex;
-        >img {
-            height: 100%;
-            width: 8rem;
-            object-fit: contain;
-        }
 
-        >div {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 5px;
-            padding: 0 1vw;
-            font-size: .9rem;
-            color: #555;
+            >img {
+                height: 100%;
+                width: 8rem;
+                object-fit: contain;
+            }
 
-            i {
-                color: #FFD700;
-                cursor: pointer;
+            >div {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 5px;
+                padding: 0 1vw;
+                font-size: .9rem;
+                color: #555;
+
+                i {
+                    color: #FFD700;
+                    cursor: pointer;
+                }
             }
         }
-    }
 
         .act {
             min-width: 10rem;
             height: 100%;
             display: flex;
             align-items: center;
-            h3{
+
+            h3 {
                 display: flex;
-                span{
+
+                span {
                     color: #555;
                     font-size: .8rem;
                     text-decoration: line-through;
                 }
+
                 color: #0065fc;
                 font-size: 1.5rem;
                 margin: 0 2vw;
             }
-            button{
+
+            button {
                 color: #fff;
                 background: #0065fc;
                 width: 8rem;
@@ -349,11 +535,13 @@ const ScrollToreviews = () => {
                 border-radius: 5px;
                 margin-right: 2vw;
             }
-            p{
+
+            p {
                 cursor: pointer;
                 color: #555;
                 font-size: .8rem;
-                i{
+
+                i {
                     font-size: 1.2rem;
                 }
 
@@ -369,20 +557,20 @@ const ScrollToreviews = () => {
 
 
     .prd-details {
-        width: 100%;
-        height: 90vh;
+        width: 90%;
+        min-height: 90vh;
         display: flex;
+        margin: 1rem auto;
 
         >div {
             width: 50%;
-            height: 100%;
+            min-height: 90%;
             position: relative;
 
             .slider-main-badge {
                 position: absolute;
                 top: 2rem;
-                left: 2rem;
-                background: red;
+                left: 10%;
                 border-radius: 50%;
                 color: white;
                 width: 3rem;
@@ -392,12 +580,13 @@ const ScrollToreviews = () => {
                 font-weight: bold;
                 z-index: 2;
                 user-select: none;
+                background: red;
             }
         }
 
         .slider-main-top {
             width: 100%;
-            height: 90%;
+            height: 75vh;
 
             cursor: pointer;
 
@@ -412,9 +601,10 @@ const ScrollToreviews = () => {
         .slider-main-bottom {
             cursor: pointer;
             width: 100%;
-            height: 20%;
+            height: 15vh;
             display: flex;
             justify-content: space-evenly;
+
 
             >div {
                 width: 25%;
@@ -446,9 +636,9 @@ const ScrollToreviews = () => {
 
             >h3 {
                 color: #2E6BC6;
-                font-size: 3rem;
+                font-size: 2.5rem;
                 display: flex;
-                padding: 2rem 0;
+                padding: 1rem 0;
 
                 >span {
                     display: inline-block;
@@ -462,12 +652,14 @@ const ScrollToreviews = () => {
             >p {
                 font-size: .9rem;
                 line-height: 2rem;
+                padding: 1rem 0;
             }
 
             .supported-payment {
                 display: flex;
                 flex-direction: column;
                 padding: 1rem 0;
+                margin-top: 1rem;
 
                 h5 {
                     font-size: .9rem;
@@ -486,6 +678,30 @@ const ScrollToreviews = () => {
 
                     }
                 }
+            }
+        }
+
+        .stock {
+            color: #0065fc;
+            font-size: .9rem;
+
+            >i {
+                margin: 0 1vw;
+                font-size: 1.2rem;
+
+            }
+        }
+
+        .outStock {
+            text-decoration: line-through;
+            color: red;
+            font-size: .9rem;
+            font-weight: bold;
+
+            >i {
+                color: red;
+                margin: 0 1vw;
+                font-size: 1.2rem;
             }
         }
 
@@ -512,13 +728,14 @@ const ScrollToreviews = () => {
                 >p {
                     border-right: 2px solid #5555556b;
                     border-left: 2px solid #5555556b;
+                    cursor: default;
                 }
             }
 
             button {
                 width: 12rem;
                 height: 2.5rem;
-                background: #2E6BC6;
+                background: #2e6bc6ef;
                 color: #fff;
                 border: none;
                 border-radius: 5px;
@@ -527,7 +744,7 @@ const ScrollToreviews = () => {
                 text-transform: uppercase;
 
                 &:hover {
-                    background: red;
+                    background: #0c5dd6;
                 }
             }
         }
@@ -539,6 +756,8 @@ const ScrollToreviews = () => {
 
             >h5 {
                 cursor: pointer;
+                font-size: 1rem;
+
             }
 
             >div {
@@ -553,6 +772,7 @@ const ScrollToreviews = () => {
                     margin-right: 1vw;
                     transition: .3s ease;
                     cursor: pointer;
+                    font-size: 1.2rem;
 
                     &:hover {
                         color: #0065fc;
@@ -589,7 +809,7 @@ const ScrollToreviews = () => {
         min-height: 50vh;
 
         >div {
-            width: 90%;
+            width: 100%;
             min-height: 30vh;
             margin: 5px auto;
         }
@@ -671,13 +891,14 @@ const ScrollToreviews = () => {
 
         .reviews-box {
             display: flex;
-            justify-content: space-evenly;
+            justify-content: center;
             flex-wrap: wrap;
+            padding: 1rem 0 3rem 0;
 
             >div {
-                width: 20rem;
-                height: 23rem;
-                margin: 10px 1rem;
+                width: 22rem;
+                height: 20rem;
+                margin: 10px;
                 border-radius: 5px;
                 overflow: hidden;
                 box-shadow: 1px 1px 6px #00000052;
@@ -695,7 +916,7 @@ const ScrollToreviews = () => {
                 .img-bx {
                     width: 100%;
                     position: relative;
-                    height: 15rem;
+                    height: 13rem;
 
                     &:not(:has(img)) {
                         height: 5rem;
@@ -753,6 +974,90 @@ const ScrollToreviews = () => {
                 }
 
             }
+
+            .reviews-filters {
+                width: 100%;
+                height: 4rem;
+                box-shadow: 0 0 0 0;
+                @include flex($jc: space-between);
+                padding: 0 1vw;
+
+                p {
+                    font-size: .8rem;
+                }
+
+                >select {
+                    font-size: .9rem;
+                    border: 1px solid #00000025;
+                    padding: 5px 10px;
+                    border-radius: 5px;
+                    color: #555;
+                }
+            }
+
+            .reviews-pagination {
+                width: 100%;
+                height: 4rem;
+                box-shadow: 0 0 0 0;
+                @include flex();
+                padding: 0 1vw;
+
+                >button {
+                    width: 10rem;
+                    height: 3rem;
+                    border: none;
+                    border-radius: 50px;
+                    background: #0065fc;
+                    color: #fff;
+                    cursor: pointer;
+                }
+            }
+
+            .loader {
+                min-height: 4rem;
+
+                .lds-ring {
+                    display: inline-block;
+                    position: relative;
+                    width: 80px;
+                    height: 80px;
+                }
+
+                .lds-ring div {
+                    box-sizing: border-box;
+                    display: block;
+                    position: absolute;
+                    width: 64px;
+                    height: 64px;
+                    margin: 8px;
+                    border: 8px solid #488ffa;
+                    border-radius: 50%;
+                    animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+                    border-color: #488ffa transparent transparent transparent;
+                }
+
+                .lds-ring div:nth-child(1) {
+                    animation-delay: -0.45s;
+                }
+
+                .lds-ring div:nth-child(2) {
+                    animation-delay: -0.3s;
+                }
+
+                .lds-ring div:nth-child(3) {
+                    animation-delay: -0.15s;
+                }
+
+                @keyframes lds-ring {
+                    0% {
+                        transform: rotate(0deg);
+                    }
+
+                    100% {
+                        transform: rotate(360deg);
+                    }
+                }
+            }
         }
 
     }
@@ -783,12 +1088,16 @@ const ScrollToreviews = () => {
     }
 
 }
-.showBottomNav{
+
+.disabled {
+    opacity: .5 !important;
+    cursor: default !important;
+}
+
+.showBottomNav {
     display: flex !important;
     transform: translateY(0) !important;
     transition: .5s ease-in-out;
 
-}
-
-</style>
+}</style>
 

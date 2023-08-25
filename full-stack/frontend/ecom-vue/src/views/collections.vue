@@ -1,19 +1,34 @@
 <script setup>
 import categoryCarousel from '../components/build/category-carousel.vue';
 import Mail from "../components/build/mail-container.vue";
-
+import { ref, onMounted } from "vue";
+import { useProductStore } from '../stores/product'
 import { useRouter } from 'vue-router';
+import api from '../http/api'
+
+
+const productStore = useProductStore()
 
 const router = useRouter();
+
+const categories = ref([])
+
 const navBack = () => {
     router.back();
 };
+onMounted(() => {
+    getCategories()
+})
+async function getCategories() {
+    const res = await productStore.getCategories()
+    categories.value = res.data.response
+}
 </script>
 
 <template>
     <div class="collections">
         <div class="banner">
-            <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/04/accessories-page-title.jpg"
+            <img src="https://woodmart.xtemos.com/accessories/wp-content/uploads/sites/7/2022/04/accessories-page-title.jpg"
                 alt="cover">
             <div>
                 <i @click="navBack" class="fa-solid fa-arrow-left"></i>
@@ -21,15 +36,13 @@ const navBack = () => {
             </div>
         </div>
         <div class="heading">
-            <p>There are some redeeming factors</p>
+            <p>Explore our diverse range of categories for your interests</p>
             <h2>Recommended Categories</h2>
         </div>
-        <categoryCarousel />
-
+        <categoryCarousel headerText="" :categoryList="categories" />
         <div class="mega-bx">
             <div>
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/04/mag-safe-accessories-category.jpg.webp"
-                    alt="cover">
+                <img src="../assets/images/accessories-banner-1.jpg.webp" alt="cover">
                 <div>
                     <p>Lorem ipsum dolor sit lop</p>
                     <h2>Category X</h2>
@@ -37,8 +50,7 @@ const navBack = () => {
                 </div>
             </div>
             <div>
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/04/protective-cases-category.jpg.webp"
-                    alt="cover">
+                <img src="../assets/images/accessories-banner-2.jpg.webp" alt="cover">
                 <div>
                     <p>Lorem ipsum dolor sit lop</p>
                     <h2>Category X</h2>
@@ -46,8 +58,7 @@ const navBack = () => {
                 </div>
             </div>
             <div>
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/04/watches-straps-category.jpg.webp"
-                    alt="cover">
+                <img src="../assets/images/accessories-banner-3.jpg.webp" alt="cover">
                 <div>
                     <p>Lorem ipsum dolor sit lop</p>
                     <h2>Category X</h2>
@@ -55,8 +66,7 @@ const navBack = () => {
                 </div>
             </div>
             <div id="mb-cate">
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/04/new-arrivals-banner.jpg?id=226"
-                    alt="cover">
+                <img src="../assets/images/accessories-slide-3.jpg" alt="cover">
                 <div>
                     <p>Lorem ipsum dolor sit lop</p>
                     <h2>Category X</h2>
@@ -66,8 +76,7 @@ const navBack = () => {
         </div>
 
         <div class="newIn-bx">
-            <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/04/new-arrivals-banner.jpg?id=226"
-                alt="cover">
+            <img src="../assets/images/accessories-slide-3.jpg" alt="cover">
 
             <div>
                 <h2>Discover Our Latest Arrivals</h2>
@@ -80,7 +89,7 @@ const navBack = () => {
         <Mail />
     </div>
 </template>
-<style lang="scss">
+<style lang="scss" >
 @import '@/style/_global.scss';
 
 .collections {
@@ -112,6 +121,7 @@ const navBack = () => {
 
             h2 {
                 font-size: 3rem;
+                text-transform: uppercase;
             }
 
             i {
@@ -228,6 +238,7 @@ const navBack = () => {
             left: 1rem;
             width: 45%;
             padding: 1rem 2vw;
+
             h2 {
                 font-size: 2rem;
                 padding: 1rem 0;
@@ -251,5 +262,105 @@ const navBack = () => {
             }
 
         }
+    }
+
+    .Carousel>p {
+        display: none;
+    }
+}
+
+@media screen and (max-width:1024px) {
+    .collections {
+        .mega-bx {
+            width: 95%;
+        }
+
+        .newIn-bx {
+            width: 95%;
+        }
+    }
+}
+
+@media screen and (max-width:768px) {
+    .collections {
+        .mega-bx {
+            flex-direction: column;
+            box-shadow: none !important;
+
+            >div {
+                width: 100%;
+                height: 20rem;
+                box-shadow: 0px 5px 13px 2px rgba(0, 0, 0, 0.168627451);
+                margin-top: 1rem;
+                border-radius: 15px;
+
+                >img {
+                    &:hover {
+                        transform: scale(1.02);
+                    }
+                }
+
+                >div {
+                    width: 70%;
+                    height: 70%;
+                    padding: 5px;
+                    top: 2rem;
+                    left: 2rem;
+
+                    button {
+                        width: 8rem;
+                        height: 2.5rem;
+                        border-radius: 30px;
+                    }
+                }
+            }
+
+            #mb-cate {
+                display: block;
+            }
+
+        }
+        .newIn-bx {
+            width: 95%;
+            >div {
+            width: 90%;
+            }
+        }
+    }
+}
+
+@media screen and (max-width:450px) {
+    .collections {
+        .banner {
+            >div {
+                h2 {
+                    font-size: 2rem !important;
+                }
+            }
+        }
+        .mega-bx {
+            >div {
+                >div {
+                    h2 {
+                        font-size: 1.5rem;
+                    }
+                }
+            }
+        }
+        .newIn-bx {
+            width: 95%;
+            >div {
+            width: 90%;
+            h2{
+                font-size: 1.5rem;
+            }
+            }
+        }
+    }
+}
+
+@media screen and (max-width:320px) {
+    #main>div>div.heading>h2 {
+        font-size: 10vw !important;
     }
 }</style>

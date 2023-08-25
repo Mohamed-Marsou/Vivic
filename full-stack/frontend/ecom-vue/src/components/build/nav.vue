@@ -1,9 +1,13 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router';
+import { useAuthtStore } from '../../stores/auth'
 
+const authtStore = useAuthtStore()
 const visibleLinks = ref(false)
 const visibleAuth = ref(false)
+
+
 
 const toggleLinks = () => {
     visibleLinks.value = !visibleLinks.value;
@@ -34,7 +38,7 @@ const clearPage = () => {
                 <RouterLink :to="{ name: 'home' }"> Home </RouterLink>
             </li>
             <li>
-                <RouterLink :to="{ name: 'category' }"> New </RouterLink>
+                <RouterLink :to="{ name: 'new' }"> New </RouterLink>
             </li>
             <li>
                 <RouterLink :to="{ name: 'collections' }"> Collections </RouterLink>
@@ -51,7 +55,7 @@ const clearPage = () => {
                 <a>Track Orders</a>
             </li>
             <li class="mobile-li">
-                <a>Wishlist</a>
+                <RouterLink :to="{ name: 'wishlist' }"> Wishlist </RouterLink>
             </li>
             <li class="mobile-li">
                 <a>Profile</a>
@@ -68,13 +72,18 @@ const clearPage = () => {
             </p>
             <i class="fa-regular fa-user" id="userIcon"></i>
             <div class="icon-container">
-                <i class="fa-regular fa-heart"></i>
+                <RouterLink :to="{ name: 'wishlist' }"> 
+                    <i class="fa-regular fa-heart"></i> 
+                </RouterLink>
+                
                 <span>0</span>
             </div>
+            <RouterLink :to="{ name: 'cart' }"> 
             <div class="icon-container Cart">
-                <span>0</span>
-                <i class="fa-solid fa-cart-shopping"></i>
-            </div>
+                    <span>0</span>
+                    <i class="fa-solid fa-cart-shopping"></i>
+                </div>
+            </RouterLink>
         </ul>
         <div class="mobile-menu " :class="{ clickedHam: visibleLinks }" @click="toggleLinks">
             <div></div>
@@ -312,15 +321,13 @@ const clearPage = () => {
         position: relative;
 
         a {
-            position: absolute;
-            top: 50%;
-            right: 50%;
-            transform: translate(50%, -50%);
             font-size: 1rem;
             text-transform: uppercase;
             padding: 2px;
             font-weight: bold;
             cursor: pointer;
+             position: relative;
+
 
             &::after {
                 content: "";
@@ -334,6 +341,8 @@ const clearPage = () => {
         }
 
         i {
+            position: absolute;
+
             font-size: 3.5rem;
             color: #5555553a;
         }
@@ -381,6 +390,7 @@ const clearPage = () => {
 
         >a {
             font-size: 1.7rem;
+            width: fit-content;
         }
 
         .short-icns {
@@ -480,6 +490,10 @@ const clearPage = () => {
             z-index: 2;
         }
     }
+
+    #auth-wrapper {
+        width: 40vw !important;
+    }
 }
 
 @media screen and (max-width:768px) {
@@ -487,6 +501,9 @@ const clearPage = () => {
         .NavLinks {
             width: 45vw;
         }
+    }
+    #auth-wrapper {
+        width: 55vw !important;
     }
 }
 
@@ -499,6 +516,9 @@ const clearPage = () => {
         .NavLinks {
             width: 65vw;
         }
+    }
+    #auth-wrapper {
+        width: 90vw !important;
     }
 }
 

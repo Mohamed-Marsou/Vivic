@@ -17,15 +17,15 @@
             <div class="i-gall">
                 <div>
                     <div class="div1">
-                        <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/08/acs-ab-us-img-2.jpg.webp"
+                        <img src="https://img.freepik.com/free-photo/businesspeople-meeting-office-working_23-2148908922.jpg?w=740&t=st=1692962134~exp=1692962734~hmac=41aa8f0917a6885f728acceb189b8e57c8ef04f6d62eecae91d47cc2c30866c5"
                             alt="cover">
                     </div>
                     <div class="div2">
-                        <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/08/acs-ab-us-img-1.jpg.webp"
+                        <img src="https://img.freepik.com/free-photo/guy-shows-document-girl-group-young-freelancers-office-have-conversation-working_146671-13569.jpg?w=900&t=st=1692962160~exp=1692962760~hmac=6cb4c3c9556cb045eca41a576281bb7e2417f0d6d195763a1b949baf1ab4e4fb"
                             alt="cover">
                     </div>
                     <div class="div3">
-                        <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/08/acs-ab-us-img-3.jpg.webp"
+                        <img src="https://img.freepik.com/free-photo/medium-shot-colleagues-meeting_23-2149006860.jpg?w=900&t=st=1692962183~exp=1692962783~hmac=e5caf6b67be28db43173452dcdefb42d730b6057ef74e5490aa5a3496c75b2d3"
                             alt="cover">
                     </div>
                 </div>
@@ -67,20 +67,23 @@
                     </div>
                 </div>
             </div>
-        
+
 
             <div class="wwu-cta">
                 <div>
                     <h1>Join our team</h1>
                     <p>
-                        we're not just building products – we're crafting opportunities. Joining our team means becoming part of a dynamic family that's driven by innovation and fueled by passion. We believe in nurturing talents and empowering growth, providing an environment where creativity and collaboration thrive.
+                        we're not just building products – we're crafting opportunities. Joining our team means becoming
+                        part of a dynamic family that's driven by innovation and fueled by passion. We believe in nurturing
+                        talents and empowering growth, providing an environment where creativity and collaboration thrive.
                     </p>
                     <button>
                         Join
                     </button>
                 </div>
 
-                <img src="https://a6n4d3q9.rocketcdn.me/accessories/wp-content/uploads/sites/7/2022/08/acs-ab-us-community.jpg?id=899" alt="cover">
+                <img src="https://img.freepik.com/free-photo/picture-many-business-people-working-laptop-computer-people-watching-video-pictures-about-companies-enterprises-firms_549566-791.jpg?w=900&t=st=1692962207~exp=1692962807~hmac=d49dd2252a1b52903a5463b40ca6ffcb7a1e9fc4713c90b1cb55593cdb48342b"
+                    alt="cover">
             </div>
         </div>
 
@@ -182,15 +185,17 @@
         }
 
         >h2 {
-            margin: 1rem;
-            padding: 0 20vw;
+            margin: 1rem 2vw;
+            padding: 1rem 0;
+            text-align: center;
         }
 
         >p {
-            padding: 0 15vw;
+            padding: 1rem 2vw;
             color: #555;
             font-size: .9rem;
             line-height: 2rem;
+            text-align: center;
         }
 
         .qua-box {
@@ -208,6 +213,7 @@
 
                 >div {
                     width: 22vw;
+
                     height: 16rem;
                     @include flex($jc: space-around);
                     flex-direction: column;
@@ -229,7 +235,7 @@
             }
         }
 
-        .wwu-cta{
+        .wwu-cta {
             width: 80%;
             height: 20rem;
             margin: 1rem auto;
@@ -239,23 +245,26 @@
             box-shadow: 1px 1px 5px 5px #0000003b;
             color: #fff;
 
-            >img{
+            >img {
                 width: 30%;
                 height: 100%;
                 object-fit: cover;
             }
-            >div{
+
+            >div {
                 width: 70%;
                 height: 100%;
                 background: #2E6BC6;
-                @include flex($ai:flex-start);
+                @include flex($ai: flex-start);
                 flex-direction: column;
                 padding: 1rem 2vw;
                 gap: 1rem;
-                >p{
+
+                >p {
                     text-align: left;
                 }
-                >button{
+
+                >button {
                     width: 8rem;
                     height: 3rem;
                     background: #fff;
@@ -268,4 +277,126 @@
             }
         }
     }
-}</style>
+}
+
+@media screen and (max-width: 1200px) {
+    .about-us {
+        .intro {
+            .i-ctx {
+                padding: 1rem 2vw;
+                width: 40%;
+
+                h2 {
+                    font-size: 2rem;
+                }
+            }
+
+            .i-gall {
+                width: 60%;
+
+                >div {
+                    width: 90%;
+                }
+
+            }
+        }
+        .work-with-us {
+            width: 90%;
+        }
+        .wwu-cta {
+            width: 90% !important;
+        }
+    }
+            
+}
+
+@media screen and (max-width:1024px) {
+    .about-us {
+        .intro {
+            flex-direction: column;
+            margin-top: 3rem;
+            >div {
+                width: 100% !important;
+                min-height: fit-content !important;
+                padding: 1rem 1vw;
+            }
+            .i-gall {
+                @include flex();
+                >div {
+                    width: 85%;
+                display: flex;
+
+                }
+            }
+        }
+
+        .wwu-cta {
+            width: 98% !important;
+            height: 22rem !important;
+
+            >img {
+                width: 0 !important;
+            }
+            >div {
+                width: 100% !important;
+            }
+        }
+    }
+}
+@media screen and (max-width:768px) {
+    .about-us {
+        .intro {
+            flex-direction: column;
+            margin-top: 3rem;
+            
+        .i-gall {
+            @include flex();
+
+            >div {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+
+                >div {
+                    width: 100% !important;
+                    height: 30rem !important;
+                    &:first-child{
+                        display: none;
+                    }
+                    &:nth-child(3){
+                        display: none;
+                    }
+                }
+            }
+        }
+        }
+    }
+}
+@media screen and (max-width:450px) {
+
+    .work-with-us {
+            width: 100% !important;
+            margin-bottom: 0 !important;
+            >h2{
+                font-size: 1.2rem;
+            }
+        }
+
+        .wwu-cta {
+            min-width: 100% !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            >div {
+                width: 100% !important;
+                >h1{
+                    font-size: 1.5rem;
+                }
+                >p{
+                    font-size: .8rem;
+                    margin: 1rem 0;
+                }
+            }
+        }
+}
+</style>
