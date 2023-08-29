@@ -4,24 +4,49 @@ use App\Http\Controllers\CategoryController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 
-// get Categories
+// Categories
 Route::get('/categories', [CategoryController::class, 'index'])->name('category.index');
-// get Category products
+
+// Category Products
 Route::get('/products/category/{id}', [CategoryController::class, 'getCategoryProducts'])->name('category.getCategoryProducts');
 
-// get all products 
+// All Products
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 
-// get paginate products desc 
+// New Arrivals Products
 Route::get('/products/new-arrivals', [ProductController::class, 'newProducts'])->name('products.newProducts');
 
-// get hot products desc 
+// High Rating Products
 Route::get('/products/high-rating', [ProductController::class, 'getHighRating'])->name('products.getHighRating');
 
-// get hot product DATA 
+// Product Details
 Route::get('/product/{slug}', [ProductController::class, 'getProduct'])->name('products.getProduct');
 
-// get products based on range 
+// Products Based on Price Range
 Route::get('/products/range/{minPrice}', [ProductController::class, 'getRange'])->name('products.getRange');
-// get products based on filter 
+
+// Filtered Products
 Route::get('/products/filterd', [ProductController::class, 'getFilteredProducts'])->name('products.getFilteredProducts');
+
+// Add Product to Wishlist
+Route::post('/product/wishlist', [ProductController::class, 'addToWishlist'])->name('products.addToWishlist');
+
+// Get User Wishlist Products
+Route::get('/get/wishlist-products/{id}', [ProductController::class, 'getUserWishListProducts'])->name('products.getUserWishListProducts');
+
+// Add Product to User Cart
+Route::post('product/cart', [ProductController::class, 'addToCart'])->name('products.addToCart');
+
+// Get Wishlist Products
+Route::get('/get/products', [ProductController::class, 'getProducts'])->name('products.getProducts');
+
+// Get User InCart Products
+Route::get('/get/cart-products/{id}', [ProductController::class, 'getInCartProducts'])->name('products.getInCartProducts');
+
+// Remove User InCart Product
+Route::delete('/product/cart/{userId}/{productId}', [ProductController::class, 'removeInCartProducts'])->name('products.removeInCartProducts');
+
+
+
+
+

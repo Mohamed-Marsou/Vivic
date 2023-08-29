@@ -1,73 +1,107 @@
 <script setup>
-import {ref } from 'vue'
+import {ref,onMounted } from 'vue'
+import { useProductStore } from '../stores/product';
+import { useAuthtStore } from '../stores/auth';
+const productStore = useProductStore()
+const authStore = useAuthtStore()
+const products = ref([])
+onMounted(async()=>{
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth' 
+    });
+    const res = await productStore.getInCartProducts()
+    console.log(res);
 
+    if (res.products &&  res.products.length > 0) {
+        products.value = res.products
+    }
+})
+const getCoverImg =(p) =>{
+    const coverImg =  p.images.find(image => image.pivot.is_cover === true);
+    return coverImg.url
+}
 const isShowingShippingFields = ref(false)
 
 const showShippingFields = ()=>{
     isShowingShippingFields.value = !isShowingShippingFields.value
 }
+const removeItem =async (pId)=>{
+    const res = await productStore.removeCartItem(pId)
+    if(res)
+    {
+        const index = products.value.findIndex(product => product.product.id === pId);
+          if (index !== -1) {
+            products.value.splice(index, 1);
+            
+          }
+    }
+} 
+
 </script>
 <template>
     <div class="cart-main-box">
+        <div v-if="products.products">
         <div class="products-table">
-            <div v-for="i in 3 " :key="i" class="cell">
+            <div v-for="p in products " :key="p.id" class="cell">
                 <div class="left">
                     <div class="cancel">
-                        <span title="REMOVE ITEM">X</span>
+                        <span title="REMOVE ITEM" @click="removeItem(p.product.id)">X</span>
                     </div>
                     <div class="product-image">
-                        <img src="https://packnrun.com/wp-content/uploads/2021/10/Army20Green-1-600x600.jpg"
-                            alt="product-image">
+                        <img :src="getCoverImg(p.product)" alt="Product image">
                     </div>
                 </div>
                 <div class="right">
                     <div class="product-name">
                         <h4>Product</h4>
-                        <p>10-in-1 Buckle Belt - Army Green with Extra Options</p>
+                        <p>{{ p.product.name }}</p>
                     </div>
                     <div class="price">
                         <h4>Price</h4>
-                        <h6><small>$277.21</small> $121.55 </h6>
+                        <h6><small v-if="p.product.sale_price">${{p.product.sale_price ? p.product.price: ''}}</small> ${{ p.product.sale_price ? p.product.sale_price:p.products.price }} </h6>
                     </div>
                     <div class="quantity">
                         <h4>Quantity</h4>
                         <div class="controllers">
                             <button>-</button>
-                            <p>1</p>
+                            <p>{{ p.quantity }}</p>
                             <button>+</button>
                         </div>
                     </div>
                     <div class="sub-total">
                         <h4>Subtotal</h4>
-                        <h5>$55152.55</h5>
+                        <h5>${{ p.product.price * p.quantity  }}</h5>
                     </div>
                 </div>
             </div>
         </div>
         <!-- * mob version  -->
         <div id="product-table-mobile">
-            <div class="mb-slot" v-for="i in 3 " :key="i">
-                <img src="https://packnrun.com/wp-content/uploads/2021/10/Army20Green-1-600x600.jpg" alt="product-image">
+            <div class="mb-slot" v-for="p in products " :key="p.id">
+                <img :src="getCoverImg(p.product)" alt="Product image">
                 <div class="prd">
                     <div class="p-header">
-                        <h3>Lorem ipsum dolor sit amet. dsdz fsq20</h3>
-                        <span title="REMOVE ITEM">X</span>
+                        <h3>L{{ p.product.name }}</h3>
+                        <span title="REMOVE ITEM" @click="removeItem(p.product.id)">X</span>
                     </div>
                     <div class="full-box">
                         <p>Price</p>
-                        <p>$332</p>
+                        <p>
+                            ${{ p.product.sale_price ? p.product.sale_price:p.product.price }}
+                        </p>
                     </div>
                     <div class="full-box">
                         <p>Quantity</p>
                         <div class="controllers">
                             <button>-</button>
-                            <p>1</p>
+                            <p>{{ p.quantity }}</p>
                             <button>+</button>
                         </div>
                     </div>
                     <div class="full-box">
                         <p>Subtotal</p>
-                        <h6>$332</h6>
+                        <h6>${{ p.product.price * p.quantity }}</h6>
                     </div>
                 </div>
             </div>
@@ -128,16 +162,16 @@ const showShippingFields = ()=>{
                             <input type="text" id="_country" name="_country" required placeholder="Enter Country">
                         </div>
                         <div class="slot">
-                            <label for="city">City <small>*</small>:</label>
-                            <input type="text" id="city" name="city" required placeholder="Enter City">
+                            <label for="d-city">City <small>*</small>:</label>
+                            <input type="text" id="d-city" name="d-city" required placeholder="Enter City">
                         </div>
                         <div class="slot">
-                            <label for="street">Street Address <small>*</small>:</label>
-                            <input type="text" id="street" name="street" required placeholder="Enter street ">
+                            <label for="d-street">Street Address <small>*</small>:</label>
+                            <input type="text" id="d-street" name="d-street" required placeholder="Enter street ">
                         </div>
                         <div class="slot">
-                            <label for="email">Email <small>*</small>:</label>
-                            <input type="email" id="email" name="email" required placeholder="Enter  Email">
+                            <label for="d-email">Email <small>*</small>:</label>
+                            <input type="d-email" id="d-email" name="d-email" required placeholder="Enter  Email">
                         </div>
                     </div>
                 </div>
@@ -148,20 +182,19 @@ const showShippingFields = ()=>{
                     <h4>Product</h4>
                     <h4>Subtotal</h4>
                 </div>
-                <div class="full-w">
-                    <p>10-in-1 Buckle Belt - Army Green </p>
-                    <h4>$54.36</h4>
+                <div v-for="p in products" :key="p.id" class="full-w">
+                    <p>{{ p.product.name }}</p>
+                    <h4>${{ p.product.sale_price ? (p.product.sale_price * p.quantity): (p.product.price * p.quantity)}}</h4>
                 </div>
-                <div class="full-w">
-                    <p>Lorem ipsum dolor sit amet dolor sit amet </p>
-                    <h4>$5124.36</h4>
-                </div>
+              
                 <div class="full-w">
                     <h5>Subtotal </h5>
+                     <!-- TODO CHANGE ME LATER  -->
                     <span>$5124.36</span>
                 </div>
                 <div class="full-w total">
                     <h2>total </h2>
+                        <!-- TODO CHANGE ME LATER  -->
                     <span id="total">$5124.36</span>
                 </div>
                 <div class="full-w">
@@ -172,6 +205,11 @@ const showShippingFields = ()=>{
                 </div>
 
             </div>
+        </div>
+        </div>
+        <div class="EmptyCart" v-else>
+            <!--todo  cahnge me   -->
+            <h1>Empty Cart ):</h1>
         </div>
     </div>
 </template>
@@ -222,10 +260,11 @@ const showShippingFields = ()=>{
                 .product-image {
                     width: 90%;
                     height: 100%;
+                    @include flex();
 
                     >img {
-                        width: 100%;
-                        height: 100%;
+                        width: 80%;
+                        height: 80%;
                         object-fit: contain;
                     }
                 }
@@ -472,6 +511,14 @@ const showShippingFields = ()=>{
         }
     }
 }
+.EmptyCart
+{
+
+    width: 100%;
+    height: 80vh;
+    @include flex();
+    color: #555;
+}
 .show {
     display: block !important; 
 }
@@ -509,14 +556,17 @@ const showShippingFields = ()=>{
 
             >img {
                 width: 20%;
-                height: 100%;
                 object-fit: contain;
+
             }
 
             .prd {
                 width: 80%;
                 height: 10rem;
-
+                .full-box {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.212);
+                
+                }
                 .p-header,
                 .full-box {
                     width: 100%;
@@ -526,8 +576,10 @@ const showShippingFields = ()=>{
                     font-size: .9rem;
                     padding: 10px;
 
+
                     span {
                         font-weight: bold;
+                        cursor: pointer;
                     }
 
                     h6 {

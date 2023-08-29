@@ -1,7 +1,9 @@
 <script setup>
 import { defineProps } from 'vue';
-import { RouterLink } from 'vue-router';
-
+import { RouterLink,useRouter } from 'vue-router';
+import { useProductStore } from '../../stores/product'
+const router = useRouter()
+const productStore = useProductStore()
 const props = defineProps({
     smallHeader : String,
     headerText: String,
@@ -26,6 +28,18 @@ function getProductDiscount(product) {
     return discountPercentage.toFixed(0)
 }
 
+const  addProductToWishlist =async  (productId) =>
+{
+    productStore.addToWishlist(productId)
+    router.push({name : 'wishlist'})
+
+}
+const  addToCart =async  (productId) =>
+{
+    productStore.addToCart(productId)
+    router.push({name : 'cart'})
+
+}
 
 </script>
 <template>
@@ -43,11 +57,11 @@ function getProductDiscount(product) {
                         -{{ getProductDiscount(p) }}%
                     </div>
                     <div class="actions">
-                        <i class="fa-solid fa-cart-shopping"></i>
+                        <i class="fa-solid fa-cart-shopping" @click="addToCart(p.id)"></i>
                         <RouterLink :to="{ name: 'product-page', params: { slug: p.slug }}">  
                             <i class="fa-regular fa-eye"></i>
                         </RouterLink>
-                        <i class="fa-regular fa-heart"></i>
+                        <i class="fa-regular fa-heart" @click="addProductToWishlist(p.id)"></i>
                     </div>
                 </div>
                 <RouterLink :to="{ name: 'product-page' , params: { slug: p.slug }}">  

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted,watch } from 'vue'
 import ProductsCarousel from '../components/build/products-carousel.vue';
 import api from '../http/api'
-import { useRoute } from 'vue-router'
+import { useRoute , useRouter  } from 'vue-router'
 
 // Reviews DATA 
 import reviews from '../assets/products-reviews.json'
@@ -65,6 +65,7 @@ const productImages = ref([]);
 const productCover = ref('');
 const productDiscount = ref(0);
 const route = useRoute();
+const router = useRouter();
 
 
 // Props
@@ -144,6 +145,7 @@ const hideSticky = () => {
     showStickyNav.value = false;
 };
 
+
 // get discount %
 function getProductDiscount() {
     if (!product.value.sale_price || !product.value.regular_price) {
@@ -221,6 +223,20 @@ const showMoreReviews = ()=> {
         },1500)
     }
 }
+// add to wishlist
+const  addProductToWishlist =async  (productId) =>
+{
+    productStore.addToWishlist(productId)
+    router.push({name : 'wishlist'})
+
+}
+// add to Cart
+const  addToCart =async  (productId) =>
+{
+    productStore.addToCart(productId)
+    router.push({name : 'cart'})
+
+}
 </script>
 <template>
     <div class="main-cls-wrapper">
@@ -245,8 +261,8 @@ const showMoreReviews = ()=> {
                         product.sale_price : product.price
                     }}
                 </h3>
-                <button>Add to Cart</button>
-                <p>
+                <button @click="addToCart(product.id)">Add to Cart</button>
+                <p @click="addProductToWishlist(product.id)">
                     Add to wishlist :
                     <i class="fa-regular fa-heart"></i>
                 </p>
@@ -320,12 +336,12 @@ const showMoreReviews = ()=> {
 
                             <span @click="increaseCount" :class="{ disabled: quantity <= count }">+</span>
                         </div>
-                        <button>
+                        <button @click="addToCart(product.id)">
                             Add to cart
                         </button>
                     </div>
                     <div class="slots links">
-                        <h5>
+                        <h5 @click="addProductToWishlist(product.id)">
                             <i class="fa-regular fa-heart"></i> Add to wishlist
                         </h5>
 

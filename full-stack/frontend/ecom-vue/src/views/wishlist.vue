@@ -1,5 +1,23 @@
-<script>
-
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useProductStore } from '../stores/product';
+const productStore = useProductStore()
+const products = ref([])
+onMounted(async () => {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth' 
+    });
+    const res = await productStore.getWishlistProducts()
+    console.log(res);
+    if ( !res.response &&  res.products.length > 0) {
+        products.value = res.products
+    }
+})
+const getCoverImg = (p) => {
+    const coverImg = p.images.find(image => image.pivot.is_cover === true);
+    return coverImg.url
+}
 </script>
 
 
@@ -11,49 +29,56 @@
                 <h1>Wishlist products</h1>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Product Image</th>
-                        <th>Product name</th>
-                        <th>Product Price</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            <img src="https://woodmart.xtemos.com/accessories/wp-content/uploads/sites/7/2022/04/w-accessories-product-15-430x491.jpg" alt="product">
-                        </td>
-                        <td><b>Lorem ipsum dolor sit amet consectetur adipisicing elit</b></td>
+            <div v-if="products.length >= 1">
 
-                        <td>
-                            <b>
-                                $99.99
-                            </b>
-                        </td>
-                        <td>
-                            <button>
-                                BUY NOW
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product Image</th>
+                            <th>Product name</th>
+                            <th>Product Price</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="p in products" :key="p.id">
+                            <td>
+                                <img :src="getCoverImg(p)" alt="product">
+                            </td>
+                            <td><b>{{ p.name }}</b></td>
 
-            <div class="sm-card">
-                <div class="top">
-                    <img src="https://assets.materialup.com/uploads/ec46f513-9984-4636-b9ac-c237a7d6f01e/preview.jpg"
-                        alt="Product">
-                </div>
-                <div class="main">
-                    <p>Lorem ipsum dolor sit amet consecte.</p>
-                    <h4>$555</h4>
-                    <span>X</span>
-                    <button>BUY NOW</button>
+                            <td>
+                                <b>
+                                    ${{ p.sale_price ? p.sale_price : p.price }}
+                                </b>
+                            </td>
+                            <td>
+                                <button>
+                                    BUY NOW
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="sm-card">
+                    <div class="top">
+                        <img src="https://assets.materialup.com/uploads/ec46f513-9984-4636-b9ac-c237a7d6f01e/preview.jpg"
+                            alt="Product">
+                    </div>
+                    <div class="main">
+                        <p>Lorem ipsum dolor sit amet consecte.</p>
+                        <h4>$555</h4>
+                        <span>X</span>
+                        <button>BUY NOW</button>
+                    </div>
                 </div>
             </div>
+            <div v-else>
+                <h3>No Products Here yet .</h3>
+            </div>
         </div>
+
     </div>
 </template>
 
@@ -92,6 +117,7 @@ $ff: 'Poppins', sans-serif;
                 padding: 1rem;
                 border-radius: 5px;
                 color: #555;
+
                 >img {
                     width: 3rem;
                     object-fit: contain;
@@ -184,6 +210,7 @@ $ff: 'Poppins', sans-serif;
             color: #ffffff;
             cursor: pointer;
             transition: .3s ease-in;
+
             &:hover {
                 background: rgb(255, 6, 6);
             }
@@ -196,23 +223,28 @@ $ff: 'Poppins', sans-serif;
         display: none !important;
     }
 }
+
 @media screen and (max-width : 768px) {
     .sm-card {
         display: flex !important;
+    }
 }
-}
+
 @media screen and (max-width : 550px) {
     .sm-card {
         flex-direction: column;
+
         .top {
             width: 100%;
-            >img{
+
+            >img {
                 height: 95%;
             }
         }
+
         .main {
             width: 100%;
         }
-}
+    }
 }
 </style>

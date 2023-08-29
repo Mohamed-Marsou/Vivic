@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, RouterLink , useRouter} from 'vue-router'
 import { useProductStore } from '../stores/product';
 import api from '../http/api';
 
@@ -9,6 +9,7 @@ const bannerImg =
     ref('https://img.freepik.com/free-vector/realistic-style-new-smartphone-model_23-2148380821.jpg?w=740&t=st=1692964248~exp=1692964848~hmac=274740091045b4e89aa510904eb08e015caf03b925e2aa348a8a6300ee444e45')
 
 const route = useRoute()
+const router = useRouter()
 const productStore = useProductStore()
 const products = ref([])
 const total = ref(0)
@@ -169,6 +170,13 @@ const visibleFilters = ref(false)
 const toggoleFilters = ()=>{
     visibleFilters.value = !visibleFilters.value 
 }
+// add to Cart
+const  addToCart =async  (productId) =>
+{
+    productStore.addToCart(productId)
+    router.push({name : 'cart'})
+
+}
 </script>
 <template>
     <div class="category-main">
@@ -264,7 +272,7 @@ const toggoleFilters = ()=>{
                             <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
                                 <img :src="getCoverImg(p)" alt="Product image">
                             </RouterLink>
-                            <div class="prd-link">
+                            <div class="prd-link" @click="addToCart(p.id)">
                                 <i class="fa-solid fa-cart-plus"></i>
                             </div>
 

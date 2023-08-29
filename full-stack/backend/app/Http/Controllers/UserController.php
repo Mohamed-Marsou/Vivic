@@ -31,9 +31,29 @@ class UserController extends Controller
         // Generate and return an API token for the user
         $token = $user->createToken('api-token')->plainTextToken;
 
-        return response()->json(['message' => 'Registration successful', 'user' => $user, 'token' => $token], 201);
+        return response()->json(
+            ['message' => 'Registration successful',
+            'user' => $user->only(['id', 'name']),
+            'token' => $token], 201);
     }
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8'],
+        ]);
 
-   
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Login successful',
+                'user' => $user->only(['id', 'name']),
+                'token' => $token
+            ]);
+        }
+
+        return response()->json(['message' => 'Login failed'], 401);
+    }
 }
-

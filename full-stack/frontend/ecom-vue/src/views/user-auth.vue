@@ -1,10 +1,15 @@
 <script setup>
 import { ref } from 'vue'
-import api from '../http/api'; // Replace with your API module import
+import api from '../http/api';
 import Cookies from 'js-cookie';
 import axios from 'axios'
-import {  useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
+import { useAuthtStore } from '../stores/auth'
+import { useProductStore } from '../stores/product'
+
 const router = useRouter();
+const authPinia = useAuthtStore();
+const productPinia = useProductStore();
 
 const isLoginVisible = ref(false)
 const heading = ref('Register')
@@ -14,17 +19,16 @@ const toggole = () => {
     isLoginVisible.value = !isLoginVisible.value
     heading.value = isLoginVisible.value ? 'Register' : 'Login'
 }
-const registerPayload =  {
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
-    }
+const registerPayload = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+}
 const register = async () => {
     // Destructure the values from the registerPayload
-    const { firstName , lastName , email, password, confirmPassword } = registerPayload;
-
+    const { firstName, lastName, email, password, confirmPassword } = registerPayload;
     // Create the payload object
     const payload = {
         name: ` ${firstName} ${lastName}`,
@@ -32,32 +36,58 @@ const register = async () => {
         password,
         password_confirmation: confirmPassword,
     };
-    console.log(payload);
     try {
         const res = await api.post('/user/register', payload);
-        console.log(res.data.user);
         if (res.data.token) {
-          // Store the token in a cookie
-          Cookies.set('auth-token', res.data.token, { expires: 7 });
-          const userData = JSON.stringify(res.data.user);
-          Cookies.set('auth-user', userData, { expires: 7 });
-          setAuthorizationHeader()
-          // Redirect or perform other actions after successful registration
-          console.log('Registration successful:', res.data);
-          router.push('/')
+            if (localStorage.getItem('wishlist')) {
+                localStorage.removeItem('wishlist');  
+                productPinia.whishListCount = 0
+            }
+            // Store the token in a cookie
+            Cookies.set('auth-token', res.data.token, { expires: 7 });
+            const userData = JSON.stringify(res.data.user);
+            Cookies.set('auth-user', userData, { expires: 7 });
+
+            authPinia.checkAuth()
+            // Redirect or perform other actions after successful registration
+            router.push('/')
         }
-      } catch (error) {
+    } catch (error) {
         console.error('Error during registration:', error);
         errMsg.value = error.response.data.message
-      }
+    }
 }
-        async function setAuthorizationHeader() {
-        const token = Cookies.get('auth-token');
-        if (token) {
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+const loginEmail = ref('')
+const loginPassword = ref('')
+const remember = ref(false)
+
+const login = async () => {
+    const payload = {
+        email : loginEmail.value,
+        password : loginPassword.value
+    }
+    try {
+        const res = await api.post('/user/login' , payload)
+        errMsg.value =''
+        if (res.data.token) {
+            if (localStorage.getItem('wishlist')) {
+                localStorage.removeItem('wishlist');  
+                productPinia.whishListCount = 0
+            }
+            // Store the token in a cookie
+            Cookies.set('auth-token', res.data.token, { expires: remember.value ? 21 : 7 });
+            const userData = JSON.stringify(res.data.user);
+            Cookies.set('auth-user', userData, { expires: remember.value ? 21 : 7 });
+            authPinia.checkAuth()
+            // Redirect or perform other actions after successful registration
+            router.push('/')
         }
-}
-    
+        console.log(res);
+    } catch (error) {
+        console.log(error);
+        errMsg.value = error.response.data.message
+    }
+}    
 </script>
 <template>
     <div class="auth-container">
@@ -69,46 +99,52 @@ const register = async () => {
         <div class="x-form">
             <div class="login" :class="{ hide: !isLoginVisible }">
                 <h1>Login</h1>
+                <span v-if="errMsg" style="color: red; margin-left: 2vw;font-size: .9rem;">{{ errMsg }}</span>
                 <div class="inp-slot">
                     <label for="Email">Email address </label>
-                    <input type="text" id="Email" name="Email" placeholder="Email address" required>
+                    <input type="email" id="Email" name="Email" placeholder="Email address" v-model="loginEmail" required>
                 </div>
                 <div class="inp-slot">
                     <label for="password">Password</label>
-                    <input type="login-password" id="login-password" name="login-password" placeholder="Password" required>
+                    <input type="password" id="login-password" name="login-password" placeholder="Password"
+                        v-model="loginPassword" required>
                 </div>
                 <div class="inp-slot opt">
                     <div>
-                        <input type="checkbox">
+                        <input type="checkbox" v-model="remember">
                         <p>Remember me</p>
                     </div>
                     <p>Forgot your Password ?</p>
                 </div>
 
-                <button :disabled="clicked" type="submit">Login</button>
+                <button :disabled="clicked" @click="login">Login</button>
             </div>
             <div class="register" :class="{ hide: isLoginVisible }">
                 <h1>Register</h1>
                 <span v-if="errMsg" style="color: red; margin-left: 2vw;font-size: .9rem;">{{ errMsg }}</span>
                 <div class="inp-slot">
                     <label for="register-firstName">First Name <small>*</small> :</label>
-                    <input type="text" id="register-firstName" name="register-firstName" placeholder="First name" v-model="registerPayload.firstName" required>
+                    <input type="text" id="register-firstName" name="register-firstName" placeholder="First name"
+                        v-model="registerPayload.firstName" required>
                 </div>
                 <div class="inp-slot">
                     <label for="register-lastName">Last Name <small>*</small> :</label>
-                    <input type="text" id="register-lastName" name="register-lastName" v-model="registerPayload.lastName" placeholder="Last name" required>
+                    <input type="text" id="register-lastName" name="register-lastName" v-model="registerPayload.lastName"
+                        placeholder="Last name" required>
                 </div>
                 <div class="inp-slot">
                     <label for="register-email">Email <small>*</small> :</label>
-                    <input type="email" id="register-email" name="register-email" placeholder="Email address" v-model="registerPayload.email" required>
+                    <input type="email" id="register-email" name="register-email" placeholder="Email address"
+                        v-model="registerPayload.email" required>
                 </div>
                 <div class="inp-slot">
                     <label for="register-password">Password <small>*</small> :</label>
-                    <input type="password" id="register-password" name="register-password" placeholder="Password" v-model="registerPayload.password" required>
+                    <input type="password" id="register-password" name="register-password" placeholder="Password"
+                        v-model="registerPayload.password" required>
                 </div>
                 <div class="inp-slot">
                     <label for="register-confirmPassword">Confirm Password <small>*</small> :</label>
-                    <input type="password" id="register-confirmPassword"  name="register-confirmPassword"
+                    <input type="password" id="register-confirmPassword" name="register-confirmPassword"
                         placeholder="Confirm Password" v-model="registerPayload.confirmPassword" required>
                 </div>
                 <button :disabled="clicked" @click="register" type="submit">Register</button>
@@ -164,10 +200,12 @@ const register = async () => {
             text-transform: uppercase;
             cursor: pointer;
             transition: .3s ease-in;
+
             &:hover {
                 opacity: 1;
                 background: #0263f4;
             }
+
             &:has([disabled]) {
                 opacity: 0.5;
                 cursor: not-allowed;

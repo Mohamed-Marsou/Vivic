@@ -12,12 +12,14 @@ import api from '../http/api'
 const isLoaded = ref(false)
 
 
+
 const categories = ref([])
 const newArrivals = ref([])
 const highRated = ref([])
 
 
 onMounted(() => {
+
     isLoaded.value = true
     getNewArrivals()
     getCategories()

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import {useAuthtStore} from '../stores/auth'
 import HomeView from '../views/home.vue'
 
 const router = createRouter({
@@ -56,6 +57,14 @@ const router = createRouter({
       component: () => import('../views/wishlist.vue')
     },
     {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/user-profile.vue'),
+      meta: {
+        requiresAuth: true, // This route requires authentication
+      },
+    },
+    {
       path: '/admin/login',
       name: 'admin-auth',
       component: () => import('../views/admin/admin-auth.vue')
@@ -67,5 +76,21 @@ const router = createRouter({
     },
   ]
 })
-
+// Navigation guard for protected routes
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthtStore();
+  
+    if (to.meta.requiresAuth) {
+      if (authStore.isAuth) {
+        // User is authenticated, allow navigation
+        next();
+      } else {
+        // User is not authenticated, redirect to login or any other route
+        next('/user/auth'); 
+      }
+    } else {
+      // Route does not require authentication, allow navigation
+      next();
+    }
+  });
 export default router

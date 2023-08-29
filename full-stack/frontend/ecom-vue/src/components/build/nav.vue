@@ -1,14 +1,37 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted,computed ,watch } from 'vue'
 import { RouterLink } from 'vue-router';
 import { useAuthtStore } from '../../stores/auth'
+import { useProductStore } from '../../stores/product';
 
 const authtStore = useAuthtStore()
+const productStore = useProductStore()
+
+const isUserAuth = computed(() => authtStore.isAuth)
+
+const wishlistItems = ref(productStore.whishListCount);
+const inCartItems = ref(productStore.whishListCount);
+
 const visibleLinks = ref(false)
 const visibleAuth = ref(false)
 
-
-
+onMounted(async()=>{
+    authtStore.checkAuth();
+    productStore.getWishlistProducts();
+    productStore.getInCartProducts();
+})
+watch(
+  () => productStore.whishListCount,
+  (newValue, oldValue) => {
+    wishlistItems.value = newValue
+  }
+);
+watch(
+  () => productStore.inCartCount,
+  (newValue, oldValue) => {
+    inCartItems.value = newValue
+  }
+);
 const toggleLinks = () => {
     visibleLinks.value = !visibleLinks.value;
     // Toggle body scrolling
@@ -24,6 +47,7 @@ const clearPage = () => {
     toggleLinks()
     toggleAuth()
 } 
+const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile' } ;
 </script>
 
 <template>
@@ -58,29 +82,31 @@ const clearPage = () => {
                 <RouterLink :to="{ name: 'wishlist' }"> Wishlist </RouterLink>
             </li>
             <li class="mobile-li">
-                <a>Profile</a>
+                <RouterLink  :to="profileRoute" > Profile </RouterLink>
             </li>
             <li class="mobile-li">
                 <a>FAQs</a>
             </li>
         </ul>
-        <ul class="short-icns">
-            <p @click="toggleAuth">
+        <ul class="short-icns" >
+            <p :class="{ hidden : isUserAuth}" @click="toggleAuth">
                 <span>Login</span>
                 <small>/</small>
                 <span>Register</span>
             </p>
-            <i class="fa-regular fa-user" id="userIcon"></i>
+            <RouterLink :to="{ name: 'profile' }" id="userIcon" :class="{ show : isUserAuth}"> 
+                <i class="fa-regular fa-user"></i>
+            </RouterLink>
             <div class="icon-container">
                 <RouterLink :to="{ name: 'wishlist' }"> 
                     <i class="fa-regular fa-heart"></i> 
                 </RouterLink>
                 
-                <span>0</span>
+                <span>{{ wishlistItems }}</span>
             </div>
             <RouterLink :to="{ name: 'cart' }"> 
             <div class="icon-container Cart">
-                    <span>0</span>
+                    <span>{{ inCartItems }}</span>
                     <i class="fa-solid fa-cart-shopping"></i>
                 </div>
             </RouterLink>
@@ -92,6 +118,7 @@ const clearPage = () => {
         </div>
 
         <div class="overlay" :class="{ hideEl: visibleLinks }" @click="toggleLinks"></div>
+        <div class="overlay2" :class="{ hideEl: visibleAuth }" @click="toggleAuth"></div>
 
         <div id="auth-wrapper" :class="{ showAuth: visibleAuth }">
             <div class="auth-header">
@@ -489,6 +516,7 @@ const clearPage = () => {
             display: none;
             z-index: 2;
         }
+
     }
 
     #auth-wrapper {
@@ -529,7 +557,13 @@ const clearPage = () => {
 .hideEl {
     display: block !important;
 }
-
+.show{
+    display: flex !important;
+}
+.hidden
+{
+    display: none !important;
+}
 .showMobileNav {
     transform: translateX(0) !important;
 }
@@ -538,7 +572,16 @@ const clearPage = () => {
     transform: translateX(0) !important;
     opacity: 1 !important;
 }
-
+.overlay2 {
+            width: 100%;
+            min-height: 100vh !important;
+            background: #4c4c4c73;
+            position: absolute;
+            top: 4.5rem;
+            left: 0;
+            display: none;
+            z-index: 2;
+        }
 .clickedHam {
     >div:nth-child(1) {
         transform: rotate(-45deg) translate(-8px, 5px);
