@@ -43,8 +43,15 @@ Route::get('/get/products', [ProductController::class, 'getProducts'])->name('pr
 // Get User InCart Products
 Route::get('/get/cart-products/{id}', [ProductController::class, 'getInCartProducts'])->name('products.getInCartProducts');
 
+// decrase User InCart Product quantity
+Route::put('/product/cart/decrease/{userId}/{id}', [ProductController::class, 'decreaseCartProductQuantity'])->name('products.decreaseCartProductQuantity');
+// incrase User InCart Product quantity
+Route::put('/product/cart/increase/{userId}/{id}', [ProductController::class, 'increaseCartProductQuantity'])->name('products.increaseCartProductQuantity');
+
 // Remove User InCart Product
 Route::delete('/product/cart/{userId}/{productId}', [ProductController::class, 'removeInCartProducts'])->name('products.removeInCartProducts');
+// Remove User wishlist Product
+Route::delete('/product/wishlist/{userId}/{productId}', [ProductController::class, 'removeWishlistProducts'])->name('products.removeWishlistProducts');
 
 
 

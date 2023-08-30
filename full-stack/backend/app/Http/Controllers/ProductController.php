@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Models\Cart;
+
 class ProductController extends Controller
 {
     public function index()
@@ -204,16 +205,16 @@ class ProductController extends Controller
     public function getProducts(Request $request)
     {
         try {
-            $productIds = $request->input('productIds'); 
-            
+            $productIds = $request->input('productIds');
+
             // Fetch products based on the array of product IDs
             $products = Product::whereIn('id', $productIds)->with('images')->get();
 
             if ($products->isEmpty()) {
                 return response()->json(['response' => "No products found."], 200);
             }
-            $count = count($productIds); 
-            return response()->json(['products' => $products, 'count'=> $count], 200);
+            $count = count($productIds);
+            return response()->json(['products' => $products, 'count' => $count], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error retrieving products', 'error' => $e->getMessage()], 500);
         }
@@ -225,20 +226,20 @@ class ProductController extends Controller
         $wishlistItems = Wishlist::where('user_id', $id)
             ->with('product.images')
             ->get();
-        
+
         if ($wishlistItems->isEmpty()) {
             return response()->json(['response' => "No products in wishlist."], 200);
         }
-    
+
         $productsWithImages = $wishlistItems->map(function ($wishlistItem) {
             $product = $wishlistItem->product;
             $images = $product->images;
             $product->images = $images;
             return $product;
         });
-    
+
         $wishlistCount = count($wishlistItems);
-    
+
         return response()->json([
             'wishlistCount' => $wishlistCount,
             'products' => $productsWithImages
@@ -250,34 +251,84 @@ class ProductController extends Controller
         $inCartItems = Cart::where('user_id', $id)
             ->with('product.images')
             ->get();
-        
+
         if ($inCartItems->isEmpty()) {
             return response()->json(['response' => "No products inCart."], 200);
         }
-    
+
         $productIds = $inCartItems->pluck('product_id');
-    
+
         $productsWithImages = Product::whereIn('id', $productIds)
             ->with('images')
             ->get();
-    
+
         // Combine cart items with corresponding products and images
         $combinedItems = $inCartItems->map(function ($inCartItem) use ($productsWithImages) {
             $product = $productsWithImages->firstWhere('id', $inCartItem->product_id);
             return [
                 'product' => $product,
-                'quantity' => $inCartItem->quantity 
+                'quantity' => $inCartItem->quantity
             ];
         });
-    
+
         $inCartlistCount = count($inCartItems);
-    
+
         return response()->json([
             'inCartlistCount' => $inCartlistCount,
             'products' => $combinedItems
         ], 200);
     }
+    public function decreaseCartProductQuantity($userId, $productId)
+    {
+        try {
+            $cartItem = Cart::where('user_id', $userId)
+                ->where('product_id', $productId)
+                ->firstOrFail();
 
+            // Decrease the quantity by 1 if it's greater than 1
+            if ($cartItem->quantity > 1) {
+                $cartItem->decrement('quantity');
+            }
+
+            return response()->json(['message' => 'Cart product quantity updated successfully.', 'product' => $cartItem], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error updating cart product quantity. ' . $e], 500);
+        }
+    }
+    public function increaseCartProductQuantity($userId, $productId)
+    {
+        try {
+            $cartItem = Cart::where('user_id', $userId)
+                ->where('product_id', $productId)
+                ->firstOrFail();
+    
+            $product = $cartItem->product;
+    
+            // Increase the quantity by 1 if it's less than the product's inStock value
+            if ($cartItem->quantity < $product->inStock) {
+                $cartItem->increment('quantity');
+            }
+            return response()->json(['message' => 'Cart product quantity updated successfully.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error updating cart product quantity.'], 500);
+        }
+    }
+    public function removeWishlistProducts($userId, $productId)
+    {
+        try {
+            $cartItem = Wishlist::where('user_id', $userId)
+                ->where('product_id', $productId)
+                ->firstOrFail();
+
+            $cartItem->delete();
+
+            return response()->json(['message' => 'Product removed from Wishlist'], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Product not found in Wishlist'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error removing product from Wishlist'], 500);
+        }
+    }
     public function removeInCartProducts($userId, $productId)
     {
         try {

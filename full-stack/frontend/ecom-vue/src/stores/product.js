@@ -201,21 +201,25 @@ export const useProductStore = defineStore('product', {
           return response.data
         } else {
           // GUEST USER
-          let localStorageInCart = JSON.parse(localStorage.getItem('inCart')) || [];
+          let localStorageInCart = JSON.parse(localStorage.getItem('inCart')) || []
 
           // Extract only productId values and create a new array
-          const productIdsInCart = localStorageInCart.map(item => item.productId);
+          const productIdsInCart = localStorageInCart.map((item) => item.productId)
 
           if (productIdsInCart && productIdsInCart.length > 0) {
             try {
-              const response = await api.get('/get/products', { params: { productIds: productIdsInCart } })
+              const response = await api.get('/get/products', {
+                params: { productIds: productIdsInCart }
+              })
               this.inCartCount = response.data.count
-              
-              let products = []
-              // let products = [
-              //   product : .....
-              //   ,quantity : ...
-              // ]
+              let products = response.data.products.map((product) => {
+                const quantityObj = localStorageInCart.find((item) => item.productId === product.id)
+                return {
+                  product: product,
+                  quantity: quantityObj.quantity
+                }
+              })
+
               return products
             } catch (error) {
               console.error('Error fetching inCart products for guest user:', error)
@@ -230,15 +234,55 @@ export const useProductStore = defineStore('product', {
       }
     },
     async removeCartItem(pId) {
-      const userId = JSON.parse(Cookies.get('auth-user')).id
-      try {
-        await api.delete(`/product/cart/${userId}/${pId}`)
-        this.inCartCount = this.inCartCount - 1
-        return true
-      } catch (error) {
-        console.error('Error removing item from cart:', error)
-        return false
+      if (this.authStore.isAuth) {
+        const userId = JSON.parse(Cookies.get('auth-user')).id
+        try {
+          await api.delete(`/product/cart/${userId}/${pId}`)
+          this.inCartCount = this.inCartCount - 1
+          return true
+        } catch (error) {
+          console.error('Error removing item from cart:', error)
+          return false
+        }
+      } else {
+
+        let localStorageInCart = JSON.parse(localStorage.getItem('inCart')) || []
+        const itemIndex = localStorageInCart.findIndex((item) => item.productId === pId)
+
+        if (itemIndex !== -1) {
+          localStorageInCart.splice(itemIndex, 1)
+          localStorage.setItem('inCart', JSON.stringify(localStorageInCart))
+          this.inCartCount = this.inCartCount - 1
+          return true
+        }
+        return false 
+      }
+    },
+    async removeWishlistItem(pId) {
+      if (this.authStore.isAuth) {
+        const userId = JSON.parse(Cookies.get('auth-user')).id
+        try {
+          await api.delete(`/product/wishlist/${userId}/${pId}`)
+          this.whishListCount = this.whishListCount - 1
+          return true
+        } catch (error) {
+          console.error('Error removing item from cart:', error)
+          return false
+        }
+      } else {
+
+        let localStorageInCart = JSON.parse(localStorage.getItem('wishlist')) || []
+        const itemIndex = localStorageInCart.findIndex((item) => item === pId)
+
+        if (itemIndex !== -1) {
+          localStorageInCart.splice(itemIndex, 1)
+          localStorage.setItem('wishlist', JSON.stringify(localStorageInCart))
+          this.whishListCount = this.whishListCount - 1
+          return true
+        }
+        return false 
       }
     }
+
   }
 })

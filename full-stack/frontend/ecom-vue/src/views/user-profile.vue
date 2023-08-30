@@ -1,35 +1,22 @@
 <script setup>
 import { RouterLink , useRouter } from 'vue-router';
 import { ref, onMounted } from 'vue'
-import {useAuthtStore } from '../stores/auth'
-import {useProductStore } from '../stores/product'
-import api from '../http/api';
 import Cookies from 'js-cookie'
 const router = useRouter()
-const authStore = useAuthtStore()
+import { useProductStore } from '../stores/product';
+import  {useAuthtStore} from '../stores/auth'
+import userForm from '../components/build/profile/form.vue'
 const productStore = useProductStore()
+const authStore = useAuthtStore()
 
-
-const countries = ref([])
 const userName = ref('')
-const userContry = ref('Select your country')
 
 onMounted(async () => {
-    await getContries()
     if(Cookies.get('auth-user')){
         userName.value = JSON.parse(Cookies.get('auth-user')).name
     }
 })
 
-async function getContries ()
-{
-       try {
-        const res = await api.get('/countries')
-        countries.value = res.data.countries
-    } catch (error) {
-        console.log(error);
-    }
-}
 ////Function to log out the user
 const logOut = () => {
     authStore.logOut()
@@ -49,8 +36,14 @@ const logOut = () => {
             </div>
             <div class="slot">
                 <RouterLink :to="{ name: 'home' }">
+                    <i class="fa-solid fa-file-pen"></i>
+                    Edit your details
+                </RouterLink>
+            </div>
+            <div class="slot">
+                <RouterLink :to="{ name: 'home' }">
                     <i class="fa-solid fa-clock-rotate-left"></i>
-                    History
+                    History 
                 </RouterLink>
             </div>
             <div class="slot">
@@ -66,54 +59,17 @@ const logOut = () => {
                 </span>
             </div>
         </aside>
+
         <div class="main-user-form">
             <div class="slot">
                 <h1>Welcome , {{ userName }}</h1>
-            </div>
-            <div class="slot">
-                <label for="firstName">First Name <small>*</small>:</label>
-                <input type="text" name="firstName" id="firstName" placeholder="First Name">
-            </div>
-
-            <div class="slot">
-                <label for="lastName">Last Name <small>*</small>:</label>
-                <input type="text" name="lastName" id="lastName" placeholder="Last Name">
+                <p class="greeting">
+                    Welcome to your profile! Personalize your experience by managing preferences, customizing content, and curating your wishlist. Enjoy!
+                </p>
             </div>
 
-            <div class="slot">
-                <label for="email">Email <small>*</small>:</label>
-                <input type="email" name="email" id="email" placeholder="Email">
-            </div>
-
-            <div class="slot">
-                <label for="password">Password <small>*</small>:</label>
-                <input type="password" name="password" id="password" placeholder="Password">
-            </div>
-
-            <div class="slot">
-                <label for="confirmPassword">Confirm Password <small>*</small>:</label>
-                <input type="password" name="confirmPassword" id="confirmPassword" placeholder="Confirme Password">
-            </div>
-
-            <div class="slot">
-                <label for="country">Country:</label>
-                <select name="country" id="country" v-model="userContry">
-                    <option disabled>Select your country</option>
-                    <option v-for="(c, i) in countries" :key="i">{{ c }}</option>
-                </select>
-            </div>
-
-            <div class="slot">
-                <label for="city">City:</label>
-                <input type="text" name="city" id="city" placeholder="City">
-            </div>
-
-            <div class="slot">
-                <label for="street">Street:</label>
-                <input type="text" name="street" id="street" placeholder="Street">
-            </div>
-            <div class="slot">
-                <button>Submit</button>
+            <div class="portal">
+                <userForm />
             </div>
         </div>
     </div>
@@ -125,13 +81,13 @@ const logOut = () => {
 .user-profile {
     width: 100%;
     font-family: $ff;
-    min-height: 93vh;
+    min-height: 80vh;
     display: flex;
     padding: 2rem 0;
 
     aside {
-        width: 20vw;
-        min-height: 93vh;
+        width: 25%;
+        min-height: 80vh;
         position: relative;
         border-right: 1px solid #5555551f;
 
@@ -146,14 +102,13 @@ const logOut = () => {
 
         .slot {
             width: 100%;
-            height: 4.5rem;
+            height: 4rem;
             border-bottom: 1px solid #5555551f;
             padding: 5px 1vw;
             display: flex;
             align-items: center;
             gap: 51px;
             font-size: 1rem;
-            margin-top: 1rem;
             transition: .3s ease-in-out;
 
             i {
@@ -179,10 +134,20 @@ const logOut = () => {
     }
 
     .main-user-form {
-        width: 50vw;
-        min-height: 93vh;
-        padding: 0 5vw;
-
+        width: 60%;
+        min-height: 84vh;
+        h1{
+            padding: 1rem;
+        }
+        .greeting{
+            padding:0 5vw 0 1vw;
+            color: #555;
+            font-size: .9rem;
+        }
+        .portal{
+            width: 100%;
+            height: fit-content;
+            margin-top: 1rem;
         .slot {
             width: 100%;
             min-height: 4.5rem;
@@ -192,39 +157,33 @@ const logOut = () => {
             flex-direction: column;
             gap: 10px;
             font-size: 1rem;
-            margin-top: 1rem;
+            margin-top: .5rem;
             transition: .3s ease-in-out;
-
-            small {
-                color: red;
-            }
-
-            >input {
-                width: 90%;
-                height: 3.5rem;
-                border-radius: 50px;
-                border: 1px solid #55555567;
-                padding: 0 20px;
-            }
-
-            >select {
-                width: 10rem;
-                height: 3rem;
-                border-radius: 15px;
-                border: 1px solid #55555567;
-                padding: 0 10px;
-            }
-
-            >button {
-                width: 10rem;
-                height: 3rem;
-                background: #2e6bc6;
-                color: #fff;
-                border-radius: 25px;
-                border: none;
-                cursor: pointer;
-            }
+        }
         }
 
     }
-}</style>
+}
+@media screen and (max-width : 1024px) {
+    .user-profile {
+    flex-direction: column;
+    aside {
+        width: 100%;
+        min-height: fit-content !important;
+        position: relative;
+        >h2 {
+            padding: 2rem 2vw;
+        }
+        .logOut {
+           display: none !important;
+        }
+    }
+
+    .main-user-form {
+        width: 100%;
+        min-height: 84vh;
+      
+    }
+}
+}
+</style>

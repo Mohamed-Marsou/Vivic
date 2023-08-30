@@ -1,12 +1,14 @@
 <script setup>
 import { ref, onMounted,computed ,watch } from 'vue'
-import { RouterLink } from 'vue-router';
+import { RouterLink , useRouter } from 'vue-router';
 import { useAuthtStore } from '../../stores/auth'
 import { useProductStore } from '../../stores/product';
+import api from '../../http/api';
+import Cookies from 'js-cookie';
 
 const authtStore = useAuthtStore()
 const productStore = useProductStore()
-
+const router = useRouter()
 const isUserAuth = computed(() => authtStore.isAuth)
 
 const wishlistItems = ref(productStore.whishListCount);
@@ -14,7 +16,41 @@ const inCartItems = ref(productStore.whishListCount);
 
 const visibleLinks = ref(false)
 const visibleAuth = ref(false)
+const email = ref('')
+const password = ref('')
+const remember = ref(false)
+const errMsg = ref('')
 
+const login = async () => {
+    errMsg.value =''
+
+    const payload = {
+        email : email.value,
+        password : password.value
+    }
+    try {
+        const res = await api.post('/user/login' , payload)
+        console.log(res);
+        if (res.data.token) {
+            if (localStorage.getItem('wishlist')) {
+                localStorage.removeItem('wishlist');  
+                productPinia.whishListCount = 0
+            }
+            // Store the token in a cookie
+            Cookies.set('auth-token', res.data.token, { expires: remember.value ? 21 : 7 });
+            const userData = JSON.stringify(res.data.user);
+            Cookies.set('auth-user', userData, { expires: remember.value ? 21 : 7 });
+            authtStore.checkAuth()
+            // Redirect 
+            clearPage()
+            router.push('/profile')
+        }
+        console.log(res);
+    } catch (error) {
+        console.log(error);
+        errMsg.value = error.response.data.message
+    }
+}
 onMounted(async()=>{
     authtStore.checkAuth();
     productStore.getWishlistProducts();
@@ -128,23 +164,24 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
                 </span>
             </div>
             <div class="slot">
+                <small v-if="errMsg" id="errMsg">{{ errMsg }}</small>
                 <label for="email">Email <small>*</small>:</label>
-                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                <input type="email" id="email" name="email" placeholder="Enter your email" v-model="email" required>
             </div>
             <div class="slot">
                 <label for="password">Password <small>*</small>:</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                <input type="password" id="password" name="password" placeholder="Enter your password" v-model="password"  required>
             </div>
 
             <div class="slot lst">
                 <div>
-                    <input type="checkbox">
+                    <input type="checkbox" v-model="remember">
                     <p>Remember me</p>
                 </div>
                 <span>Forgot Password ?</span>
             </div>
             <div class="slot ">
-                <button>Login</button>
+                <button @click="login">Login</button>
             </div>
             <div class="no-acc">
 
@@ -274,7 +311,11 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
     transform: translateX(110%);
     opacity: .5;
     transition: .4s ease-in-out;
-
+    #errMsg
+    {
+        color: red;
+        font-size: .8rem;
+    }
     .auth-header {
         width: 100%;
         height: 4.5rem;

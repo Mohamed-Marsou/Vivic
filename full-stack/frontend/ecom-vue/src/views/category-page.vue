@@ -33,7 +33,7 @@ onMounted(async () => {
 
 
         category.value = res.data.category
-        title.value = category.value.name
+        title.value = category.value.description
         bannerImg.value = category.value.image
 
         maxPrice.value = Math.floor(res.data.maxPrice) + 1

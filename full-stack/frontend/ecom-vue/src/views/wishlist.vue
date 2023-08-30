@@ -1,249 +1,341 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useProductStore } from '../stores/product';
+import { RouterLink , useRouter } from 'vue-router';
+import Loading from '../components/build/loading.vue';
 const productStore = useProductStore()
+const router = useRouter()
 const products = ref([])
+const loaded = ref(false)
 onMounted(async () => {
     window.scrollTo({
         top: 0,
-        behavior: 'smooth' 
+        behavior: 'smooth'
     });
-    const res = await productStore.getWishlistProducts()
-    console.log(res);
-    if ( !res.response &&  res.products.length > 0) {
-        products.value = res.products
-    }
+    await getWishlistItems()
+    loaded.value = true
 })
 const getCoverImg = (p) => {
     const coverImg = p.images.find(image => image.pivot.is_cover === true);
     return coverImg.url
 }
+const getWishlistItems =async ()=>{
+    const res = await productStore.getWishlistProducts()
+    if (res && res.products !== undefined && res.products !== null) {
+        products.value = res.products
+    } else {
+        products.value = []
+    }
+}
+const  addToCart =async  (productId) =>
+{
+    await productStore.addToCart(productId)
+    await productStore.removeWishlistItem(productId)
+    router.push({name : 'cart'})
+}
+const removeFromWishList = async (productId)=>{
+    await productStore.removeWishlistItem(productId)
+    await getWishlistItems()
+    
+}
 </script>
-
 
 
 <template>
     <div class="WishList-container">
-        <div class="container">
-            <div class="header">
-                <h1>Wishlist products</h1>
+        <div class="header">
+            <img src="../assets/images/page-header-img.jpg" alt="banner">
+            <div>
+                <h1>wishlist</h1>
+                <small>
+                    <RouterLink :to="{ name: 'home' }">Home</RouterLink> / wishlist
+                </small>
+            </div>
+        </div>
+
+        <div v-if="!loaded" class="loader">
+            <Loading />
+        </div>
+
+        <div v-else>
+            <div v-if="products.length == 0" class="emptyWhishlist">
+                <i class="fa-regular fa-heart"></i>
+                <h4>This wishlist is empty.</h4>
+                <p>You don't have any products in the wishlist yet.<br />
+                    You will find a lot of interesting products on our "Shop" page.
+                </p>
+                <RouterLink :to="{ name: 'home' }">
+                    RETURN TO SHOP
+                </RouterLink>
             </div>
 
-            <div v-if="products.length >= 1">
+            <div v-else class="full-wishlist-products">
+                <h1>My Wihslit</h1>
+                <div class="wishList-items-box">
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Product Image</th>
-                            <th>Product name</th>
-                            <th>Product Price</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="p in products" :key="p.id">
-                            <td>
-                                <img :src="getCoverImg(p)" alt="product">
-                            </td>
-                            <td><b>{{ p.name }}</b></td>
-
-                            <td>
-                                <b>
-                                    ${{ p.sale_price ? p.sale_price : p.price }}
-                                </b>
-                            </td>
-                            <td>
-                                <button>
-                                    BUY NOW
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="sm-card">
-                    <div class="top">
-                        <img src="https://assets.materialup.com/uploads/ec46f513-9984-4636-b9ac-c237a7d6f01e/preview.jpg"
-                            alt="Product">
+                    <div class="item" v-for="p in products" :key="p.id">
+                        <RouterLink :to="{ name: 'product-page', params: { slug: p.slug }}" >
+                            <img :src="getCoverImg(p)" alt="Product image">
+                        </RouterLink>
+                        <div>
+                            <small v-if="p.inStock">InStock</small>
+                            <small class="outOfStock" v-else>Out of Stock</small>
+                            <p>{{ p.name }}</p>
+                            <span>
+                                {{ (+p.average_rating).toFixed(1) }}
+                                <i class="fa-solid fa-star"></i>
+                            </span>
+                            <h4>${{ p.sale_price ? p.sale_price : p.price }}</h4>
+                            <button :disabled="!p.inStock" @click="addToCart(p.id)">ADD TO CART</button>
+                            <i @click="removeFromWishList(p.id)" class="fa-solid fa-trash-can"></i>
+                        </div>
                     </div>
-                    <div class="main">
-                        <p>Lorem ipsum dolor sit amet consecte.</p>
-                        <h4>$555</h4>
-                        <span>X</span>
-                        <button>BUY NOW</button>
-                    </div>
+
                 </div>
-            </div>
-            <div v-else>
-                <h3>No Products Here yet .</h3>
+
             </div>
         </div>
 
     </div>
 </template>
 
-<style lang="scss" >
+<style lang="scss" scoped>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
 $ff: 'Poppins', sans-serif;
 
 .WishList-container {
     width: 100%;
-    min-height: 90vh;
+    min-height: fit-content;
     font-family: $ff;
 
-    .container {
-        width: 90vw;
-        min-height: 80vh;
-        margin: 2rem auto;
+    .header {
+        width: 100%;
+        height: 25vh;
+        position: relative;
 
-        .header {
+        >img {
             width: 100%;
-            height: 6rem;
-            padding: 2rem 0;
-            font-size: 1rem;
+            height: 100%;
+            object-fit: cover;
         }
 
-        table {
-            width: 80vw;
-            min-height: 20vh;
-            margin: 2rem auto;
+        >div {
+            position: absolute;
+            top: 50%;
+            right: 50%;
+            transform: translate(50%, -50%);
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            color: #fff;
 
-            thead tr th {
-                padding: 1rem;
-                color: #555;
+            h1 {
+                font-size: 4rem;
+                text-transform: uppercase;
+                font-weight: normal;
             }
 
-            tbody tr td {
-                padding: 1rem;
-                border-radius: 5px;
-                color: #555;
-
-                >img {
-                    width: 3rem;
-                    object-fit: contain;
-                    margin: 0 50%;
-                    transform: translateX(-50%);
-                }
-
-                >button {
-                    width: 100%;
-                    height: 3rem;
-                    border: none;
-                    font-weight: bold;
-                    background: rgb(251, 77, 77);
-                    border-radius: 5px;
-                    color: #ffffff;
-                    cursor: pointer;
-                    transition: .3s ease-in;
-
-                    &:hover {
-                        background: rgb(255, 6, 6);
-
-                    }
-
-                }
+            a {
+                color: #fff;
             }
         }
-
     }
-}
 
-.sm-card {
-    width: 95%;
-    height: 18vh;
-    margin: 1rem auto;
-    display: none;
+    .loader {
+        width: 100%;
+        height: 90vh;
+    }
 
-    .top {
-        width: 20%;
-        height: 100%;
+    .emptyWhishlist {
+        width: 100%;
+        height: calc(90vh - 25vh);
         display: flex;
         justify-content: center;
         align-items: center;
+        flex-direction: column;
+        text-align: center;
+        font-size: .9rem;
+        color: #555;
+        gap: 5px;
 
-        img {
-            width: 90%;
-            object-fit: contain;
-            border-radius: 10px;
-        }
-    }
-
-    .main {
-        width: 80%;
-        height: 100%;
-        padding: 1rem 1vw;
-        position: relative;
-
-        span {
-            position: absolute;
-            top: 5px;
-            right: 1rem;
-            border: 1px solid #5555555e;
-            padding: .3rem .6rem;
-            border-radius: 5px;
-            font-weight: bold;
-            color: #55555590;
-            cursor: pointer;
-
-        }
-
-        p {
-            font-size: .9rem;
-            padding: 0 10vw 0 1vw;
+        >i {
+            font-size: 15vw;
+            color: #0000001a;
         }
 
         h4 {
-            font-size: 1.3rem;
-            padding: 1rem 1vw;
+            font-size: 1.5rem;
         }
 
-        >button {
-            width: 8rem;
-            position: absolute;
-            bottom: 5px;
-            right: 1rem;
+        a {
+            background: #2E6BC6;
+            width: 10rem;
             height: 3rem;
             border: none;
-            font-weight: bold;
-            background: rgb(251, 77, 77);
-            border-radius: 5px;
-            color: #ffffff;
-            cursor: pointer;
-            transition: .3s ease-in;
+            border-radius: 50px;
+            margin-top: 1rem;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    }
 
-            &:hover {
-                background: rgb(255, 6, 6);
+    .full-wishlist-products {
+        width: 100%;
+        min-height: 70vh;
+
+        >h1 {
+            font-size: 2rem;
+            padding: 1rem 4vw;
+        }
+
+        .wishList-items-box {
+            width: 60%;
+            min-height: 20vh;
+            margin: 1rem auto;
+
+            >div {
+                width: 100%;
+                height: 10rem;
+                margin: 1rem auto;
+                display: flex;
+                align-items: center;
+                justify-content: space-evenly;
+                border-bottom: 1px solid #0000001a;
+                padding: 6px 0;
+
+                > a img {
+                    width: 9rem;
+                    height: 9rem;
+                    object-fit: contain;
+                }
+
+                >div {
+                    width: calc(90% - 10rem);
+                    height: 100%;
+                    padding: 5px;
+                    position: relative;
+                    display: flex;
+                    justify-content: space-evenly;
+                    flex-direction: column;
+
+                    small {
+                        color: green;
+                        font-weight: bold;
+                    }
+
+                    .outOfStock {
+                        color: red;
+                    }
+
+                    >p {
+                        color: #555;
+                        font-size: .9rem;
+                        padding: 5px 0;
+                    }
+
+                    >span {
+                        background: #2E6BC6;
+                        color: #fff;
+                        font-size: .8rem;
+                        padding: 4px 5px;
+                        width: fit-content;
+
+                        >i {
+                            font-size: .75rem;
+                            margin: 0 3px;
+                        }
+                    }
+
+                    >h4 {
+                        margin: 10px 0;
+                    }
+
+                    >button {
+                        width: 8rem;
+                        height: 3rem;
+                        background: #2E6BC6;
+                        color: #fff;
+                        border: none;
+                        border-radius: 50px;
+                        position: absolute;
+                        bottom: 5px;
+                        right: 5px;
+                        transition: .3s ease-in-out;
+                        cursor: pointer;
+
+                        &:not([disabled]):hover {
+                            background: red;
+                        }
+
+                    }
+
+                    button[disabled] {
+                        opacity: .5;
+                        cursor: not-allowed;
+
+                    }
+
+                    >i {
+                        position: absolute;
+                        top: 15px;
+                        right: 1rem;
+                        color: #555;
+                        font-size: 1.1rem;
+                        cursor: pointer;
+
+                        &:hover {
+                            color: red;
+                        }
+                    }
+                }
+
             }
         }
+    }
+
+}
+
+@media screen and (max-width : 1024px) {
+    .wishList-items-box {
+        width: 80% !important;
     }
 }
 
 @media screen and (max-width : 768px) {
-    table {
-        display: none !important;
-    }
-}
+    .wishList-items-box {
+        width: 98% !important;
 
-@media screen and (max-width : 768px) {
-    .sm-card {
-        display: flex !important;
-    }
-}
+        >div {
+            > a img {
+                width: 7rem !important;
+                height: 7rem !important;
+            }
 
-@media screen and (max-width : 550px) {
-    .sm-card {
-        flex-direction: column;
-
-        .top {
-            width: 100%;
-
-            >img {
-                height: 95%;
+            >div {
+                width: calc(90% - 8rem) !important;
             }
         }
+    }
+}
+@media screen and (max-width : 500px) {
+    .wishList-items-box {
+        width: 98% !important;
 
-        .main {
-            width: 100%;
+        >div {
+            padding: 0 2vw !important;
+            > a img {
+                display: none;
+            }
+
+            >div {
+                width: 100% !important;
+                >button{
+                    width: 7rem !important;
+                    font-size: .75rem !important;
+                }
+            }
         }
     }
 }

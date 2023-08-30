@@ -37,6 +37,7 @@ const  addProductToWishlist =async  (productId) =>
 const  addToCart =async  (productId) =>
 {
     productStore.addToCart(productId)
+    
     router.push({name : 'cart'})
 
 }
@@ -47,17 +48,20 @@ const  addToCart =async  (productId) =>
         <h4>{{ smallHeader }}</h4>
         <h1>{{ headerText }}</h1>
         <div class="prods-conatiner">
-            <div v-for="p in productList" :key="p.id" class="product-box">
+            <div v-for="p in productList" :key="p.id" class="product-box" :class="{'product-outOfStock' : p.inStock ==0}">
                 <div class="img-box">
                 <RouterLink :to="{ name: 'product-page', params: { slug: p.slug }}">  
                     <img :src="getCoverImg(p)" alt="Product image">
                 </RouterLink>
 
-                    <div v-if="p.sale_price" class="badge">
+                    <div v-if="p.sale_price && !p.inStock == 0 " class="badge">
                         -{{ getProductDiscount(p) }}%
                     </div>
+                    <div v-if="p.inStock == 0" class="badge-outOfStock" title="Out Of Stock">
+                        <i class="fa-solid fa-shop-slash"></i>
+                    </div>
                     <div class="actions">
-                        <i class="fa-solid fa-cart-shopping" @click="addToCart(p.id)"></i>
+                        <i class="fa-solid fa-cart-shopping" v-if="!p.inStock == 0" @click="addToCart(p.id)"></i>
                         <RouterLink :to="{ name: 'product-page', params: { slug: p.slug }}">  
                             <i class="fa-regular fa-eye"></i>
                         </RouterLink>
@@ -147,6 +151,18 @@ const  addToCart =async  (productId) =>
                     @include flex();
                     font-size: .8rem;
                 }
+                .badge-outOfStock{
+                    position: absolute;
+                    left: 5px;
+                    top: 5px; 
+                    background: #ef1e1ea3;
+                    color: #fff;
+                    width: 2.5rem;
+                    height: 2.5rem;
+                    border-radius: 50%;  
+                    @include flex();
+                    font-size: .8rem;
+                }
                 .actions{
                     position: absolute;
                     right: 5px;
@@ -193,6 +209,9 @@ const  addToCart =async  (productId) =>
             h4{
                 color: #2E6BC6;
             }
+        }
+        .product-outOfStock{
+            opacity: .7;
         }
     }
 }

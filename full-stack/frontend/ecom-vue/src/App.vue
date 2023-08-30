@@ -9,11 +9,11 @@ const router = useRouter();
 
 <template>
 <main id="main" >
-<Nav v-if="router.currentRoute.value.name  !== 'admin-auth'"/>
+<Nav v-if="router.currentRoute.value.name  !== 'admin-auth' && router.currentRoute.value.name  !== 'dashboard' "/>
 
 <RouterView />
 
-<Footer v-if="router.currentRoute.value.name  !== 'admin-auth'"/>
+<Footer v-if="router.currentRoute.value.name  !== 'admin-auth' && router.currentRoute.value.name  !== 'dashboard'"/>
 
 </main>
 </template>
