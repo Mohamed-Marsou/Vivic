@@ -1,27 +1,47 @@
+<!-- TODO axiosConfig failed use 0Auth1  -->
+
+
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useProductStore } from '../stores/product';
 import { useAuthtStore } from '../stores/auth';
 import Cookies from 'js-cookie'
-
+import { loadStripe } from '@stripe/stripe-js';
+import countryCodes from '../assets/contries'
 import api from '../http/api';
-
 import Loading from '../components/build/loading.vue'
+import axios from 'axios';
 
 const productStore = useProductStore()
 const authStore = useAuthtStore()
-const products = ref([])
+let products = ref([])
 const loaded = ref(false)
-const isShowingShippingFields = ref(false)
+const VITE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_PK_STRIPE
+
 const showCouponMsg = ref(false)
 const couponCode = ref('')
+const axiosConfig = {
+    auth: {
+        username: import.meta.env.VITE_WP_NAME,
+        password: import.meta.env.VITE_WP_PASS,
+    },
+};
+let stripe = {}
+
 onMounted(async () => {
     window.scrollTo({
         top: 0,
         behavior: 'smooth'
     });
+    stripe = loadStripe(VITE_STRIPE_PUBLIC_KEY);
+    stripe.then((s) => {
+        stripe = s
+        const elements = stripe.elements();
+        cardElement = elements.create('card');
+    });
     await getInCartProductsList()
     loaded.value = true;
+
 })
 async function getInCartProductsList() {
     const res = await productStore.getInCartProducts()
@@ -40,15 +60,13 @@ const getCoverImg = (p) => {
     return coverImg.url
 }
 
-const showShippingFields = () => {
-    isShowingShippingFields.value = !isShowingShippingFields.value
-}
+
 const removeItem = async (pId) => {
     await productStore.removeCartItem(pId)
     await getInCartProductsList()
 }
 
-const decreaseCount =async (product) => {
+const decreaseCount = async (product) => {
 
     if (authStore.isAuth) {
         const userId = JSON.parse(Cookies.get('auth-user')).id;
@@ -75,8 +93,8 @@ const decreaseCount =async (product) => {
             });
 
             products.value = updatedProducts;
-            if(response.status === 200){
-                product.quantity --
+            if (response.status === 200) {
+                product.quantity--
             }
         } catch (error) {
             console.error('Error updating item quantity in cart:', error);
@@ -111,12 +129,12 @@ const increaseCount = async (product) => {
 
         const response = await api.put(`/product/cart/increase/${userId}/${pId}`, {
             headers: {
-              Authorization: `Bearer ${authToken}`
+                Authorization: `Bearer ${authToken}`
             }
-          })
-          if(response.status === 200){
-          product.quantity ++
-          }
+        })
+        if (response.status === 200) {
+            product.quantity++
+        }
     } else {
         // GUEST USER
         let stock = product.product.inStock;
@@ -148,7 +166,7 @@ const updateLocalStorage = (productId, quantityChange) => {
     }
 };
 
-function getTotalAmount (){
+function getTotalAmount() {
     let totalAmount = 0;
 
     products.value.forEach(product => {
@@ -158,13 +176,218 @@ function getTotalAmount (){
 
     return totalAmount.toFixed(2);
 }
-const handleCouponSub = ()=>{
-    showCouponMsg.value =true
-    setTimeout(()=>{
-        showCouponMsg.value =false
+
+const handleCouponSub = () => {
+    showCouponMsg.value = true
+    setTimeout(() => {
+        showCouponMsg.value = false
         couponCode.value = ''
-    },3000)
+    }, 3000)
 }
+
+
+// ------- user form
+const countries = ref(countryCodes)
+
+// User Data
+const userFname = ref('');
+const userFnameError = ref('');
+
+const userLname = ref('');
+const userLnameError = ref('');
+
+const userEmail = ref('');
+const userEmailError = ref('');
+
+const userCountry = ref('Select your country');
+const userCountryError = ref('');
+
+const userAddress = ref('');
+const userAddressError = ref('');
+
+const userCity = ref('');
+const userCityError = ref('');
+// is Diffrent address 
+const isShowingShippingFields = ref(false)
+const showShippingFields = () => {
+    isShowingShippingFields.value = !isShowingShippingFields.value
+}
+// Shipment Data
+const shipmentFname = ref('');
+const shipmentFnameError = ref('');
+
+const shipmentLname = ref('');
+const shipmentLnameError = ref('');
+
+const shipmentCountry = ref('Select your shipment country');
+const shipmentCountryError = ref('');
+
+const shipmentCity = ref('');
+const shipmentCityError = ref('');
+
+const shipmentAddress = ref('');
+const shipmentAddressError = ref('');
+
+// --------- payInit
+const paymentInit = ref(false)
+let cardElement = {}
+const payInit = (e) => {
+
+    // if (validateUserData() && (!isShowingShippingFields.value || validateShipmentData() )) {
+    if (true) {
+        // Hide PAY NOW BTN 
+        e.target.parentNode.style.display = 'none';
+        // SHOW CONTAINER 
+        paymentInit.value = true;
+        // ! mount the credit card "input" to the DOM
+        cardElement.mount('#payment-element');
+        //! Initialize the PayPal SDK
+        paypal
+            .Buttons({
+                style: {
+                    layout: 'horizontal',
+                    tagline: 'false',
+                },
+                createOrder: (data, actions) => {
+
+                    return actions.order.create({
+                        purchase_units: [
+                            {
+                                amount: {
+                                    currency_code: 'USD',
+                                    value: getTotalAmount(),
+                                },
+                            },
+                        ],
+                    });
+                },
+                onApprove: (data, actions) => {
+                    return actions.order.capture().then(response => {
+                        handlePaypalSubmission(response);
+                    });
+                },
+                onError: err => {
+                    console.error('Error during PayPal payment:', err);
+                },
+            })
+            .render('#paypal-button-container');
+    }
+}
+
+const validateUserData = () => {
+    const namePattern = /^[a-zA-Z\s]+$/;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    userFnameError.value = userFname.value.length >= 3 && namePattern.test(userFname.value) ? '' : 'Invalid first name';
+    userLnameError.value = userLname.value.length >= 3 && namePattern.test(userLname.value) ? '' : 'Invalid last name';
+    userEmailError.value = emailPattern.test(userEmail.value) ? '' : 'Invalid email';
+    userCountryError.value = userCountry.value !== 'Select your country' ? '' : 'Select a country';
+    userCityError.value = userCity.value.length >= 3 ? '' : 'Invalid city';
+    userAddressError.value = userAddress.value.length > 3 ? '' : 'Invalid address';
+
+    return (
+        userFnameError.value === '' &&
+        userLnameError.value === '' &&
+        userEmailError.value === '' &&
+        userCountryError.value === '' &&
+        userCityError.value === '' &&
+        userAddressError.value === ''
+    );
+}
+
+const validateShipmentData = () => {
+    const namePattern = /^[a-zA-Z\s]+$/;
+
+    shipmentFnameError.value = shipmentFname.value.length >= 3 && namePattern.test(shipmentFname.value) ? '' : 'Invalid first name';
+    shipmentLnameError.value = shipmentLname.value.length >= 3 && namePattern.test(shipmentLname.value) ? '' : 'Invalid last name';
+    shipmentCountryError.value = shipmentCountry.value !== 'Select your shipment country' ? '' : 'Select a country';
+    shipmentCityError.value = shipmentCity.value.length >= 3 ? '' : 'Invalid city';
+    shipmentAddressError.value = shipmentAddress.value.length > 3 ? '' : 'Invalid address';
+
+    return (
+        shipmentFnameError.value === '' &&
+        shipmentLnameError.value === '' &&
+        shipmentCountryError.value === '' &&
+        shipmentCityError.value === '' &&
+        shipmentAddressError.value === ''
+    );
+};
+
+
+/////////////////////////////
+/////////////////////////////
+/////////////////////////////
+const isProcessing = ref(false)
+const costomerOrder = ref({})
+// handling Stripe payment
+const stripePaymentSubmit = async () => {
+
+    isProcessing.value = true
+    // Create a payment method using the Stripe API.
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+        billing_details: {
+            name: userFname.value + ' ' + userLname.value,
+            email: userEmail.value,
+            address: {
+                city: userCity.value,
+                line1: userAddress.value,
+                country: userCountry.value.split(":")[0]
+            },
+        },
+    });
+
+    // If there is an error during payment processing, handle the error.
+    if (error) {
+        throw new Error(error.message); // Throw an error to be caught below.
+    }
+
+    // Prepare the payload for the WordPress API.
+    const orderdProducts = products.value.map(item => ({
+        quantity: item.quantity,
+        product_id: item.product.id,
+        name: item.product.name,
+        price: item.product.sale_price ? (item.product.sale_price).toString() : (item.product.price).toString(),
+        total: item.product.sale_price ?
+            (item.product.sale_price * item.quantity).toString() : (item.product.price * item.quantity).toString()
+    }));
+    // order details for the customer.
+    costomerOrder.value.payment_method_id = paymentMethod.id;
+    costomerOrder.value.amount = getTotalAmount();
+    costomerOrder.value.userId = authStore.isAuth ? Cookies.JSON.parse(Cookies.get('auth-user')).id : null;
+
+
+    const wordpressPayload = {
+        status: 'completed',
+        currency: 'USD',
+        total: costomerOrder.value.amount,
+        customer_id: costomerOrder.value.userId,
+        billing: {
+            first_name: userFname.value,
+            last_name: userLname.value,
+            address_1: userAddress.value,
+            country: userCountry.value,
+            city: userCity.value,
+            email: userEmail.value,
+        },
+        shipping: {
+            first_name: shipmentFname.value ? shipmentFname.value : userFname.value,
+            last_name: shipmentLname.value ? shipmentLname.value : userLname.value,
+            address_1: shipmentAddress.value ? shipmentAddress.value : userAddress.value,
+            country: shipmentCountry.value ? shipmentCountry.value : userCountry.value,
+            city: shipmentCity.value ? shipmentCity.value : shipmentCity.value,
+        },
+        user_id: costomerOrder.value.userId,
+        line_items: orderdProducts,
+    };
+    // Post order details to the WordPress API.
+    const wordpressResponse = await axios.post('http://localhost/wordpress-6.3/wordpress/wp-json/wc/v3/orders', wordpressPayload, axiosConfig);
+    console.log(wordpressResponse);
+    const wpOrderId = wordpressResponse.data.id;
+}
+
+
 </script>
 <template>
     <div class="cart-main-box">
@@ -189,7 +412,7 @@ const handleCouponSub = ()=>{
                         </div>
                         <div class="price">
                             <h4>Price</h4>
-                            <h6><small v-if="p.product.sale_price">${{p.product.price}}</small>
+                            <h6><small v-if="p.product.sale_price">${{ p.product.price }}</small>
                                 ${{ p.product.sale_price ? p.product.sale_price : p.product.price }} </h6>
                         </div>
                         <div class="quantity">
@@ -197,15 +420,15 @@ const handleCouponSub = ()=>{
                             <div class="controllers">
                                 <button :disabled="p.quantity == 1" @click="decreaseCount(p)">-</button>
                                 <p>{{ p.quantity }}</p>
-                                <button :disabled="p.quantity == p.product.inStock " @click="increaseCount(p)">+</button>
+                                <button :disabled="p.quantity == p.product.inStock" @click="increaseCount(p)">+</button>
                             </div>
                         </div>
                         <div class="sub-total">
                             <h4>Subtotal</h4>
-                            <h5>${{ p.product.sale_price ? 
-                            ( p.product.sale_price * p.quantity ).toFixed(2) :
-                            ( p.product.price * p.quantity ).toFixed(2)
-                             }}</h5>
+                            <h5>${{ p.product.sale_price ?
+                                (p.product.sale_price * p.quantity).toFixed(2) :
+                                (p.product.price * p.quantity).toFixed(2)
+                            }}</h5>
                         </div>
                     </div>
                 </div>
@@ -235,10 +458,10 @@ const handleCouponSub = ()=>{
                         </div>
                         <div class="full-box">
                             <p>Subtotal</p>
-                            <h6>${{ p.product.sale_price ? 
-                            ( p.product.sale_price * p.quantity ).toFixed(2) :
-                            ( p.product.price * p.quantity ).toFixed(2)
-                             }}</h6>
+                            <h6>${{ p.product.sale_price ?
+                                (p.product.sale_price * p.quantity).toFixed(2) :
+                                (p.product.price * p.quantity).toFixed(2)
+                            }}</h6>
                         </div>
                     </div>
                 </div>
@@ -258,61 +481,93 @@ const handleCouponSub = ()=>{
             <div class="checkout-container">
                 <div class="shipping-details">
                     <h2>BILLING DETAILS</h2>
+
                     <div class="slot">
                         <label for="fname">First Name <small>*</small>:</label>
-                        <input type="text" id="fname" name="fname" required placeholder="First name">
+                        <small class="error-message">{{ userFnameError }}</small>
+                        <input type="text" id="fname" name="fname" v-model="userFname" :disabled="isProcessing" required
+                            placeholder="First name">
                     </div>
                     <div class="slot">
                         <label for="lname">Last Name <small>*</small>:</label>
-                        <input type="text" id="lname" name="lname" required placeholder="Last name">
-                    </div>
-                    <div class="slot">
-                        <label for="country">Country <small>*</small>:</label>
-                        <input type="text" id="country" name="country" required placeholder="Enter your country">
-                    </div>
-                    <div class="slot">
-                        <label for="city">City <small>*</small>:</label>
-                        <input type="text" id="city" name="city" required placeholder="Enter your city">
-                    </div>
-                    <div class="slot">
-                        <label for="street">Street Address <small>*</small>:</label>
-                        <input type="text" id="street" name="street" required placeholder="Enter your street address">
+                        <small class="error-message">{{ userLnameError }}</small>
+                        <input type="text" id="lname" name="lname" v-model="userLname" :disabled="isProcessing" required
+                            placeholder="Last name">
                     </div>
                     <div class="slot">
                         <label for="email">Email <small>*</small>:</label>
-                        <input type="email" id="email" name="email" required placeholder="Enter your email">
+                        <small class="error-message">{{ userEmailError }}</small>
+                        <input type="email" id="email" name="email" v-model="userEmail" :disabled="isProcessing" required
+                            placeholder="Enter your email">
+                    </div>
+                    <div class="slot">
+                        <label for="country">Country <small>*</small>:</label>
+                        <small class="error-message">{{ userCountryError }}</small>
+                        <select name="country" id="country" v-model="userCountry" :disabled="isProcessing">
+                            <option disabled selected value="">Select your country</option>
+                            <option v-for="(c, index) in countries" :key="index">
+                                {{ c.code + ': ' + c.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="slot">
+                        <label for="city">City <small>*</small>:</label>
+                        <small class="error-message">{{ userCityError }}</small>
+                        <input type="text" id="city" name="city" v-model="userCity" :disabled="isProcessing" required
+                            placeholder="Enter your city">
+                    </div>
+                    <div class="slot">
+                        <label for="street">Street Address <small>*</small>:</label>
+                        <small class="error-message">{{ userAddressError }}</small>
+                        <input type="text" id="street" name="street" v-model="userAddress" :disabled="isProcessing" required
+                            placeholder="Enter your street address">
                     </div>
 
+                    <!--? Diffrent Shipment Details  -->
                     <div class="slot-diffrent-address">
-                        <input type="checkbox" @input="showShippingFields">
-                        <p>Ship to a different address?</p>
+
+                        <input type="checkbox" name="showMoreFields" id="showMoreFields" @input="showShippingFields"
+                            :disabled="isProcessing">
+                        <label for="showMoreFields">Ship to a different address?</label>
+
                         <div class="box" :class="{ show: isShowingShippingFields }">
                             <div class="slot">
                                 <label for="_fname">First Name <small>*</small>:</label>
-                                <input type="text" id="_fname" name="_fname" aria-required="">
+                                <small class="error-message">{{ shipmentFnameError }}</small>
+                                <input type="text" id="_fname" name="_fname" v-model="shipmentFname"
+                                    :disabled="isProcessing" required>
                             </div>
                             <div class="slot">
                                 <label for="_lname">Last Name <small>*</small>:</label>
-                                <input type="text" id="_lname" name="_lname" required>
+                                <small class="error-message">{{ shipmentLnameError }}</small>
+                                <input type="text" id="_lname" name="_lname" v-model="shipmentLname"
+                                    :disabled="isProcessing" required>
                             </div>
                             <div class="slot">
-                                <label for="_country">Country <small>*</small>:</label>
-                                <input type="text" id="_country" name="_country" required placeholder="Enter Country">
+                                <label for="_country">Shipment country <small>*</small>:</label>
+                                <small class="error-message">{{ shipmentCountryError }}</small>
+                                <select name="_country" id="_country" v-model="shipmentCountry" :disabled="isProcessing">
+                                    <option disabled selected value="">Select your shipment country</option>
+                                    <option v-for="(c, index) in countries" :key="index">
+                                        {{ c.code + ': ' + c.name }}
+                                    </option>
+                                </select>
                             </div>
                             <div class="slot">
                                 <label for="d-city">City <small>*</small>:</label>
-                                <input type="text" id="d-city" name="d-city" required placeholder="Enter City">
+                                <small class="error-message">{{ shipmentCityError }}</small>
+                                <input type="text" id="d-city" name="d-city" v-model="shipmentCity" :disabled="isProcessing"
+                                    required placeholder="Enter City">
                             </div>
                             <div class="slot">
                                 <label for="d-street">Street Address <small>*</small>:</label>
-                                <input type="text" id="d-street" name="d-street" required placeholder="Enter street ">
-                            </div>
-                            <div class="slot">
-                                <label for="d-email">Email <small>*</small>:</label>
-                                <input type="d-email" id="d-email" name="d-email" required placeholder="Enter  Email">
+                                <small class="error-message">{{ shipmentAddressError }}</small>
+                                <input type="text" id="d-street" name="d-street" v-model="shipmentAddress"
+                                    :disabled="isProcessing" required placeholder="Enter street ">
                             </div>
                         </div>
                     </div>
+
                 </div>
                 <div class="shipping-summ">
                     <h1>Your Order</h1>
@@ -322,9 +577,9 @@ const handleCouponSub = ()=>{
                     </div>
                     <div v-for="p in products" :key="p.id" class="full-w">
                         <p>{{ p.product.name }}</p>
-                        <h4>${{ p.product.sale_price ? 
-                        (p.product.sale_price * p.quantity).toFixed(2) : 
-                        (p.product.price * p.quantity).toFixed(2)
+                        <h4>${{ p.product.sale_price ?
+                            (p.product.sale_price * p.quantity).toFixed(2) :
+                            (p.product.price * p.quantity).toFixed(2)
                         }}
                         </h4>
                     </div>
@@ -341,15 +596,45 @@ const handleCouponSub = ()=>{
                         <img src="https://packnrun.com/wp-content/uploads/2020/12/Payment-Logo-01.png" alt="">
                     </div>
                     <div class="full-w">
-                        <button id="payInit">Chose Payment</button>
+                        <button id="payInit" @click="payInit($event)">Chose Payment</button>
                     </div>
 
+                    <!--????????????????????????? Pyament  ?????????????????????????-->
+                    <div class="paymentFieldsHolder" :class="{ paymenFieldsVsible: paymentInit }">
+                        <!--? Stripe will create form elements here -->
+                        <div class="p-cell">
+                            <div id="payment-element"></div>
+                        </div>
+                        <button @click="stripePaymentSubmit" :disabled="isProcessing">
+                            PAY NOW
+                            <!-- // Loader -->
+                            <div class="lds-ring" :class="{ 'clicked': isProcessing }">
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                            </div>
+                        </button>
+                        <span>Or</span>
+                        <!--? Paypal will be here -->
+                        <div class="paypal">
+                            <div id="paypal-button-container"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="EmptyCart" v-else>
-            <!--todo  cahnge me   -->
-            <h1>Empty Cart ):</h1>
+            <h1>Your Cart is Empty</h1>
+            <p>
+                It's time to fill your cart with the products you love.<br /> Add items and enjoy your shopping journey!
+            </p>
+            <button>
+                <RouterLink :to="{ name: 'home' }">
+                    Back Shopping
+                </RouterLink>
+            </button>
+            <img src="../assets/images/wired-outline-146-basket-trolley-shopping-card.gif" alt="">
         </div>
     </div>
 </template>
@@ -505,9 +790,11 @@ const handleCouponSub = ()=>{
         margin: 1rem auto;
         padding: 1rem 1vw;
         border-bottom: 1px solid rgba(102, 85, 85, 0.227);
-        small{
+
+        small {
             color: red;
         }
+
         p {
             color: #555;
             font-size: .9rem;
@@ -560,9 +847,13 @@ const handleCouponSub = ()=>{
                 display: flex;
                 flex-direction: column;
 
+
+
                 label {
                     font-size: .9rem;
                     color: #555;
+                    margin-left: .5vw;
+                    margin-top: 5px;
                 }
 
                 small {
@@ -576,6 +867,15 @@ const handleCouponSub = ()=>{
                     margin: .5rem 0;
                     padding: 0 1vw;
                 }
+
+                >select {
+                    width: 10rem;
+                    height: 3rem;
+                    padding: 0 5px;
+                    border-radius: 50px;
+                    border: 1px solid rgba(102, 85, 85, 0.227);
+                    color: #555;
+                }
             }
 
             .slot-diffrent-address {
@@ -587,8 +887,9 @@ const handleCouponSub = ()=>{
                 gap: .7vw;
                 flex-wrap: wrap;
 
-                >p {
+                >label {
                     font-size: .9rem;
+                    cursor: pointer;
                 }
 
                 .box {
@@ -663,20 +964,223 @@ const handleCouponSub = ()=>{
                 border-bottom: 1px solid rgba(102, 85, 85, 0.227);
                 margin-bottom: 2rem;
             }
+
+            .paymentFieldsHolder {
+                width: 100%;
+                min-height: 10rem;
+                border: 1px dotted #2c2e2f72;
+                flex-direction: column;
+                justify-content: space-evenly;
+                align-items: center;
+                display: none;
+                transition: .3s ease-in-out;
+                margin-top: 1rem;
+                padding: 1rem 0;
+
+                >button {
+                    width: 97%;
+                    height: 3rem;
+                    color: #fff;
+                    border: none;
+                    background: #2c2e2f;
+                    cursor: pointer;
+                    text-transform: uppercase;
+                    font-weight: bold;
+                    transition: .3s ease;
+                    margin-top: 1rem;
+                    @include flex();
+                    gap: 10px;
+
+                    &:hover {
+                        background: #000;
+                    }
+
+                    .lds-ring {
+                        display: inline-block;
+                        position: relative;
+                        width: 50px;
+                        height: 100%;
+                        display: none;
+                    }
+
+                    .lds-ring div {
+                        box-sizing: border-box;
+                        display: block;
+                        position: absolute;
+                        width: 30px;
+                        height: 30px;
+                        margin: 10px 0 0 0;
+                        border: 4px solid #fff;
+                        border-radius: 50%;
+                        animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+                        border-color: #fff transparent transparent transparent;
+                    }
+
+                    .lds-ring div:nth-child(1) {
+                        animation-delay: -0.45s;
+                    }
+
+                    .lds-ring div:nth-child(2) {
+                        animation-delay: -0.3s;
+                    }
+
+                    .lds-ring div:nth-child(3) {
+                        animation-delay: -0.15s;
+                    }
+
+                    @keyframes lds-ring {
+                        0% {
+                            transform: rotate(0deg);
+                        }
+
+                        100% {
+                            transform: rotate(360deg);
+                        }
+                    }
+                }
+
+                button[disabled] {
+                    opacity: .5;
+                    cursor: wait;
+                }
+
+                >span {
+                    color: #55555578;
+                    font-weight: bold;
+                    position: relative;
+                    margin: 2rem 0;
+
+                    &::after {
+                        position: absolute;
+                        right: 150%;
+                        top: 50%;
+                        background: #55555525;
+                        width: 15vw;
+                        height: 2px;
+                        content: '';
+                    }
+
+                    &::before {
+                        position: absolute;
+                        left: 150%;
+                        top: 50%;
+                        background: #55555525;
+                        width: 15vw;
+                        height: 2px;
+                        content: '';
+                    }
+                }
+            }
         }
     }
+}
+
+input[disabled] {
+    opacity: .5;
+}
+
+.p-cell {
+    width: 97%;
+    height: 4.5rem;
+
+    >* {
+        border: 1px solid rgba(102, 85, 85, 0.227);
+        padding: 1rem 5px;
+        width: 100%;
+        height: 3.5rem;
+        margin-top: .5rem;
+    }
+}
+
+.paypal {
+    width: 97%;
 }
 
 .EmptyCart {
 
     width: 100%;
     height: 80vh;
-    @include flex();
     color: #555;
+    @include flex();
+    flex-direction: column;
+    position: relative;
+    text-align: center;
+    gap: 25px;
+
+    h1 {
+        font-size: 3rem;
+        text-transform: uppercase;
+    }
+
+    p,
+    h1,
+    button {
+        z-index: 2;
+    }
+
+    >button {
+        margin-top: 4rem;
+        cursor: pointer;
+        width: 8rem;
+        height: 3rem;
+        border-radius: 25px;
+        border: none;
+        background: #007AFF;
+        box-shadow: 1px 1px 6px 2px #0000002e;
+
+        a {
+            color: #fff;
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    >img {
+        position: absolute;
+        top: 50%;
+        right: 50%;
+        transform: translate(50%, -50%);
+        opacity: .2;
+    }
+}
+
+@media screen and (max-width : 600px) {
+    .EmptyCart {
+        h1 {
+            font-size: 2.5rem;
+            padding: 0 2vw;
+        }
+
+        p {
+            font-size: .9rem;
+            padding: 0 2vw;
+        }
+
+        >button {
+            margin-top: 2rem;
+        }
+
+        >img {
+            position: absolute;
+            top: 50%;
+            right: 50%;
+            transform: translate(50%, -50%);
+            opacity: .2;
+            width: 60%;
+        }
+    }
+}
+
+.clicked {
+    display: inline-block !important;
 }
 
 .show {
     display: block !important;
+}
+
+.paymenFieldsVsible {
+    display: flex !important;
 }
 
 @media screen and (max-width : 1024px) {
@@ -849,5 +1353,4 @@ const handleCouponSub = ()=>{
         }
 
     }
-}
-</style>
+}</style>
