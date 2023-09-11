@@ -53,6 +53,8 @@ Route::delete('/product/cart/{userId}/{productId}', [ProductController::class, '
 // Remove User wishlist Product
 Route::delete('/product/wishlist/{userId}/{productId}', [ProductController::class, 'removeWishlistProducts'])->name('products.removeWishlistProducts');
 
+// clear user Cart 
+Route::delete('/user/cart/clear/{id}', [ProductController::class, 'clearUserCart'])->name('Cart.clearUserCart');
 
 
 

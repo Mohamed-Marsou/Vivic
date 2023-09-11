@@ -48,7 +48,7 @@ const login = async () => {
         console.log(res);
     } catch (error) {
         console.log(error);
-        errMsg.value = error.response.data.message
+        errMsg.value = error.response.data.message ? error.response.data.message : 'Something went wrong please try again '
     }
 }
 onMounted(async()=>{
@@ -305,12 +305,12 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
     top: 0;
     right: 0;
     height: 100vh;
-    background: #fff;
-    z-index: 2;
+    background: #ffffff;
     width: 25vw;
     transform: translateX(110%);
     opacity: .5;
     transition: .4s ease-in-out;
+    z-index: 2;
     #errMsg
     {
         color: red;
@@ -395,6 +395,7 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
             font-weight: bold;
             cursor: pointer;
              position: relative;
+             z-index: 2;
 
 
             &::after {
@@ -616,7 +617,7 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
 .overlay2 {
             width: 100%;
             min-height: 100vh !important;
-            background: #4c4c4c73;
+            background: #4c4c4c77;
             position: absolute;
             top: 4.5rem;
             left: 0;

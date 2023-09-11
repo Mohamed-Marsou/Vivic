@@ -30,5 +30,8 @@ return [
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
-
+    'woocommerce' => [
+        'api_key' => env('WOOCOMMERCE_API_KEY'),
+        'api_secret' => env('WOOCOMMERCE_API_SECRET'),
+    ],
 ];

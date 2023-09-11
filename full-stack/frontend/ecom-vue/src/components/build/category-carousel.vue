@@ -13,6 +13,7 @@ const props = defineProps({
 });
 const generateSlug = (name) => {
     return name.toLowerCase().replace(/\s+/g, '-');
+    
 };
 </script>
 <template>
@@ -104,6 +105,7 @@ const generateSlug = (name) => {
                 top: 50%;
                 right: 50%;
                 transform: translate(50%, -50%);
+                transform-origin: center;
                 opacity: 0;
                 transition: .2s ease-in;
                 border-radius: 50%;

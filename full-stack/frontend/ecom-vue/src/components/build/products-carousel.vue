@@ -17,6 +17,19 @@ const getCover = (p) => {
     const coverImg = p.images.find(image => image.pivot.is_cover === true);
     return coverImg.url
 }
+
+// get discount %
+function getProductDiscount(p) {
+    if (!p.sale_price && p.sale_price !== '0.00' ) {
+        return;
+    }
+
+    const regularPrice = parseFloat(p.price);
+    const salePrice = parseFloat(p.sale_price);
+
+    const discountPercentage = ((regularPrice - salePrice) / regularPrice) * 100;
+    return discountPercentage.toFixed(0)
+}
 </script>
 <template>
     <div class="prds-crsl">
@@ -26,20 +39,20 @@ const getCover = (p) => {
             clickable: true,
         }" :breakpoints="{
     '@0.00': {
-        slidesPerView: 1,
-        spaceBetween: 2,
+        slidesPerView: 2,
+        spaceBetween: 250,
     },
     '@0.75': {
         slidesPerView: 3,
-        spaceBetween: 150,
+        spaceBetween: 100,
     },
     '@1.00': {
-        slidesPerView: 3,
+        slidesPerView: 4,
         spaceBetween: 150,
     },
     '@1.50': {
-        slidesPerView: 4,
-        spaceBetween: 200,
+        slidesPerView: 5,
+        spaceBetween: 150,
     },
 }" class="mySwiper">
             <swiper-slide v-for="p  in productList " :key="p.id">
@@ -54,15 +67,15 @@ const getCover = (p) => {
                             </div>
                         </RouterLink>
 
-                        <div class="badge">
-                            -25%
+                        <div v-if="p.sale_price != '0.00'" class="badge">
+                            -{{getProductDiscount(p)}}%
                         </div>
                     </div>
 
                     <div>
 
                         <RouterLink :to="{ name: 'product-page' ,  params: { slug: p.slug }}">
-                            {{ p.name }}
+                            {{  p.name  }}
                         </RouterLink>
                         <div class="stars">
                             <i v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
@@ -79,10 +92,11 @@ const getCover = (p) => {
 @import '@/style/_global.scss';
 
 .prds-crsl {
-    width: 90%;
+    width: 95%;
     height: fit-content;
     margin: 2rem auto;
     padding: 1rem 0;
+    margin-bottom: 4rem;
 
     >h2 {
         text-align: center;
@@ -92,7 +106,7 @@ const getCover = (p) => {
 
     >p {
         text-align: center;
-        font-size: .8rem;
+        font-size: .9rem;
         color: #555;
         padding: 2rem 1rem;
     }
@@ -107,11 +121,10 @@ const getCover = (p) => {
             align-items: center;
             justify-content: space-between;
             text-align: center;
-
             a {
                 margin: 1rem 0 0 0;
                 color: #555;
-                font-weight: bold;
+                font-size: .9rem;
             }
 
             .image-ctx {
@@ -120,6 +133,8 @@ const getCover = (p) => {
                 position: relative;
                 overflow: hidden;
                 border-radius: 10px;
+                @include flex();
+                margin-bottom: 10px;
 
                 &:hover .prd-link {
                     transform: translateY(0);
@@ -131,8 +146,8 @@ const getCover = (p) => {
                 }
 
                 > a > img {
-                    width: 100%;
-                    height: 100%;
+                    width: 80%;
+                    height: 80%;
                     object-fit: contain;
                 }
 

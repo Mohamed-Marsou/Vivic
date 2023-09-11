@@ -1,18 +1,20 @@
 <script setup>
 import { defineProps } from 'vue';
-import { RouterLink,useRouter } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import { useProductStore } from '../../stores/product'
+import { ref} from 'vue'
 const router = useRouter()
 const productStore = useProductStore()
 const props = defineProps({
-    smallHeader : String,
+    smallHeader: String,
     headerText: String,
-    productList : Array
+    productList: Array
 });
 
 
-const getCoverImg =(p) =>{
-    const coverImg =  p.images.find(image => image.pivot.is_cover === true);
+
+const getCoverImg = (p) => {
+    const coverImg = p.images.find(image => image.pivot.is_cover === true);
     return coverImg.url
 }
 // get discount %
@@ -28,17 +30,15 @@ function getProductDiscount(product) {
     return discountPercentage.toFixed(0)
 }
 
-const  addProductToWishlist =async  (productId) =>
-{
+const addProductToWishlist = async (productId) => {
     productStore.addToWishlist(productId)
-    router.push({name : 'wishlist'})
+    router.push({ name: 'wishlist' })
 
 }
-const  addToCart =async  (productId) =>
-{
+const addToCart = async (productId) => {
     productStore.addToCart(productId)
-    
-    router.push({name : 'cart'})
+
+    router.push({ name: 'cart' })
 
 }
 
@@ -48,13 +48,13 @@ const  addToCart =async  (productId) =>
         <h4>{{ smallHeader }}</h4>
         <h1>{{ headerText }}</h1>
         <div class="prods-conatiner">
-            <div v-for="p in productList" :key="p.id" class="product-box" :class="{'product-outOfStock' : p.inStock ==0}">
+            <div v-for="p in productList" :key="p.id" class="product-box" :class="{ 'product-outOfStock': p.inStock == 0 }">
                 <div class="img-box">
-                <RouterLink :to="{ name: 'product-page', params: { slug: p.slug }}">  
-                    <img :src="getCoverImg(p)" alt="Product image">
-                </RouterLink>
+                    <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
+                        <img :src="getCoverImg(p)" alt="Product image">
+                    </RouterLink>
 
-                    <div v-if="p.sale_price && !p.inStock == 0 " class="badge">
+                    <div v-if="p.sale_price && p.sale_price != '0.00' && !p.inStock == 0" class="badge">
                         -{{ getProductDiscount(p) }}%
                     </div>
                     <div v-if="p.inStock == 0" class="badge-outOfStock" title="Out Of Stock">
@@ -62,17 +62,17 @@ const  addToCart =async  (productId) =>
                     </div>
                     <div class="actions">
                         <i class="fa-solid fa-cart-shopping" v-if="!p.inStock == 0" @click="addToCart(p.id)"></i>
-                        <RouterLink :to="{ name: 'product-page', params: { slug: p.slug }}">  
+                        <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
                             <i class="fa-regular fa-eye"></i>
                         </RouterLink>
                         <i class="fa-regular fa-heart" @click="addProductToWishlist(p.id)"></i>
                     </div>
                 </div>
-                <RouterLink :to="{ name: 'product-page' , params: { slug: p.slug }}">  
+                <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
                     <p>{{ p.name }}</p>
                 </RouterLink>
                 <div class="reviews">
-                    <i  v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
+                    <i v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
                 </div>
                 <h4>${{ p.price }}</h4>
             </div>
@@ -108,109 +108,138 @@ const  addToCart =async  (productId) =>
         display: flex;
         justify-content: center;
         gap: 2rem;
-        padding:1rem 0;
-        flex-wrap: wrap;  
-        .product-box{
+        padding: 1rem 0;
+        flex-wrap: wrap;
+
+        .product-box {
             width: 20rem;
             height: 22rem;
-            margin:1rem 0;
+            margin: 1rem 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             overflow: hidden;
 
-            .img-box{
+            .img-box {
                 width: 100%;
                 height: 14rem;
                 position: relative;
 
 
-                &:hover .actions{ 
+                &:hover .actions {
                     transform: translateX(0);
                 }
-                >a > img{
+
+                &:hover .badge {
+                    background: #fe0303df;
+                    font-weight: bold;
+
+                }
+
+                >a>img {
                     width: 100%;
                     height: 100%;
                     object-fit: contain;
                     margin: auto;
                     transition: .3s ease-in-out;
-                    &:hover{
+
+                    &:hover {
                         transform: scale(1.08);
                     }
 
                 }
-                .badge{
+
+                .badge {
                     position: absolute;
                     left: 5px;
-                    top: 5px; 
+                    top: 0;
                     background: #2E6BC6;
                     color: #fff;
                     width: 2.5rem;
                     height: 2.5rem;
-                    border-radius: 50%;  
+                    border-radius: 50%;
                     @include flex();
                     font-size: .8rem;
+                    transition: .3s ease-in-out;
+
                 }
-                .badge-outOfStock{
+
+                .badge-outOfStock {
                     position: absolute;
                     left: 5px;
-                    top: 5px; 
+                    top: 5px;
                     background: #ef1e1ea3;
                     color: #fff;
                     width: 2.5rem;
                     height: 2.5rem;
-                    border-radius: 50%;  
+                    border-radius: 50%;
                     @include flex();
                     font-size: .8rem;
                 }
-                .actions{
+
+                .actions {
                     position: absolute;
                     right: 5px;
-                    top: 5px; 
+                    top: 0;
                     color: #555;
                     width: 3.3rem;
-                    height:8rem;
-                    @include flex($jc:flex-start);
+                    height: 8rem;
+                    @include flex($jc: flex-start);
                     flex-direction: column;
                     padding: 1rem 0;
                     gap: 1rem;
                     transition: .3s ease-in;
                     transform: translateX(100px);
-                    a{
+                    background: #ffffff95;
+
+                    &:hover {
+                        background: #fff;
+
+                    }
+
+                    a {
                         color: #555;
                     }
-                    >a i , >i{
+
+                    >a i,
+                    >i {
                         font-size: 1.3rem;
                         cursor: pointer;
                         z-index: 2;
                         transition: .3s ease-in;
-                        &:hover{
+
+                        &:hover {
                             color: #2E6BC6;
                         }
                     }
                 }
             }
-            p{
+
+            p {
                 margin-top: 2rem;
                 font-size: .91rem;
-                color:#555;
+                color: #555;
 
             }
-            .reviews{
+
+            .reviews {
                 width: 90%;
                 height: 2rem;
                 margin: .3rem 0;
                 @include flex();
-                >i{
+
+                >i {
                     font-size: 1rem;
                     color: gold;
                 }
             }
-            h4{
+
+            h4 {
                 color: #2E6BC6;
             }
         }
-        .product-outOfStock{
+
+        .product-outOfStock {
             opacity: .7;
         }
     }
@@ -219,28 +248,29 @@ const  addToCart =async  (productId) =>
 @media screen and (max-width:1024px) {
     .bg-box {
 
-    .prods-conatiner {
-        gap: 2vw;
+        .prods-conatiner {
+            gap: 2vw;
+        }
     }
-}
 }
 @media screen and (max-width:630px) {
     .bg-box {
-    .prods-conatiner {
-        width: 97%;
-        .product-box{
-            width: 14rem;
+        .prods-conatiner {
+            width: 97%;
+
+            .product-box {
+                width: 14rem;
+            }
         }
     }
-}
 }
 @media screen and (max-width:350px) {
     .bg-box {
-    .prods-conatiner {
-        .product-box{
-            width: 90%;
+        .prods-conatiner {
+            .product-box {
+                width: 90%;
+            }
         }
     }
-}
 }
 </style>

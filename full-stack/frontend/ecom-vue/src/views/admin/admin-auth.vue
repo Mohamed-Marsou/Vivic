@@ -2,10 +2,13 @@
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useRouter } from 'vue-router';
+import {useAdminStore} from '../../stores/admin'
 
 import Cookies from 'js-cookie';
 
 import api from '../../http/api';
+
+const adminStore = useAdminStore()
 
 const email = ref('')
 const password = ref('')
@@ -16,6 +19,7 @@ const errMsg = ref('Something went wrong !')
 const showErr = ref(false)
 const router = useRouter();
 const rememberMe = ref(false)
+
 const login = async () => {
     
     if (!email.value || !isValidEmail(email.value)) {
@@ -34,10 +38,21 @@ const login = async () => {
     };
 
     try {
-        // CALL API
-    } catch (error) {
-        console.log(error);
-    }
+        const response = await api.post('/admin/login', payload);
+        if (response.data.token) {
+            // Store the token in a cookie
+            Cookies.set('admin-token', response.data.token, { expires: rememberMe.value ? 22 : 5 });
+            const adminData = JSON.stringify(response.data.admin);
+            Cookies.set('auth-admin', adminData, { expires: rememberMe.value ? 22 : 5 });
+
+            adminStore.checkAdminAuth()
+            // Redirect 
+           router.push('/dashboard')
+        }
+      } catch (error) {
+        // Handle errors 
+        console.error(error);
+      }
 }
 const isValidEmail = (value) => {
     // Basic email format validation
@@ -85,8 +100,8 @@ const isValidEmail = (value) => {
     @include flex();
 
     .login-box {
-        width: 30vw;
-        height: 30rem;
+        width: 32rem;
+        min-height: 30rem;
 
         >h2 {
             text-align: center;
@@ -95,7 +110,7 @@ const isValidEmail = (value) => {
 
         .form {
             width: 100%;
-            min-height: 25rem;
+            height: 30rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -117,21 +132,20 @@ const isValidEmail = (value) => {
                 padding: 0 .5rem;
                 background: #E5E7EB;
                 margin: 5px 5% 2rem 5%;
+                outline: none;
             }
 
             >div {
                 width: 85%;
                 height: 2rem;
                 @include flex();
-                gap: 1.5vw;
+                gap: 7px;
                 margin: 0 5%;
 
                 input[type="checkbox"] {
                     width: 15px;
                     height: 15px;
-                    border-radius: 5px;
                 }
-
                 >p {
                     font-size: .8rem;
                 }

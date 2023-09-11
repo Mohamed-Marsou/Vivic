@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import api from '../http/api';
 import Cookies from 'js-cookie';
-import axios from 'axios'
 import { useRouter } from 'vue-router';
 import { useAuthtStore } from '../stores/auth'
 import { useProductStore } from '../stores/product'

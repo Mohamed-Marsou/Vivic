@@ -45,7 +45,7 @@ const goTop = () => {
                 <div class="con-rw">
                     <h2>INFORMATION</h2>
                     <RouterLink to="/">Pravicy policy</RouterLink>
-                    <RouterLink to="/">Terms of services</RouterLink>
+                    <RouterLink :to="{name : 'trackOrders'}">Track Orders</RouterLink>
                     <RouterLink to="/">Shipping Policy</RouterLink>
                     <RouterLink to="/">Refund Policy</RouterLink>
                 </div>

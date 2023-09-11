@@ -1,28 +1,16 @@
 <script setup>
 import { RouterLink , useRouter } from 'vue-router';
 import { ref, onMounted } from 'vue'
-
+import countriesJSON  from '../../../assets/contries.json'
 import api from '../../../http/api';
 const router = useRouter()
 
 
 
-const countries = ref([])
+const countries = ref(countriesJSON)
 const userContry = ref('Select your country')
 
-onMounted(async () => {
-    await getContries()
-   
-})
-async function getContries ()
-{
-       try {
-        const res = await api.get('/countries')
-        countries.value = res.data.countries
-    } catch (error) {
-        console.log(error);
-    }
-}
+
 </script>
 <template>
     <div class="form-c">
@@ -44,7 +32,7 @@ async function getContries ()
                 <label for="country">Country:</label>
                 <select name="country" id="country" v-model="userContry">
                     <option disabled>Select your country</option>
-                    <option v-for="(c, i) in countries" :key="i">{{ c }}</option>
+                    <option v-for="(c, i) in countries" :key="i">{{ c.name }}</option>
                 </select>
             </div>
 

@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import {useAuthtStore} from '../stores/auth'
 import HomeView from '../views/home.vue'
+import {useAdminStore} from '../stores/admin'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -70,9 +72,27 @@ const router = createRouter({
       component: () => import('../views/admin/admin-auth.vue')
     },
     {
+      path: '/success',
+      name: 'success',
+      component: () => import('../views/success.vue')
+    },
+    {
+      path: '/error',
+      name: 'error',
+      component: () => import('../views/error-page.vue')
+    },
+    {
+      path: '/track-orders',
+      name: 'trackOrders',
+      component: () => import('../views/order-track.vue')
+    },
+    {
       path: '/dashboard',
       name: 'dashboard',
-      component: () => import('../views/admin/dashboard.vue')
+      component: () => import('../views/admin/dashboard.vue'),
+      meta: {
+        requiresToBeAdmin: true, // This route requires authentication
+      },
     },
   ]
 })
@@ -92,5 +112,18 @@ router.beforeEach(async (to, from, next) => {
       // Route does not require authentication, allow navigation
       next();
     }
-  });
+});
+router.beforeEach(async (to, from, next) => {
+const adminStore = useAdminStore()
+adminStore.checkAdminAuth()
+    if (to.meta.requiresToBeAdmin) {
+      if (adminStore.isAdmin) {
+        next();
+      } else {
+        next('/admin/login'); 
+      }
+    } else {
+      next();
+    }
+});
 export default router

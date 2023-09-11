@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-
-
+// TODO edit in prod the following file in vendor/guzzlehttp/guzzle/src/Client.php 
+// TODO 'verify'          => true,
 require __DIR__.'/Api/Admin.php';
 
 require __DIR__.'/Api/Product.php';

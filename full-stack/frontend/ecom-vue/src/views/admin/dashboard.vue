@@ -1,977 +1,434 @@
 <script setup>
-const toggleFilterMenu = () => {
-  document.querySelector(".filter-menu").classList.toggle("active");
-};
+import DashVue from '../../components/build/dashboard/dash.vue'
+import ProductVue from '../../components/build/dashboard/products.vue'
+import CategoryVue from '../../components/build/dashboard/category.vue'
+import OrderVue from '../../components/build/dashboard/order.vue'
+import UserVue from '../../components/build/dashboard/user.vue'
+import AdminVue from '../../components/build/dashboard/admin.vue'
+import Cookies from 'js-cookie';
 
-const switchToGridView = () => {
-  document.querySelector(".list").classList.remove("active");
-  document.querySelector(".grid").classList.add("active");
-  document.querySelector(".products-area-wrapper").classList.add("gridView");
-  document.querySelector(".products-area-wrapper").classList.remove("tableView");
-};
+import {useAdminStore} from '../../stores/admin'
 
-const switchToListView = () => {
-  document.querySelector(".list").classList.add("active");
-  document.querySelector(".grid").classList.remove("active");
-  document.querySelector(".products-area-wrapper").classList.remove("gridView");
-  document.querySelector(".products-area-wrapper").classList.add("tableView");
-};
+const adminStore = useAdminStore()
 
-const toggleLightMode = () => {
-  document.documentElement.classList.toggle('light');
-  modeSwitch.classList.toggle('active');
-};
+import { ref,onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
+
+const adminName = ref('')
+onMounted(()=>{
+    adminName.value = JSON.parse(Cookies.get('auth-admin')).name ?? ''
+})
+
+const view = ref('Home')
+const OpendSideBar = ref(true);
+
+
+function getFormattedDateTime() {
+    const currentDate = new Date();
+
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currentDate.getDate()).padStart(2, '0');
+
+
+    const formattedDate = `${year}-${month}-${day}`;
+
+
+    return `${formattedDate}`;
+}
+const OpenAside = () => {
+    OpendSideBar.value = !OpendSideBar.value
+}
+const changeView = (v) => {
+    view.value = v
+}
+const logOut =()=>{
+    adminStore.adminLogOut()
+}
+
 </script>
-
 <template>
-    <div class="dashboard-main">
+    <section>
+        <aside :class="{ closedAside: OpendSideBar }">
+            <header>
+                <RouterLink to="/">
+                    <h2 v-if="!OpendSideBar">Vivic</h2>
+                    <i v-if="OpendSideBar" title="Visit website" class="fa-brands fa-hashnode"></i>
+                </RouterLink>
+            </header>
 
-        <div class="app-container">
-            <!-- ! dashbboard sideBar  -->
-            <div class="sidebar">
-                <div class="sidebar-header">
-                    <div class="app-icon">
-                        <h3>Dashboard</h3>
+            <ul>
+                <li :class="{ activeLink: view === 'Home' }" @click="changeView('Home')">
+                    <a>
+                        <i title="Home" class="fa-solid fa-gauge-high"></i>
+                        <p>Home</p>
+                    </a>
+                </li>
+                <li :class="{ activeLink: view === 'ProductVue' }" @click="changeView('ProductVue')">
+                    <a>
+                        <i title="Products" class="fa-solid fa-box-open"></i>
+                        <p>Products</p>
+                    </a>
+                </li>
+                <li :class="{ activeLink: view === 'OrderVue' }" @click="changeView('OrderVue')">
+                    <a>
+                        <i  title="Orders" class="fa-solid fa-coins"></i>
+                        <p>Orders</p>
+                    </a>
+                </li>
+                <li :class="{ activeLink: view === 'CategoryVue' }" @click="changeView('CategoryVue')">
+                    <a>
+                        <i title="Categories" class="fa-solid fa-cubes-stacked"></i>
+                        <p>Categories</p>
+                    </a>
+                </li>
+                <li :class="{ activeLink: view === 'UserVue' }" @click="changeView('UserVue')">
+                    <a>
+                        <i title="Users" class="fa-solid fa-user"></i>
+                        <p>Users</p>
+                    </a>
+                </li>
+                <li :class="{ activeLink: view === 'AdminVue' }" @click="changeView('AdminVue')">
+                    <a>
+                        <i  title="Admins" class="fa-solid fa-user-tag"></i>
+                        <p>Admins</p>
+                    </a>
+                </li>
+            </ul>
+
+            <li title="LogOut" id="logOut-Btn">
+                <a title="Log Out" @click="logOut" >
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <p>LogOut</p>
+                </a>
+            </li>
+        </aside>
+        <main :class="{ mainFullWidth: OpendSideBar }">
+            <header>
+                <div class="headerBox">
+                        <i class="fa-solid fa-bars" @click="OpenAside"></i>
+                    <h2>Welecome back , {{ adminName }}</h2>
+                </div>
+                <div class="headerBox TandN">
+                    <h1>Dashboard</h1>
+                    <p>{{ getFormattedDateTime() }}</p>
+                    <div class="noti-wrapper">
+                        <i class="fa-solid fa-bell"></i>
+
+                        <div class="num">
+                            <small>0</small>
+                        </div>
+
                     </div>
                 </div>
-                <ul class="sidebar-list">
-                    <li class="sidebar-list-item">
-                        <a href="#">
-                            <i class="fa-solid fa-globe"></i>
-                            <span>Visit website</span>
-                        </a>
-                    </li>
-                    <li class="sidebar-list-item active">
-                        <a href="#">
-                            <i class="fa-solid fa-gauge-high"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="sidebar-list-item">
-                        <a href="#">
-                            <i class="fa-brands fa-product-hunt"></i>
-                            <span>Products</span>
-                        </a>
-                    </li>
-                    <li class="sidebar-list-item">
-                        <a href="#">
-                            <i class="fa-solid fa-user"></i>
-                            <span>User</span>
-                        </a>
-                    </li>
-                    <li class="sidebar-list-item">
-                        <a href="#">
-                            <i class="fa-solid fa-folder-open"></i>
-                            <span>Categories</span>
-                        </a>
-                    </li>
-                    <li class="sidebar-list-item">
-                        <a href="#">
-                            <i class="fa-solid fa-user-lock"></i>
-                            <span>Admin</span>
-                        </a>
-                    </li>
-                </ul>
-                <div class="account-info">
-                    <div class="account-info-picture">
-                        <img src="https://images.unsplash.com/photo-1527736947477-2790e28f3443?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTE2fHx3b21hbnxlbnwwfHwwfHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=900&q=60"
-                            alt="Account">
-                    </div>
-                    <div class="account-info-name">Monica G.</div>
-                    <button class="account-info-more">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="feather feather-more-horizontal">
-                            <circle cx="12" cy="12" r="1" />
-                            <circle cx="19" cy="12" r="1" />
-                            <circle cx="5" cy="12" r="1" />
-                        </svg>
-                    </button>
-                </div>
+            </header>
+
+
+            <div class="dash-view">
+                <DashVue v-if="view === 'Home'" />
+                <ProductVue v-if="view === 'ProductVue'" />
+                <CategoryVue v-if="view === 'CategoryVue'" />
+                <OrderVue v-if="view === 'OrderVue'" />
+                <UserVue v-if="view === 'UserVue'" />
+                <AdminVue v-if="view === 'AdminVue'" />
             </div>
-            <!-- ! dashbboard sideBar  -->
-
-
-            <div class="app-content">
-                <!-- ! Top header  -->
-                <div class="app-content-header">
-                    <h1 class="app-content-headerText">Products</h1>
-                    <button class="mode-switch" @click="toggleLightMode" title="Switch Theme">
-                        <svg class="moon" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2" width="24" height="24" viewBox="0 0 24 24">
-                            <defs></defs>
-                            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
-                        </svg>
-                    </button>
-                    <button class="app-content-headerButton">Add Product</button>
-                </div>
-                       
-                <!-- ! Top header ! -->
-
-                <!-- ! search and filter  -->
-                <div class="app-content-actions">
-                    <input class="search-bar" placeholder="Search..." type="text">
-                    <div class="app-content-actions-wrapper">
-                        <div class="filter-button-wrapper">
-                            <button class="action-button filter jsFilter" @click="toggleFilterMenu"><span>Filter</span><svg
-                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" class="feather feather-filter">
-                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                                </svg></button>
-                            <div class="filter-menu">
-                                <label>Category</label>
-                                <select>
-                                    <option>All Categories</option>
-                                    <option>Furniture</option>
-                                    <option>Decoration</option>
-                                    <option>Kitchen</option>
-                                    <option>Bathroom</option>
-                                </select>
-                                <label>Status</label>
-                                <select>
-                                    <option>All Status</option>
-                                    <option>Active</option>
-                                    <option>Disabled</option>
-                                </select>
-                                <div class="filter-menu-buttons">
-                                    <button class="filter-button reset">
-                                        Reset
-                                    </button>
-                                    <button class="filter-button apply">
-                                        Apply
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <button class="action-button list active" @click="switchToListView" title="List View">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                class="feather feather-list">
-                                <line x1="8" y1="6" x2="21" y2="6" />
-                                <line x1="8" y1="12" x2="21" y2="12" />
-                                <line x1="8" y1="18" x2="21" y2="18" />
-                                <line x1="3" y1="6" x2="3.01" y2="6" />
-                                <line x1="3" y1="12" x2="3.01" y2="12" />
-                                <line x1="3" y1="18" x2="3.01" y2="18" />
-                            </svg>
-                        </button>
-                        <button class="action-button grid"  @click="switchToGridView" title="Grid View">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                class="feather feather-grid">
-                                <rect x="3" y="3" width="7" height="7" />
-                                <rect x="14" y="3" width="7" height="7" />
-                                <rect x="14" y="14" width="7" height="7" />
-                                <rect x="3" y="14" width="7" height="7" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <!-- ! search and filter  -->
-                
-                <!--! product Main container  -->
-                <div class="products-area-wrapper tableView">
-                    <!--! product Header  -->
-                    <div class="products-header">
-                        <div class="product-cell image">
-                            Items
-                            <button class="sort-button">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
-                                    <path fill="currentColor"
-                                        d="M496.1 138.3L375.7 17.9c-7.9-7.9-20.6-7.9-28.5 0L226.9 138.3c-7.9 7.9-7.9 20.6 0 28.5 7.9 7.9 20.6 7.9 28.5 0l85.7-85.7v352.8c0 11.3 9.1 20.4 20.4 20.4 11.3 0 20.4-9.1 20.4-20.4V81.1l85.7 85.7c7.9 7.9 20.6 7.9 28.5 0 7.9-7.8 7.9-20.6 0-28.5zM287.1 347.2c-7.9-7.9-20.6-7.9-28.5 0l-85.7 85.7V80.1c0-11.3-9.1-20.4-20.4-20.4-11.3 0-20.4 9.1-20.4 20.4v352.8l-85.7-85.7c-7.9-7.9-20.6-7.9-28.5 0-7.9 7.9-7.9 20.6 0 28.5l120.4 120.4c7.9 7.9 20.6 7.9 28.5 0l120.4-120.4c7.8-7.9 7.8-20.7-.1-28.5z" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="product-cell category">Category<button class="sort-button">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
-                                    <path fill="currentColor"
-                                        d="M496.1 138.3L375.7 17.9c-7.9-7.9-20.6-7.9-28.5 0L226.9 138.3c-7.9 7.9-7.9 20.6 0 28.5 7.9 7.9 20.6 7.9 28.5 0l85.7-85.7v352.8c0 11.3 9.1 20.4 20.4 20.4 11.3 0 20.4-9.1 20.4-20.4V81.1l85.7 85.7c7.9 7.9 20.6 7.9 28.5 0 7.9-7.8 7.9-20.6 0-28.5zM287.1 347.2c-7.9-7.9-20.6-7.9-28.5 0l-85.7 85.7V80.1c0-11.3-9.1-20.4-20.4-20.4-11.3 0-20.4 9.1-20.4 20.4v352.8l-85.7-85.7c-7.9-7.9-20.6-7.9-28.5 0-7.9 7.9-7.9 20.6 0 28.5l120.4 120.4c7.9 7.9 20.6 7.9 28.5 0l120.4-120.4c7.8-7.9 7.8-20.7-.1-28.5z" />
-                                </svg>
-                            </button></div>
-                        <div class="product-cell status-cell">Status<button class="sort-button">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
-                                    <path fill="currentColor"
-                                        d="M496.1 138.3L375.7 17.9c-7.9-7.9-20.6-7.9-28.5 0L226.9 138.3c-7.9 7.9-7.9 20.6 0 28.5 7.9 7.9 20.6 7.9 28.5 0l85.7-85.7v352.8c0 11.3 9.1 20.4 20.4 20.4 11.3 0 20.4-9.1 20.4-20.4V81.1l85.7 85.7c7.9 7.9 20.6 7.9 28.5 0 7.9-7.8 7.9-20.6 0-28.5zM287.1 347.2c-7.9-7.9-20.6-7.9-28.5 0l-85.7 85.7V80.1c0-11.3-9.1-20.4-20.4-20.4-11.3 0-20.4 9.1-20.4 20.4v352.8l-85.7-85.7c-7.9-7.9-20.6-7.9-28.5 0-7.9 7.9-7.9 20.6 0 28.5l120.4 120.4c7.9 7.9 20.6 7.9 28.5 0l120.4-120.4c7.8-7.9 7.8-20.7-.1-28.5z" />
-                                </svg>
-                            </button></div>
-                        <div class="product-cell sales">Sales<button class="sort-button">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
-                                    <path fill="currentColor"
-                                        d="M496.1 138.3L375.7 17.9c-7.9-7.9-20.6-7.9-28.5 0L226.9 138.3c-7.9 7.9-7.9 20.6 0 28.5 7.9 7.9 20.6 7.9 28.5 0l85.7-85.7v352.8c0 11.3 9.1 20.4 20.4 20.4 11.3 0 20.4-9.1 20.4-20.4V81.1l85.7 85.7c7.9 7.9 20.6 7.9 28.5 0 7.9-7.8 7.9-20.6 0-28.5zM287.1 347.2c-7.9-7.9-20.6-7.9-28.5 0l-85.7 85.7V80.1c0-11.3-9.1-20.4-20.4-20.4-11.3 0-20.4 9.1-20.4 20.4v352.8l-85.7-85.7c-7.9-7.9-20.6-7.9-28.5 0-7.9 7.9-7.9 20.6 0 28.5l120.4 120.4c7.9 7.9 20.6 7.9 28.5 0l120.4-120.4c7.8-7.9 7.8-20.7-.1-28.5z" />
-                                </svg>
-                            </button></div>
-                        <div class="product-cell stock">Stock<button class="sort-button">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
-                                    <path fill="currentColor"
-                                        d="M496.1 138.3L375.7 17.9c-7.9-7.9-20.6-7.9-28.5 0L226.9 138.3c-7.9 7.9-7.9 20.6 0 28.5 7.9 7.9 20.6 7.9 28.5 0l85.7-85.7v352.8c0 11.3 9.1 20.4 20.4 20.4 11.3 0 20.4-9.1 20.4-20.4V81.1l85.7 85.7c7.9 7.9 20.6 7.9 28.5 0 7.9-7.8 7.9-20.6 0-28.5zM287.1 347.2c-7.9-7.9-20.6-7.9-28.5 0l-85.7 85.7V80.1c0-11.3-9.1-20.4-20.4-20.4-11.3 0-20.4 9.1-20.4 20.4v352.8l-85.7-85.7c-7.9-7.9-20.6-7.9-28.5 0-7.9 7.9-7.9 20.6 0 28.5l120.4 120.4c7.9 7.9 20.6 7.9 28.5 0l120.4-120.4c7.8-7.9 7.8-20.7-.1-28.5z" />
-                                </svg>
-                            </button></div>
-                        <div class="product-cell price">Price<button class="sort-button">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512">
-                                    <path fill="currentColor"
-                                        d="M496.1 138.3L375.7 17.9c-7.9-7.9-20.6-7.9-28.5 0L226.9 138.3c-7.9 7.9-7.9 20.6 0 28.5 7.9 7.9 20.6 7.9 28.5 0l85.7-85.7v352.8c0 11.3 9.1 20.4 20.4 20.4 11.3 0 20.4-9.1 20.4-20.4V81.1l85.7 85.7c7.9 7.9 20.6 7.9 28.5 0 7.9-7.8 7.9-20.6 0-28.5zM287.1 347.2c-7.9-7.9-20.6-7.9-28.5 0l-85.7 85.7V80.1c0-11.3-9.1-20.4-20.4-20.4-11.3 0-20.4 9.1-20.4 20.4v352.8l-85.7-85.7c-7.9-7.9-20.6-7.9-28.5 0-7.9 7.9-7.9 20.6 0 28.5l120.4 120.4c7.9 7.9 20.6 7.9 28.5 0l120.4-120.4c7.8-7.9 7.8-20.7-.1-28.5z" />
-                                </svg>
-                            </button></div>
-                    </div>
-                    <!--! product Header  -->
-
-                    <!--! product cell  -->
-                        <div class="products-row">
-                            <button class="cell-more-button">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                    class="feather feather-more-vertical">
-                                    <circle cx="12" cy="12" r="1" />
-                                    <circle cx="12" cy="5" r="1" />
-                                    <circle cx="12" cy="19" r="1" />
-                                </svg>
-                            </button>
-                            <div class="product-cell image">
-                                <img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80"
-                                    alt="product">
-                                <span>Ocean</span>
-                            </div>
-                            <div class="product-cell category"><span class="cell-label">Category:</span>Furniture</div>
-                            <div class="product-cell status-cell">
-                                <span class="cell-label">Status:</span>
-                                <span class="status active">Active</span>
-                            </div>
-                            <div class="product-cell sales"><span class="cell-label">Sales:</span>11</div>
-                            <div class="product-cell stock"><span class="cell-label">Stock:</span>36</div>
-                            <div class="product-cell price"><span class="cell-label">Price:</span>$560</div>
-                        </div>
-                        <div class="products-row">
-                            <button class="cell-more-button">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                            </button>
-                            <div class="product-cell image">
-                                <img src="https://images.unsplash.com/photo-1560448204-603b3fc33ddc?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Njd8fGludGVyaW9yfGVufDB8MHwwfHw%3D&auto=format&fit=crop&w=900&q=60" alt="product">
-                                <span>Sand</span>
-                            </div>
-                            <div class="product-cell category"><span class="cell-label">Category:</span>Living Room</div>
-                            <div class="product-cell status-cell">
-                            <span class="cell-label">Status:</span>
-                            <span class="status disabled">Disabled</span>
-                            </div>
-                            <div class="product-cell sales"><span class="cell-label">Sales:</span>52</div>
-                            <div class="product-cell stock"><span class="cell-label">Stock:</span>16</div>
-                            <div class="product-cell price"><span class="cell-label">Price:</span>$230</div>
-                        </div>
-                    <!--! product cell  -->
-
-                </div>
-                <!--! product Main container  -->
-
-            </div>
-        </div>
-    </div>
+        </main>
+    </section>
 </template>
 
 <style lang="scss">
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap');
+@import '@/style/_global.scss';
 
-* {
-    box-sizing: border-box;
-}
+@import url('https://fonts.googleapis.com/css2?family=Racing+Sans+One&display=swap');
+$logo_font: 'Racing Sans One', cursive;
 
-:root {
-    --app-bg: #101827;
-    --sidebar: rgba(21, 30, 47, 1);
-    --sidebar-main-color: #fff;
-    --table-border: #1a2131;
-    --table-header: #1a2131;
-    --app-content-main-color: #fff;
-    --sidebar-link: #fff;
-    --sidebar-active-link: #1d283c;
-    --sidebar-hover-link: #1a2539;
-    --action-color: #2869ff;
-    --action-color-hover: #6291fd;
-    --app-content-secondary-color: #1d283c;
-    --filter-reset: #2c394f;
-    --filter-shadow: rgba(16, 24, 39, 0.8) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
-}
+section {
+    width: 100vw;
+    height: 100vh;
+    font-family: $ff;
+    display: flex;
 
-.light:root {
-    --app-bg: #fff;
-    --sidebar: #f3f6fd;
-    --app-content-secondary-color: #f3f6fd;
-    --app-content-main-color: #1f1c2e;
-    --sidebar-link: #1f1c2e;
-    --sidebar-hover-link: rgba(195, 207, 244, 0.5);
-    --sidebar-active-link: rgba(195, 207, 244, 1);
-    --sidebar-main-color: #1f1c2e;
-    --filter-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
-}
+    aside {
+        width: 20%;
+        height: 100vh;
+        background-color: #2c2e3e;
+        color: azure;
+        position: relative;
+        padding: 0 0 1rem 0;
+        transition: .3s ease-in;
 
-$font-small: 14px;
-$font-medium: 16px;
-$font-large: 24px;
+        #logOut-Btn {
+            margin-top: 4rem;
+            width: 100%;
+            height: 4rem;
+            background: rgba(255, 0, 0, 0.192);
+            padding: 1rem;
+            bottom: 0;
+            position: absolute;
+            transition: .3s ease-in;
+            cursor: pointer;
 
+            &:hover {
+                background: rgba(255, 0, 0, 0.604);
+            }
 
-
-body {
-    font-family: 'Poppins', sans-serif;
-    background-color: var(--app-bg);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-.dashboard-main {
-    width: 100%;
-    min-height: 100vh;
-
-    .app-container {
-        border-radius: 4px;
-        width: 100%;
-        min-height: 100vh;
-        max-height: 100%;
-        max-width: 1280px;
-        display: flex;
-        overflow: hidden;
-        box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
-        max-width: 2000px;
-        margin: 0 auto;
-    }
-
-    .sidebar {
-        flex-basis: 200px;
-        max-width: 200px;
-        flex-shrink: 0;
-        background-color: var(--sidebar);
-        display: flex;
-        flex-direction: column;
-
-        &-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px;
+            a {
+                @include flex($jc: flex-start);
+                gap: 1vw
+            }
         }
 
-        &-list {
-            list-style-type: none;
-            padding: 0;
+        a {
+            color: azure;
+        }
 
-            &-item {
+        >header {
+            width: 100%;
+            height: 5rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            @include flex();
+
+            h2 {
+                font-family: $logo_font;
+                letter-spacing: 2px;
+            }
+
+            i {
+                display: none;
+                font-size: 2.2rem;
+                transition: .3s ease-in-out;
+                &:hover{
+                    color: #2563EB;
+                }
+            }
+        }
+
+        ul {
+            width: 100%;
+            min-height: 15rem;
+            margin-top: 4rem !important;
+            font-size: .9rem;
+
+            li {
+                width: 100%;
+                height: 4.5rem;
+                padding: 1.3rem 1rem;
+                cursor: pointer;
+                margin-top: 5px;
+                transition: .3s ease-in;
+                cursor: pointer;
                 position: relative;
-                margin-bottom: 10px;
+                i{
+                    font-size: 1.1rem;
+                }
+                &:hover {
+                    background: rgba(255, 253, 253, 0.176);
+                    transform: translateY(-5px);
+                }
 
                 a {
-                    display: flex;
-                    align-items: center;
-                    width: 100%;
-                    padding: 10px 16px;
-                    color: var(--sidebar-link);
-                    text-decoration: none;
-                    font-size: $font-small;
-                    line-height: 24px;
+                    @include flex($jc: flex-start);
+                    gap: 1vw
                 }
 
-                i {
-                    margin-right: 8px;
+            }
+        }
+    }
+
+    main {
+        width: 80%;
+        height: 100vh;
+        transition: .3s ease-in;
+        header {
+            width: 100%;
+            height: 5rem;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 1vw;
+            background: white;
+
+            .headerBox {
+                width: fit-content;
+                height: 100%;
+                @include flex();
+                gap: .5vw;
+                padding: 0 1vw;
+                user-select: none;
+
+                span {
+                    background: #2c2e3e;
+                    border-radius: 50%;
+                    color: azure;
+                    padding: 7px;
+                    cursor: pointer;
+                }
+
+                h2 {
                     font-size: 1rem;
                 }
+                .fa-arrow-right{
+                    font-size: 1.3rem;
+                    cursor: pointer;
+                }
+            }
 
-                &:hover {
-                    background-color: var(--sidebar-hover-link);
+            .TandN {
+                width: 20rem;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0;
+                position: relative;
+
+                h1 {
+                    font-size: 1.2rem;
+                    padding: 5px 0;
                 }
 
-                &.active {
-                    background-color: var(--sidebar-active-link);
-
-                    &:before {
-                        content: '';
+                p {
+                    font-size: .8rem;
+                    color: #666;
+                }
+                .noti-wrapper {
+                    position: absolute;
+                    right: 15px;
+                    top: 15px;
+                    i{
+                        font-size: 1.7rem;
+                    }
+                    
+                    .num {
                         position: absolute;
-                        right: 0;
-                        background-color: var(--action-color);
-                        height: 100%;
-                        width: 4px;
+                        top: 0;
+                        right: -4px;
+                        width: 15px;
+                        height: 15px;
+                        background-color: red;
+                        color: azure;
+                        border-radius: 50%;
+                        @include flex();
+                        font-size: .8rem;
                     }
                 }
             }
         }
+    }
 
-        @media screen and (max-width: 1024px) {
-            & {
+    .dash-view {
+        width: 100%;
+        background-color: #66666625;
+        height: calc(100vh - 5rem);
+        @include flex();
+
+        .Comp__Container {
+            width: 97%;
+            height: 88vh;
+            border-radius: 5px 5px 0 0;
+            background-color: transparent;
+        }
+    }
+}
+
+.closedAside {
+    width: 5vw !important;
+
+    #logOut-Btn {
+        a {
+            justify-content: center !important;
+
+            p {
                 display: none;
             }
         }
     }
 
-    .mode-switch {
-        background-color: transparent;
-        border: none;
-        padding: 0;
-        color: var(--app-content-main-color);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-left: auto;
-        margin-right: 8px;
-        cursor: pointer;
+    a {
+        color: azure;
 
-        .moon {
-            fill: var(--app-content-main-color);
+        p {
+            display: none;
         }
     }
 
-    .mode-switch.active .moon {
-        fill: none;
+    header {
+        h2 {
+            display: none;
+        }
+
+        img {
+            display: block !important;
+            width: 3rem;
+            margin: 1.5rem auto 0 auto;
+        }
     }
 
-    .account-info {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        margin-top: auto;
+    ul {
+        width: 100%;
+        min-height: 15rem;
+        margin-top: .5rem;
 
-        &-picture {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
+        li {
+            a {
+                justify-content: center !important;
+            }
+
+        }
+    }
+}
+
+.mainFullWidth {
+    width: 95vw !important;
+}
+
+@media screen and (min-width : 1300px) {
+    .closedAside {
+        width: 4vw !important;
+    }
+
+    .mainFullWidth {
+        width: 96vw !important;
+    }
+}
+@media screen and (max-width : 1300px) {
+    .closedAside {
+        width: 6vw !important;
+
+        header {
+            h2 {
+                display: none;
+            }
 
             img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
-        }
-
-        &-name {
-            font-size: $font-small;
-            color: var(--sidebar-main-color);
-            margin: 0 8px;
-            overflow: hidden;
-            max-width: 100%;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        &-more {
-            color: var(--sidebar-main-color);
-            padding: 0;
-            border: none;
-            background-color: transparent;
-            margin-left: auto;
-        }
-    }
-
-    .app-icon {
-        color: var(--sidebar-main-color);
-
-        svg {
-            width: 24px;
-            height: 24px;
-        }
-    }
-
-    .app-content {
-        padding: 16px;
-        background-color: var(--app-bg);
-        height: 100%;
-        flex: 1;
-        max-height: 100%;
-        display: flex;
-        flex-direction: column;
-
-        &-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 4px;
-        }
-
-        &-headerText {
-            color: var(--app-content-main-color);
-            font-size: $font-large;
-            line-height: 32px;
-            margin: 0;
-        }
-
-        &-headerButton {
-            background-color: var(--action-color);
-            color: #fff;
-            font-size: $font-small;
-            line-height: 24px;
-            border: none;
-            border-radius: 4px;
-            height: 32px;
-            padding: 0 16px;
-            transition: .2s;
-            cursor: pointer;
-
-            &:hover {
-                background-color: var(--action-color-hover);
-            }
-        }
-
-        &-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 4px;
-
-            &-wrapper {
-                display: flex;
-                align-items: center;
-                margin-left: auto;
-            }
-
-            @media screen and (max-width: 520px) {
-                & {
-                    flex-direction: column;
-
-                    .search-bar {
-                        max-width: 100%;
-                        order: 2;
-                    }
-
-                    .app-content-actions-wrapper {
-                        padding-bottom: 16px;
-                        order: 1;
-                    }
-                }
+                width: 4.5vw !important;
             }
         }
     }
 
-    @mixin searchIcon($color) {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23#{$color}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='feather feather-search'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+    .mainFullWidth {
+        width: 94vw !important;
+    }
+}
+
+@media screen and (max-width : 1200px) {
+    .closedAside {
+        width: 7vw !important;
     }
 
-    .search-bar {
-        background-color: var(--app-content-secondary-color);
-        border: 1px solid var(--app-content-secondary-color);
-        color: var(--app-content-main-color);
-        font-size: $font-small;
-        line-height: 24px;
-        border-radius: 4px;
-        padding: 0px 10px 0px 32px;
-        height: 32px;
-        @include searchIcon('fff');
-        background-size: 16px;
-        background-repeat: no-repeat;
-        background-position: left 10px center;
-        width: 100%;
-        max-width: 320px;
-        transition: .2s;
-
-        .light & {
-            @include searchIcon('1f1c2e');
-        }
-
-        &:placeholder {
-            color: var(--app-content-main-color);
-        }
-
-        &:hover {
-            border-color: var(--action-color-hover);
-            @include searchIcon('6291fd');
-        }
-
-        &:focus {
-            outline: none;
-            border-color: var(--action-color);
-            @include searchIcon('2869ff');
-        }
+    .mainFullWidth {
+        width: 93vw !important;
     }
+}
 
-    .action-button {
-        border-radius: 4px;
-        height: 32px;
-        background-color: var(--app-content-secondary-color);
-        border: 1px solid var(--app-content-secondary-color);
-        display: flex;
-        align-items: center;
-        color: var(--app-content-main-color);
-        font-size: $font-small;
-        margin-left: 8px;
-        cursor: pointer;
-
-        span {
-            margin-right: 4px;
-        }
-
-        &:hover {
-            border-color: var(--action-color-hover);
-        }
-
-        &:focus,
-        &.active {
-            outline: none;
-            color: var(--action-color);
-            border-color: var(--action-color);
-        }
-    }
-
-    .filter-button-wrapper {
-        position: relative;
-    }
-
-    @mixin arrowDown($color) {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23#{$color}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='feather feather-chevron-down'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-    }
-
-    .filter-menu {
-        background-color: var(--app-content-secondary-color);
+.activeLink {
+    &::after {
+        content: '';
         position: absolute;
-        top: calc(100% + 16px);
-        right: -74px;
-        border-radius: 4px;
-        padding: 8px;
-        width: 220px;
-        z-index: 2;
-        box-shadow: var(--filter-shadow);
-
-        visibility: hidden;
-        opacity: 0;
-        transition: .2s;
-
-        &:before {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-
-            border-bottom: 5px solid var(--app-content-secondary-color);
-            bottom: 100%;
-            left: 50%;
-            transform: translatex(-50%);
-        }
-
-        &.active {
-            visibility: visible;
-            opacity: 1;
-            top: calc(100% + 8px);
-        }
-
-        label {
-            display: block;
-            font-size: $font-small;
-            color: var(--app-content-main-color);
-            margin-bottom: 8px;
-        }
-
-        select {
-            appearance: none;
-            @include arrowDown('fff');
-            background-repeat: no-repeat;
-            padding: 8px 24px 8px 8px;
-            background-position: right 4px center;
-            border: 1px solid var(--app-content-main-color);
-            border-radius: 4px;
-            color: var(--app-content-main-color);
-            font-size: 12px;
-            background-color: transparent;
-            margin-bottom: 16px;
-            width: 100%;
-
-            option {
-                font-size: 14px;
-            }
-
-            .light & {
-                @include arrowDown('1f1c2e');
-            }
-
-            &:hover {
-                border-color: var(--action-color-hover);
-            }
-
-            &:focus,
-            &.active {
-                outline: none;
-                color: var(--action-color);
-                border-color: var(--action-color);
-                @include arrowDown('2869ff');
-            }
-        }
-    }
-
-    .filter-menu-buttons {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .filter-button {
-        border-radius: 2px;
-        font-size: 12px;
-        padding: 4px 8px;
-        cursor: pointer;
-        border: none;
-        color: #fff;
-
-        &.apply {
-            background-color: var(--action-color);
-        }
-
-        &.reset {
-            background-color: var(--filter-reset);
-        }
-    }
-
-    .products-area-wrapper {
-        width: 100%;
-        max-height: 100%;
-        overflow: auto;
-        padding: 0 4px;
-    }
-
-    .tableView {
-        .products-header {
-            display: flex;
-            align-items: center;
-            border-radius: 4px;
-            background-color: var(--app-content-secondary-color);
-            position: sticky;
-            top: 0;
-        }
-
-        .products-row {
-            display: flex;
-            align-items: center;
-            border-radius: 4px;
-
-            &:hover {
-                box-shadow: var(--filter-shadow);
-                background-color: var(--app-content-secondary-color);
-            }
-
-            .cell-more-button {
-                display: none;
-            }
-        }
-
-        .product-cell {
-            flex: 1;
-            padding: 8px 16px;
-            color: var(--app-content-main-color);
-            font-size: $font-small;
-            display: flex;
-            align-items: center;
-
-            img {
-                width: 32px;
-                height: 32px;
-                border-radius: 6px;
-                margin-right: 6px;
-            }
-
-            @media screen and (max-width: 780px) {
-                & {
-                    font-size: 12px;
-
-                    &.image span {
-                        display: none;
-                    }
-
-                    &.image {
-                        flex: 0.2;
-                    }
-                }
-            }
-
-            @media screen and (max-width: 520px) {
-                & {
-
-                    &.category,
-                    &.sales {
-                        display: none;
-                    }
-
-                    &.status-cell {
-                        flex: 0.4;
-                    }
-
-                    &.stock,
-                    &.price {
-                        flex: 0.2;
-                    }
-                }
-            }
-
-            @media screen and (max-width: 480px) {
-                & {
-                    &.stock {
-                        display: none;
-                    }
-
-                    &.price {
-                        flex: 0.4;
-                    }
-                }
-            }
-        }
-
-        .sort-button {
-            padding: 0;
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-            color: var(--app-content-main-color);
-            margin-left: 4px;
-            display: flex;
-            align-items: center;
-
-            &:hover {
-                color: var(--action-color);
-            }
-
-            svg {
-                width: 12px;
-            }
-        }
-
-        .cell-label {
-            display: none;
-        }
-    }
-
-    .status {
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        padding: 4px 8px;
-        font-size: 12px;
-
-        &:before {
-            content: '';
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            margin-right: 4px;
-        }
-
-        &.active {
-            color: #2ba972;
-            background-color: rgba(43, 169, 114, 0.2);
-
-            &:before {
-                background-color: #2ba972;
-            }
-        }
-
-        &.disabled {
-            color: #59719d;
-            background-color: rgba(89, 113, 157, 0.2);
-
-            &:before {
-                background-color: #59719d;
-            }
-        }
-    }
-
-    .gridView {
-        display: flex;
-        flex-wrap: wrap;
-        margin: 0 -8px;
-
-        @media screen and (max-width: 520px) {
-            & {
-                margin: 0;
-            }
-        }
-
-        .products-header {
-            display: none;
-        }
-
-        .products-row {
-            margin: 8px;
-            width: calc(25% - 16px);
-            background-color: var(--app-content-secondary-color);
-            padding: 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: transform .2s;
-            position: relative;
-
-            &:hover {
-                transform: scale(1.01);
-                box-shadow: var(--filter-shadow);
-
-                .cell-more-button {
-                    display: flex;
-                }
-            }
-
-            @media screen and (max-width: 1024px) {
-                & {
-                    width: calc(33.3% - 16px);
-                }
-            }
-
-            @media screen and (max-width: 820px) {
-                & {
-                    width: calc(50% - 16px);
-                }
-            }
-
-            @media screen and (max-width: 520px) {
-                & {
-                    width: 100%;
-                    margin: 8px 0;
-
-                    &:hover {
-                        transform: none;
-                    }
-                }
-            }
-
-            .cell-more-button {
-                border: none;
-                padding: 0;
-                border-radius: 4px;
-                position: absolute;
-                top: 16px;
-                right: 16px;
-                z-index: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 24px;
-                height: 24px;
-                background-color: rgba(16, 24, 39, 0.7);
-                color: #fff;
-                cursor: pointer;
-                display: none;
-            }
-        }
-
-        .product-cell {
-            color: var(--app-content-main-color);
-            font-size: $font-small;
-            margin-bottom: 8px;
-
-            &:not(.image) {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-            }
-
-            &.image span {
-                font-size: 18px;
-                line-height: 24px;
-            }
-
-            img {
-                width: 100%;
-                height: 140px;
-                object-fit: cover;
-                border-radius: 4px;
-                margin-bottom: 16px;
-            }
-        }
-
-        .cell-label {
-            opacity: 0.6;
-        }
+        right: 0;
+        top: 0;
+        width: 4px;
+        height: 100%;
+        background-color: #3da5f4;
     }
 }
 </style>

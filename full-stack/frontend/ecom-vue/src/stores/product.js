@@ -136,7 +136,6 @@ export const useProductStore = defineStore('product', {
               console.error('Error fetching wishlist products for guest user:', error)
             }
           } else {
-            console.log('No wishlist products found in local storage.')
             this.whishListCount = 0
           }
         }
@@ -225,7 +224,6 @@ export const useProductStore = defineStore('product', {
               console.error('Error fetching inCart products for guest user:', error)
             }
           } else {
-            console.log('No inCart products found in local storage.')
             this.inCartCount = 0
           }
         }
@@ -282,7 +280,6 @@ export const useProductStore = defineStore('product', {
         }
         return false 
       }
-    }
-
+    },   
   }
 })

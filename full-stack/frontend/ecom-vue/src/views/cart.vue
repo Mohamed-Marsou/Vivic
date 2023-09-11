@@ -1,10 +1,8 @@
-<!-- TODO axiosConfig failed use 0Auth1  -->
-
-
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useProductStore } from '../stores/product';
 import { useAuthtStore } from '../stores/auth';
+import { useRouter } from 'vue-router'
 import Cookies from 'js-cookie'
 import { loadStripe } from '@stripe/stripe-js';
 import countryCodes from '../assets/contries'
@@ -12,6 +10,7 @@ import api from '../http/api';
 import Loading from '../components/build/loading.vue'
 import axios from 'axios';
 
+const router = useRouter()
 const productStore = useProductStore()
 const authStore = useAuthtStore()
 let products = ref([])
@@ -20,12 +19,6 @@ const VITE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_PK_STRIPE
 
 const showCouponMsg = ref(false)
 const couponCode = ref('')
-const axiosConfig = {
-    auth: {
-        username: import.meta.env.VITE_WP_NAME,
-        password: import.meta.env.VITE_WP_PASS,
-    },
-};
 let stripe = {}
 
 onMounted(async () => {
@@ -41,7 +34,6 @@ onMounted(async () => {
     });
     await getInCartProductsList()
     loaded.value = true;
-
 })
 async function getInCartProductsList() {
     const res = await productStore.getInCartProducts()
@@ -231,10 +223,9 @@ const shipmentAddressError = ref('');
 // --------- payInit
 const paymentInit = ref(false)
 let cardElement = {}
-const payInit = (e) => {
+const payInit = async (e) => {
 
-    // if (validateUserData() && (!isShowingShippingFields.value || validateShipmentData() )) {
-    if (true) {
+    if (validateUserData() && (!isShowingShippingFields.value || validateShipmentData())) {
         // Hide PAY NOW BTN 
         e.target.parentNode.style.display = 'none';
         // SHOW CONTAINER 
@@ -314,7 +305,7 @@ const validateShipmentData = () => {
 };
 
 
-/////////////////////////////
+///////////////////////////// ------------------------------- !!! Error Handling !!!
 /////////////////////////////
 /////////////////////////////
 const isProcessing = ref(false)
@@ -323,6 +314,7 @@ const costomerOrder = ref({})
 const stripePaymentSubmit = async () => {
 
     isProcessing.value = true
+
     // Create a payment method using the Stripe API.
     const { paymentMethod, error } = await stripe.createPaymentMethod({
         type: 'card',
@@ -338,9 +330,9 @@ const stripePaymentSubmit = async () => {
         },
     });
 
-    // If there is an error during payment processing, handle the error.
+
     if (error) {
-        throw new Error(error.message); // Throw an error to be caught below.
+        throw new Error(error.message);
     }
 
     // Prepare the payload for the WordPress API.
@@ -352,14 +344,15 @@ const stripePaymentSubmit = async () => {
         total: item.product.sale_price ?
             (item.product.sale_price * item.quantity).toString() : (item.product.price * item.quantity).toString()
     }));
+
     // order details for the customer.
     costomerOrder.value.payment_method_id = paymentMethod.id;
     costomerOrder.value.amount = getTotalAmount();
-    costomerOrder.value.userId = authStore.isAuth ? Cookies.JSON.parse(Cookies.get('auth-user')).id : null;
+    costomerOrder.value.userId = authStore.isAuth ? JSON.parse(Cookies.get('auth-user')).id : null;
 
 
     const wordpressPayload = {
-        status: 'completed',
+        status: 'processing',
         currency: 'USD',
         total: costomerOrder.value.amount,
         customer_id: costomerOrder.value.userId,
@@ -367,7 +360,7 @@ const stripePaymentSubmit = async () => {
             first_name: userFname.value,
             last_name: userLname.value,
             address_1: userAddress.value,
-            country: userCountry.value,
+            country: userCountry.value.split(":")[0],
             city: userCity.value,
             email: userEmail.value,
         },
@@ -375,19 +368,85 @@ const stripePaymentSubmit = async () => {
             first_name: shipmentFname.value ? shipmentFname.value : userFname.value,
             last_name: shipmentLname.value ? shipmentLname.value : userLname.value,
             address_1: shipmentAddress.value ? shipmentAddress.value : userAddress.value,
-            country: shipmentCountry.value ? shipmentCountry.value : userCountry.value,
+            country: shipmentCountry.value ? shipmentCountry.value.split(":")[0] : userCountry.value.split(":")[0],
             city: shipmentCity.value ? shipmentCity.value : shipmentCity.value,
         },
         user_id: costomerOrder.value.userId,
         line_items: orderdProducts,
     };
-    // Post order details to the WordPress API.
-    const wordpressResponse = await axios.post('http://localhost/wordpress-6.3/wordpress/wp-json/wc/v3/orders', wordpressPayload, axiosConfig);
-    console.log(wordpressResponse);
-    const wpOrderId = wordpressResponse.data.id;
+    try {
+
+
+        // Post order details to the WordPress API.
+        const wordpressResponse = await axios.post(`${import.meta.env.VITE_WOO_URL}/orders`, wordpressPayload
+            , {
+                headers: { "Authorization": basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS) }
+        });
+
+        // 
+        costomerOrder.value.wp_order_id = wordpressResponse.data.id;
+        costomerOrder.value.costumerName = wordpressResponse.data.billing.first_name + " " + wordpressResponse.data.billing.last_name
+        costomerOrder.value.costumerEmail = wordpressResponse.data.billing.email
+        costomerOrder.value.costumerAddress = wordpressResponse.data.billing.address_1
+        costomerOrder.value.costumerCity = wordpressResponse.data.billing.city
+        costomerOrder.value.costumerCountry = userCountry.value
+        /* ***  
+         * HERE WE POST THE OUR API 
+         * TO HANDLE SUBMITING ORDER DETAILS
+         * TO OUR DATABASE AND STRIPE
+         * ***/
+        const res =  await api.post('/order', costomerOrder.value);
+
+        const laravelPayload = {
+            products: orderdProducts,
+            order_id: res.data.order_id
+        };
+        // Fill Order Prods
+        await api.post('/orders/add', laravelPayload)
+        // Clear user Cart     
+        clearUserCart()
+        // Redirect user to the success page with the order ID.
+        router.push({
+            path: '/success',
+            query: {
+                orderId: costomerOrder.value.payment_method_id
+            }
+        });
+
+    } catch (error) {
+        isProcessing.value = false;
+        // Log and handle the error.
+        console.error('Error during order submission:', error);
+        // Redirect the user to the error page.
+        router.push('/error');
+    }
+
 }
 
+function basicAuth(key, secret) {
+    let hash = btoa(key + ':' + secret);
+    return "Basic " + hash;
+}
+async function clearUserCart() {
+    try {
 
+        const id = authStore.isAuth ? JSON.parse(Cookies.get('auth-user')).id : null;
+        if (id) {
+            // User is logged in, delete their cart via API
+            await api.delete(`/user/cart/clear/${id}`);
+            products.value= []
+            productStore.inCartCount = 0
+        } else {
+            // User is not logged in, clear 'inCart' from localStorage
+            delete localStorage['inCart']
+            products.value= []
+            productStore.inCartCount = 0
+        }
+    } catch (error) {
+        // Handle any errors that might occur during ID retrieval or API request
+        console.error('Error:', error);
+    }
+}
 </script>
 <template>
     <div class="cart-main-box">
@@ -505,8 +564,8 @@ const stripePaymentSubmit = async () => {
                         <small class="error-message">{{ userCountryError }}</small>
                         <select name="country" id="country" v-model="userCountry" :disabled="isProcessing">
                             <option disabled selected value="">Select your country</option>
-                            <option v-for="(c, index) in countries" :key="index">
-                                {{ c.code + ': ' + c.name }}
+                            <option v-for="(c, index) in countries" :key="index" :value="c.code + ': ' + c.name">
+                                {{ c.name }}
                             </option>
                         </select>
                     </div>
@@ -1115,7 +1174,7 @@ input[disabled] {
     p,
     h1,
     button {
-        z-index: 2;
+        z-index:1;
     }
 
     >button {
@@ -1192,6 +1251,10 @@ input[disabled] {
         .copun-container {
             width: 95%;
         }
+    }
+
+    .checkout-container{
+        width: 95% !important;
     }
 }
 
@@ -1353,4 +1416,5 @@ input[disabled] {
         }
 
     }
-}</style>
+}
+</style>
