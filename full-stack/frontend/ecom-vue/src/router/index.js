@@ -127,12 +127,10 @@ const router = createRouter({
   
 // Navigation guard for protected routes
 router.beforeEach(async (to, from, next) => {
-
-  const authStore = await useAuthtStore();
-  const adminStore = await useAdminStore();
-
-  console.log(adminStore.isAdmin);
-  console.log(authStore.isAuth);
+  
+  const authStore =  useAuthtStore();
+  const adminStore =  useAdminStore();
+  adminStore.checkAdminAuth()
   // Set document title
   document.title = to.meta.title || 'Vivic'; // todo change the fallback option
 

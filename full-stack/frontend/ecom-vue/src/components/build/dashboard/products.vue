@@ -80,6 +80,7 @@ const advanceImport = async () => {
             params: payload,
         });
 
+        console.log(res);
         // Update the count with the number of successful product additions
         count.value = res.data.successCount;
 

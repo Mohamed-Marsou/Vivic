@@ -17,6 +17,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use PhpParser\Node\Stmt\TryCatch;
 
 class ProductController extends Controller
 {
@@ -463,7 +464,7 @@ class ProductController extends Controller
     // ********************************* ********************************* *********************************
     public function syncProductsFromWooCommerce(Request $request): JsonResponse
     {
-        $perPage = 25;
+        $perPage = 35;
         $currentPage = 1;
         $successCount = 0;
         do {
@@ -485,14 +486,12 @@ class ProductController extends Controller
                         // Check if a product with the same slug already exists
                         $existingProduct = Product::where('slug', $productData['slug'])->first();
                         if (!$existingProduct) {
-                            // Category 
-                            $category = $this->handleProductCategory($productData['categories']);
-
-
+                            $categories = $productData['categories'][0]; // CHANGE LETER
+                            $categoryId = $this->saveCategories($categories);
                             // Save the new product
-                            $newProduct = $this->saveProduct($productData , $category);
+                            $newProduct = $this->saveProduct($productData , $categoryId);
 
-                            $successCount ++;
+                            $successCount++;
                             $isFirstImage = true;
 
                             if ($newProduct->id) {
@@ -529,7 +528,66 @@ class ProductController extends Controller
             'successCount' => $successCount,
         ]);
     }
+    public function saveCategories($category)
+    {
+        $id = [];
+            $existCategory = Category::where('name', $category['name'])->first();
 
+            if ($existCategory) {
+                $id = $existCategory['id'];
+            } else {
+               
+                $urlEndPoint = '/products/categories/' . $category['id'];
+
+                try {
+                    $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
+                    ->get($this->baseUrl . $urlEndPoint);
+
+                    $categoryDATA = $response->json();
+                  
+                    // ? Handle image download and storage
+                    $imgPath = $this->downloadCategoryImages($categoryDATA['image']['src'] , $categoryDATA['slug'] );
+
+                    // save category 
+                    $newCategory = new Category([
+                        'name' => $categoryDATA['name'],
+                        'description' => $categoryDATA['description'],
+                        'image' =>  $imgPath 
+                    ]);
+
+                    $newCategory->save();
+                    $id = $newCategory['id'];
+                } catch (\Exception $e) {
+                    return response()->json(['error' => $e->getMessage()], 500);
+                }
+        }
+
+        return $id;
+    }
+    public function downloadCategoryImages($src, $slug)
+    {
+        $folderPath = 'public/category-images/' . $slug;
+        $imageName = basename($src);
+
+        // Check if the folder exists and the image file exists within it
+        if (Storage::exists($folderPath) && Storage::exists($folderPath . '/' . $imageName)) {
+            Storage::delete($folderPath . '/' . $imageName);
+        }
+
+        // Create a context with SSL certificate verification disabled
+        $context = stream_context_create([
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+        $imageData = file_get_contents($src, false, $context);
+        $imagePath = '/storage/category-images/' . $slug . '/' . $imageName;
+        Storage::put('public/category-images/' . $slug . '/' . $imageName, $imageData);
+        $imageUrl = url('/') . $imagePath;
+
+        return $imageUrl ;
+    }
     public function DownloadProductImages($src, $slug): array
     {
         $folderPath = 'public/product-images/' . $slug;
@@ -588,7 +646,7 @@ class ProductController extends Controller
         }
         return true;
     }
-    private function saveProduct($productData , $category): Product
+    private function saveProduct($productData ,  $categoryId): Product
     {
         $newProduct = new Product([
             'name' => $productData['name'],
@@ -598,7 +656,7 @@ class ProductController extends Controller
             'average_rating' => (float)$productData['average_rating'],
             'inStock' => $productData['stock_quantity'],
             'description' => $productData['description'],
-            'category_id' => $category['id'],
+            'category_id' =>  $categoryId,
             'slug' => $productData['slug'],
             'status' => $productData['status'],
             'short_description' => $productData['short_description'],
@@ -610,56 +668,5 @@ class ProductController extends Controller
         // Save the new product
         $newProduct->save();
         return  $newProduct;
-    }
-    private function handleProductCategory($category): Category
-    {
-            $newCategory [] = [];
-
-            $wordpressCategory = Category::where('name', $category[0]['name'])->first();
-
-            $sub = '/products/categories/' . $category['id'];
-
-            if (!$wordpressCategory) {
-
-                $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
-                    ->get($this->baseUrl . $sub);
-
-                if ($response->successful()) {
-                    // Parse the response JSON to get the category details
-                    $categoryDetails = $response->json();
-
-                    $slug =  $categoryDetails['slug'];
-                    $folderPath = 'public/category-images/' .  $slug;
-                    $src =  $categoryDetails['image']['src'];
-                    $imageName = basename($src);
-
-                    // Check if the folder exists and the image file exists within it
-                    if (Storage::exists($folderPath) && Storage::exists($folderPath . '/' . $imageName)) {
-                        Storage::delete($folderPath . '/' . $imageName);
-                    }
-
-                    // Create a context with SSL certificate verification disabled
-                    $context = stream_context_create([
-                        'ssl' => [
-                            'verify_peer' => false,
-                            'verify_peer_name' => false,
-                        ],
-                    ]);
-                    $imageData = file_get_contents($src, false, $context);
-                    $imagePath = '/storage/category-images/' . $slug . '/' . $imageName;
-                    Storage::put('public/category-images/' . $slug . '/' . $imageName, $imageData);
-                    $imageUrl = url('/') . $imagePath;
-                    // Create a new category in your database using the retrieved details
-                    $category = new Category();
-
-                    $category->name = $categoryDetails['name'];
-                    $category->description = $categoryDetails['description'];
-                    $category->image =  $imageUrl;
-
-                    $category->save();
-                    $newCategory =   $category;
-                }
-            }
-            return $newCategory;
     }
 }
