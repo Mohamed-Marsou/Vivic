@@ -5,7 +5,7 @@ import { useAuthtStore } from '../stores/auth';
 import { useRouter } from 'vue-router'
 import Cookies from 'js-cookie'
 import { loadStripe } from '@stripe/stripe-js';
-import countryCodes from '../assets/contries'
+import countryCodes from '../assets/countries'
 import api from '../http/api';
 import Loading from '../components/build/loading.vue'
 import axios from 'axios';
@@ -381,7 +381,7 @@ const stripePaymentSubmit = async () => {
         const wordpressResponse = await axios.post(`${import.meta.env.VITE_WOO_URL}/orders`, wordpressPayload
             , {
                 headers: { "Authorization": basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS) }
-        });
+            });
 
         // 
         costomerOrder.value.wp_order_id = wordpressResponse.data.id;
@@ -390,12 +390,27 @@ const stripePaymentSubmit = async () => {
         costomerOrder.value.costumerAddress = wordpressResponse.data.billing.address_1
         costomerOrder.value.costumerCity = wordpressResponse.data.billing.city
         costomerOrder.value.costumerCountry = userCountry.value
+
+        // --  add a private note to the WooCommerce order
+        const note = `Order Tracking Number is : ${costomerOrder.value.wp_order_id}`
+        await axios.post(
+            `${import.meta.env.VITE_WOO_URL}/orders/${costomerOrder.value.wp_order_id}/notes`,
+            {
+                note: note,
+                customer_note: true
+            },
+            {
+                headers: {
+                    Authorization: basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS)
+                }
+            }
+        )
         /* ***  
          * HERE WE POST THE OUR API 
          * TO HANDLE SUBMITING ORDER DETAILS
          * TO OUR DATABASE AND STRIPE
          * ***/
-        const res =  await api.post('/order', costomerOrder.value);
+        const res = await api.post('/order', costomerOrder.value);
 
         const laravelPayload = {
             products: orderdProducts,
@@ -409,7 +424,7 @@ const stripePaymentSubmit = async () => {
         router.push({
             path: '/success',
             query: {
-                orderId: costomerOrder.value.payment_method_id
+                orderId: costomerOrder.value.wp_order_id
             }
         });
 
@@ -434,18 +449,33 @@ async function clearUserCart() {
         if (id) {
             // User is logged in, delete their cart via API
             await api.delete(`/user/cart/clear/${id}`);
-            products.value= []
+            products.value = []
             productStore.inCartCount = 0
         } else {
             // User is not logged in, clear 'inCart' from localStorage
             delete localStorage['inCart']
-            products.value= []
+            products.value = []
             productStore.inCartCount = 0
         }
     } catch (error) {
         // Handle any errors that might occur during ID retrieval or API request
         console.error('Error:', error);
     }
+}
+
+
+// TODO implemention needed //TODO implemention needed
+//* handel Paypal on succ payment
+const handlePaypalSubmission = async (res) => {
+    console.log(res);
+    // if (res.status === "COMPLETED")
+    //     // Redirect user to success page
+    //     router.push({
+    //         path: '/success',
+    //         query: {
+    //             orderId: res.id
+    //         }
+    //     });  
 }
 </script>
 <template>
@@ -607,8 +637,8 @@ async function clearUserCart() {
                                 <small class="error-message">{{ shipmentCountryError }}</small>
                                 <select name="_country" id="_country" v-model="shipmentCountry" :disabled="isProcessing">
                                     <option disabled selected value="">Select your shipment country</option>
-                                    <option v-for="(c, index) in countries" :key="index">
-                                        {{ c.code + ': ' + c.name }}
+                                    <option v-for="(c, index) in countries" :key="index" :value="c.code + ': ' + c.name">
+                                        {{ c.name }}
                                     </option>
                                 </select>
                             </div>
@@ -1174,7 +1204,7 @@ input[disabled] {
     p,
     h1,
     button {
-        z-index:1;
+        z-index: 1;
     }
 
     >button {
@@ -1253,7 +1283,7 @@ input[disabled] {
         }
     }
 
-    .checkout-container{
+    .checkout-container {
         width: 95% !important;
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\User;
 use App\Models\Image;
 use App\Models\Product;
+use App\Models\Category;
 use App\Models\Wishlist;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
@@ -19,6 +20,18 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ProductController extends Controller
 {
+    private $baseUrl;
+    private $endpoint;
+    private $WOO_CK;
+    private $WOO_CS;
+
+    public function __construct()
+    {
+        $this->baseUrl = env('WOO_URL');
+        $this->endpoint = '/products';
+        $this->WOO_CK = env('WOOCOMMERCE_API_KEY');
+        $this->WOO_CS = env('WOOCOMMERCE_API_SECRET');
+    }
     public function index()
     {
         $perPage = 8;
@@ -35,7 +48,7 @@ class ProductController extends Controller
 
     public function newProducts()
     {
-        $perPage = 4;
+        $perPage = 5;
         $products = Product::with('images')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -50,7 +63,7 @@ class ProductController extends Controller
     }
     public function getHighRating()
     {
-        $perPage = 8;
+        $perPage = 5;
         $products = Product::with('images')
             ->orderBy('average_rating', 'desc')
             ->paginate($perPage);
@@ -383,108 +396,80 @@ class ProductController extends Controller
 
     //* ********************************* import Woo Products to DATABASE 
 
-    public function syncAllProductsFromWooCommerce(): JsonResponse
-    {
-        $baseUrl = env('WOO_URL');
-        $endpoint = '/products';
 
-        $WOO_CK = env('WOOCOMMERCE_API_KEY');
-        $WOO_CS = env('WOOCOMMERCE_API_SECRET');
+    // public function syncAllProductsFromWooCommerce(): JsonResponse
+    // {
+    //     $perPage = 50;
+    //     $currentPage = 1;
+    //     $successCount = 0;
+    //     do {
+    //         try {
+    //             $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
+    //                 ->get($this->baseUrl . $this->endpoint, [
+    //                     'per_page' => $perPage,
+    //                     'page' => $currentPage,
+    //                 ]);
 
-        $perPage = 50;
-        $currentPage = 1;
-        $successCount = 0;
-        do {
-            try {
-                $response = Http::withBasicAuth($WOO_CK, $WOO_CS)
-                    ->get($baseUrl . $endpoint, [
-                        'per_page' => $perPage,
-                        'page' => $currentPage,
-                    ]);
+    //             $products = $response->json();
+    //             foreach ($products as $productData) {
+    //                 // Check if the product already exists in the database by slug
+    //                 $existingProduct = Product::where('slug', $productData['slug'])
+    //                     ->first();
+    //                 // Check if the status in $productData is 'publish'
+    //                 if (!$existingProduct && $productData['status'] === 'publish') {
 
-                $products = $response->json();
-                foreach ($products as $productData) {
-                    // Check if the product already exists in the database by slug
-                    $existingProduct = Product::where('slug', $productData['slug'])
-                        ->first();
-                    // Check if the status in $productData is 'publish'
-                    if (!$existingProduct && $productData['status'] === 'publish') {
-                        // Create a new Product instance and fill it with data
-                        $newProduct = new Product([
-                            'name' => $productData['name'],
-                            'price' => (float)$productData['price'],
-                            'regular_price' => (float)$productData['regular_price'],
-                            'sale_price' => (float)$productData['sale_price'],
-                            'average_rating' => (float)$productData['average_rating'],
-                            'inStock' => $productData['stock_quantity'],
-                            'description' => $productData['description'],
-                            'category_id' => rand(1, 6),
-                            'slug' => $productData['slug'],
-                            'status' => $productData['status'],
-                            'short_description' => $productData['short_description'],
-                            'weight' => $productData['weight'],
-                            'dimensions' => json_encode($productData['dimensions']),
-                            'specification' => json_encode($productData['attributes']),
-                        ]);
+    //                     // Save the new product
+    //                     $newProduct = $this->saveProduct($productData);
+    //                     // Increment the successful count
+    //                     $successCount++;
+    //                     $isFirstImage = true;
 
-                        // Save the new product
-                        $newProduct->save();
-                        // Increment the successful count
-                        $successCount++;
-                        $isFirstImage = true;
+    //                     if ($newProduct->id) {
 
-                        if ($newProduct->id) {
+    //                         foreach ($productData['images'] as $image) {
+    //                             $imageInfo = $this->DownloadProductImages(
+    //                                 $image['src'],
+    //                                 $productData['slug']
+    //                             );
 
-                            foreach ($productData['images'] as $image) {
-                                $imageInfo = $this->DownloadProductImages(
-                                    $image['src'],
-                                    $productData['slug']
-                                );
+    //                             // Add the image ID to the product_images pivot table
+    //                             $newProduct->images()->attach($imageInfo['id'], ['product_id' => $newProduct->id]);
 
-                                // Add the image ID to the product_images pivot table
-                                $newProduct->images()->attach($imageInfo['id'], ['product_id' => $newProduct->id]);
+    //                             if ($isFirstImage) {
+    //                                 $newProduct->images()->updateExistingPivot($imageInfo['id'], ['is_cover' => true]);
+    //                                 $isFirstImage = false;
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //             $currentPage++;
+    //         } catch (\Exception $e) {
+    //             // Handle any errors that occurred during the API request
+    //             Log::error('syncAllProductsFromWooCommerce API Request Error: ' . $e->getMessage());
+    //             return response()->json(['error' => $e->getMessage()], 500);
+    //         }
+    //     } while (!empty($products));
 
-                                if ($isFirstImage) {
-                                    $newProduct->images()->updateExistingPivot($imageInfo['id'], ['is_cover' => true]);
-                                    $isFirstImage = false;
-                                }
-                            }
-                        }
-                    }
-                }
-                $currentPage++;
-            } catch (\Exception $e) {
-                // Handle any errors that occurred during the API request
-                Log::error('syncAllProductsFromWooCommerce API Request Error: ' . $e->getMessage());
-                return response()->json(['error' => $e->getMessage()], 500);
-            }
-        } while (!empty($products));
-
-        // Synchronization completed, return success message
-        return response()->json([
-            'message' => 'Products retrieved and processed successfully.',
-            'successCount' => $successCount, 
-        ]);
-    }
+    //     // Synchronization completed, return success message
+    //     return response()->json([
+    //         'message' => 'Products retrieved and processed successfully.',
+    //         'successCount' => $successCount,
+    //     ]);
+    // }
 
     // *********************************
     // ********************************* *********************************
     // ********************************* ********************************* *********************************
     public function syncProductsFromWooCommerce(Request $request): JsonResponse
     {
-        $baseUrl = env('WOO_URL');
-        $endpoint = '/products';
-
-        $WOO_CK = env('WOOCOMMERCE_API_KEY');
-        $WOO_CS = env('WOOCOMMERCE_API_SECRET');
-
         $perPage = 25;
         $currentPage = 1;
         $successCount = 0;
         do {
             try {
-                $response = Http::withBasicAuth($WOO_CK, $WOO_CS)
-                    ->get($baseUrl . $endpoint, [
+                $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
+                    ->get($this->baseUrl . $this->endpoint, [
                         'per_page' => $perPage,
                         'page' => $currentPage,
                     ]);
@@ -500,40 +485,27 @@ class ProductController extends Controller
                         // Check if a product with the same slug already exists
                         $existingProduct = Product::where('slug', $productData['slug'])->first();
                         if (!$existingProduct) {
-                            // Create a new Product instance and fill it with data
-                            $newProduct = new Product([
-                                'name' => $productData['name'],
-                                'price' => (float)$productData['price'],
-                                'regular_price' => (float)$productData['regular_price'],
-                                'sale_price' => (float)$productData['sale_price'],
-                                'average_rating' => (float)$productData['average_rating'],
-                                'inStock' => $productData['stock_quantity'],
-                                'description' => $productData['description'],
-                                'category_id' => rand(1, 6),
-                                'slug' => $productData['slug'],
-                                'status' => $productData['status'],
-                                'short_description' => $productData['short_description'],
-                                'weight' => $productData['weight'],
-                                'dimensions' => json_encode($productData['dimensions']),
-                                'specification' => json_encode($productData['attributes']),
-                            ]);
-    
+                            // Category 
+                            $category = $this->handleProductCategory($productData['categories']);
+
+
                             // Save the new product
-                            $newProduct->save();
+                            $newProduct = $this->saveProduct($productData , $category);
+
                             $successCount ++;
                             $isFirstImage = true;
-    
+
                             if ($newProduct->id) {
-    
+
                                 foreach ($productData['images'] as $image) {
                                     $imageInfo = $this->DownloadProductImages(
                                         $image['src'],
                                         $productData['slug']
                                     );
-    
+
                                     // Add the image ID to the product_images pivot table
                                     $newProduct->images()->attach($imageInfo['id'], ['product_id' => $newProduct->id]);
-    
+
                                     if ($isFirstImage) {
                                         $newProduct->images()->updateExistingPivot($imageInfo['id'], ['is_cover' => true]);
                                         $isFirstImage = false;
@@ -544,19 +516,17 @@ class ProductController extends Controller
                     }
                 }
                 $currentPage++;
-
             } catch (\Exception $e) {
                 // Handle any errors that occurred during the API request
                 Log::error('API Request Error [syncProductsFromWooCommerce]: ' . $e->getMessage());
                 return response()->json(['error' => $e->getMessage()], 500);
             }
-
         } while (!empty($products));
 
-        
+
         return response()->json([
             'message' => 'Products retrieved and processed successfully.',
-             'successCount' => $successCount ,
+            'successCount' => $successCount,
         ]);
     }
 
@@ -618,5 +588,78 @@ class ProductController extends Controller
         }
         return true;
     }
+    private function saveProduct($productData , $category): Product
+    {
+        $newProduct = new Product([
+            'name' => $productData['name'],
+            'price' => (float)$productData['price'],
+            'regular_price' => (float)$productData['regular_price'],
+            'sale_price' => (float)$productData['sale_price'],
+            'average_rating' => (float)$productData['average_rating'],
+            'inStock' => $productData['stock_quantity'],
+            'description' => $productData['description'],
+            'category_id' => $category['id'],
+            'slug' => $productData['slug'],
+            'status' => $productData['status'],
+            'short_description' => $productData['short_description'],
+            'weight' => $productData['weight'],
+            'dimensions' => json_encode($productData['dimensions']),
+            'specification' => json_encode($productData['attributes']),
+        ]);
 
+        // Save the new product
+        $newProduct->save();
+        return  $newProduct;
+    }
+    private function handleProductCategory($category): Category
+    {
+            $newCategory [] = [];
+
+            $wordpressCategory = Category::where('name', $category[0]['name'])->first();
+
+            $sub = '/products/categories/' . $category['id'];
+
+            if (!$wordpressCategory) {
+
+                $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
+                    ->get($this->baseUrl . $sub);
+
+                if ($response->successful()) {
+                    // Parse the response JSON to get the category details
+                    $categoryDetails = $response->json();
+
+                    $slug =  $categoryDetails['slug'];
+                    $folderPath = 'public/category-images/' .  $slug;
+                    $src =  $categoryDetails['image']['src'];
+                    $imageName = basename($src);
+
+                    // Check if the folder exists and the image file exists within it
+                    if (Storage::exists($folderPath) && Storage::exists($folderPath . '/' . $imageName)) {
+                        Storage::delete($folderPath . '/' . $imageName);
+                    }
+
+                    // Create a context with SSL certificate verification disabled
+                    $context = stream_context_create([
+                        'ssl' => [
+                            'verify_peer' => false,
+                            'verify_peer_name' => false,
+                        ],
+                    ]);
+                    $imageData = file_get_contents($src, false, $context);
+                    $imagePath = '/storage/category-images/' . $slug . '/' . $imageName;
+                    Storage::put('public/category-images/' . $slug . '/' . $imageName, $imageData);
+                    $imageUrl = url('/') . $imagePath;
+                    // Create a new category in your database using the retrieved details
+                    $category = new Category();
+
+                    $category->name = $categoryDetails['name'];
+                    $category->description = $categoryDetails['description'];
+                    $category->image =  $imageUrl;
+
+                    $category->save();
+                    $newCategory =   $category;
+                }
+            }
+            return $newCategory;
+    }
 }

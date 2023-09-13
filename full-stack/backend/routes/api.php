@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,8 +13,7 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-// TODO edit in prod the following file in vendor/guzzlehttp/guzzle/src/Client.php 
-// TODO 'verify'          => true,
+
 require __DIR__.'/Api/Admin.php';
 
 require __DIR__.'/Api/Product.php';
@@ -33,8 +31,6 @@ require __DIR__.'/Api/Paypal.php';
 require __DIR__.'/Api/Contact_us.php';
 
 require __DIR__.'/Api/Admin.php';
-
-
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();

@@ -2,6 +2,7 @@
 import { RouterLink, RouterView ,useRouter } from 'vue-router'
 import Nav from "./components/build/nav.vue"
 import Footer from "./components/build/footer.vue";
+import AdminBanner from "./components/build/admin-banner.vue";
 
 const router = useRouter();
 
@@ -9,6 +10,9 @@ const router = useRouter();
 
 <template>
 <main id="main" >
+
+<AdminBanner v-if="router.currentRoute.value.name  !== 'admin-auth' && router.currentRoute.value.name  !== 'dashboard' "/>
+
 <Nav v-if="router.currentRoute.value.name  !== 'admin-auth' && router.currentRoute.value.name  !== 'dashboard' "/>
 
 <RouterView />

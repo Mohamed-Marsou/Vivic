@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink , useRouter } from 'vue-router';
 import { ref, onMounted } from 'vue'
-import countriesJSON  from '../../../assets/contries.json'
+import countriesJSON  from '../../../assets/countries.json'
 import api from '../../../http/api';
 const router = useRouter()
 

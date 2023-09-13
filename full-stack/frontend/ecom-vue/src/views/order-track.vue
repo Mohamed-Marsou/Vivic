@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-
+import api from '../http/api';
+import axios from 'axios';
 onMounted(() => {
     scrollToTop()
 })
@@ -9,6 +10,85 @@ function scrollToTop() {
         top: 0,
         behavior: 'smooth'
     });
+}
+const orderId = ref('')
+const email = ref('')
+const submited = ref(false)
+
+const status = ref('')
+const costumerNote = ref('')
+const placedDate = ref('')
+async function trackOrder ()
+{
+    try {
+        submited.value = true
+        const res = await axios.get(
+            `${import.meta.env.VITE_WOO_URL}/orders/${orderId.value}`,
+            {
+                headers: {
+                    Authorization: basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS)
+                }
+            }
+        )
+
+        if(res.data.billing.email != email.value)
+        {
+            alert('unmatched billing Email Please check your Email')
+            submited.value = false
+            return
+        }
+        
+        const noteResponse = await axios.get(
+            `${import.meta.env.VITE_WOO_URL}/orders/${orderId.value}/notes`,
+            {
+                headers: {
+                    Authorization: basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS)
+                }
+            }
+        )
+        const note= noteResponse.data.filter((note) => note.customer_note === true);
+        costumerNote.value  = note[0].note
+        status.value = res.data.status
+        placedDate.value = res.data.date_created
+
+    } catch (error) {
+        console.log(error);
+        submited.value = false
+    }
+}
+
+function basicAuth(key, secret) {
+    let hash = btoa(key + ':' + secret);
+    return "Basic " + hash;
+}
+function getFormattedDate() {
+  const currentDate = new Date();
+
+  const options = {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  };
+
+  const formattedDate = currentDate.toLocaleString('en-US', options);
+  return formattedDate;
+}
+
+function copyOrderID() {
+    const orderIdElement = document.getElementById('orderId');
+    const orderIdText = orderIdElement.innerText;
+    const tempTextarea = document.createElement('textarea');
+    tempTextarea.value = orderIdText.split(':')[1];
+    document.body.appendChild(tempTextarea);
+    tempTextarea.select();
+    document.execCommand('copy');
+
+    document.body.removeChild(tempTextarea);
+    alert('Order Tracking was copied : ' +  orderIdText.split(':')[1]);
 }
 </script>
 <template>
@@ -22,17 +102,26 @@ function scrollToTop() {
             <h2>Order Tracking</h2>
             <p>To track your order please enter your Order ID in the box below and press the "Track" button. This was given
                 to you on your receipt and in the confirmation email you should have received.</p>
-            <div>
+                
+            <form  @submit.prevent="trackOrder" v-if="!status">
                 <div class="inp">
                     <label for="id">Order ID :</label>
-                    <input type="text" id="id" placeholder="Order ID">
+                    <input type="text" id="id" placeholder="Order ID" v-model="orderId" required :disabled="submited">
                 </div>
                 <div class="inp">
                     <label for="billing-email">billing Email :</label>
-                    <input type="text" id="billing-email" placeholder="billing Email">
+                    <input type="text" id="billing-email" placeholder="billing Email" required v-model="email" :disabled="submited">
                 </div>
-                <button>Truck</button>
+                <button type="submit" :disabled="submited">Truck</button>
+            </form>
+
+            <div class="order-data" v-else>
+                <p>Order <span>#{{orderId}}</span> was placed {{ placedDate }} and current status is : <span>{{status}}</span></p>
+                <h2>Order Updates</h2>
+                <p>{{ getFormattedDate()}}</p>
+                <h3 id="orderId" title="click to copy" v-if="costumerNote" @click="copyOrderID">{{costumerNote}}</h3>
             </div>
+
         </div>
     </div>
 </template>
@@ -74,19 +163,19 @@ function scrollToTop() {
         padding: 2rem 1rem;
         text-align: center;
 
-        p {
+       >p {
             color: #555;
             font-size: .9rem;
             padding: 1em 10vw;
         }
 
-        h2 {
+        >h2 {
             text-transform: uppercase;
             font-size: 2rem;
             padding: 1rem 1rem;
         }
 
-        >div {
+        >form {
             @include flex($ai: flex-end);
             gap: 1.5vw;
             margin-top: 2rem;
@@ -109,6 +198,7 @@ function scrollToTop() {
                     padding: 0 1rem;
                     border: 1px solid rgba(51, 51, 51, 0.187);
                     border-radius: 10px;
+                    outline: none;
                 }
             }
 
@@ -122,6 +212,30 @@ function scrollToTop() {
                 text-transform: uppercase;
                 cursor: pointer;
             }
+        }
+    }
+    .order-data{
+        width: 80%;
+        min-height: 20vh;
+        margin: 1rem auto;
+        text-align: left;
+        font-size: .9rem;
+        >p{
+            padding: 1rem 5px;
+            >span
+            {
+                background: #448af4c7;
+                color: white;
+                padding: 0 5px;
+            }
+        }
+        h3{
+            width: fit-content;
+            padding: 0 5px;
+            font-weight: normal;
+            font-size: 1rem;
+            border-bottom: 1px solid rgba(75, 75, 75, 0.102);
+            cursor: pointer;
         }
     }
 }
@@ -167,5 +281,13 @@ function scrollToTop() {
         }
 }
 }
-
+button:disabled{
+        background: #555;
+        opacity: 0.5;
+        cursor: not-allowed !important;
+    }
+    input:disabled{
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
 </style>

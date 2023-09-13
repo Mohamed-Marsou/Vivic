@@ -6,10 +6,14 @@ const router = useRouter()
 import { useProductStore } from '../stores/product';
 import  {useAuthtStore} from '../stores/auth'
 import userForm from '../components/build/profile/form.vue'
+import history from '../components/build/profile/order-history.vue'
 const productStore = useProductStore()
 const authStore = useAuthtStore()
 
 const userName = ref('')
+
+const view = ref('edit')
+
 
 onMounted(async () => {
     if(Cookies.get('auth-user')){
@@ -17,37 +21,37 @@ onMounted(async () => {
     }
 })
 
+
 ////Function to log out the user
 const logOut = () => {
     authStore.logOut()
     productStore.whishListCount = 0
     router.push('/user/auth');
 };
+const changeView = (v) => {
+    view.value = v
+}
 </script>
+
 <template>
     <div class="user-profile">
         <aside>
             <h2>User Profile</h2>
-            <div class="slot">
-                <RouterLink :to="{ name: 'home' }">
-                    <i class="fa-solid fa-basket-shopping"></i>
-                    Back Shopping
-                </RouterLink>
-            </div>
-            <div class="slot">
-                <RouterLink :to="{ name: 'home' }">
+            
+            <div class="slot"  @click="changeView('edit')" :class="{active : view === 'edit'}">
+                <a>
                     <i class="fa-solid fa-file-pen"></i>
                     Edit your details
-                </RouterLink>
+                </a>
             </div>
-            <div class="slot">
-                <RouterLink :to="{ name: 'home' }">
+            <div class="slot"  @click="changeView('history')" :class="{active : view === 'history'}">
+                <a>
                     <i class="fa-solid fa-clock-rotate-left"></i>
-                    History 
-                </RouterLink>
+                    Orders history 
+                </a>
             </div>
             <div class="slot">
-                <RouterLink :to="{ name: 'home' }">
+                <RouterLink :to="{ name: 'trackOrders' }">
                     <i class="fa-solid fa-magnifying-glass-location"></i>
                     Track Order
                 </RouterLink>
@@ -69,7 +73,11 @@ const logOut = () => {
             </div>
 
             <div class="portal">
-                <userForm />
+
+                <userForm v-if="view === 'edit'"/>
+                <history v-if="view === 'history'"/>
+
+
             </div>
         </div>
     </div>
@@ -81,18 +89,18 @@ const logOut = () => {
 .user-profile {
     width: 100%;
     font-family: $ff;
-    min-height: 80vh;
+    min-height: calc(100vh - 4.5rem);
     display: flex;
-    padding: 2rem 0;
 
     aside {
         width: 25%;
-        min-height: 80vh;
+        min-height: calc(100vh - 4.5rem);
         position: relative;
-        border-right: 1px solid #5555551f;
-
+        border-right: 1px solid #5555550f;
+        color: #555;
         a {
             color: #555;
+            cursor: pointer;
         }
 
         >h2 {
@@ -110,16 +118,25 @@ const logOut = () => {
             gap: 51px;
             font-size: 1rem;
             transition: .3s ease-in-out;
+            position: relative;
 
             i {
                 margin-right: 5px;
             }
-
-            &:hover {
-                border-bottom: 1px solid #555;
+            &::after{
+                position: absolute;
+                content: '';
+                bottom: 0;
+                left: 0;
+                background: #2e6bc6;
+                width: 0;
+                height: 2px;
+                transition: .5s ease-in-out;
+            }
+            &:not(.active):hover::after{
+                width: 100%;
             }
         }
-
         .logOut {
             position: absolute;
             bottom: 0;
@@ -136,6 +153,7 @@ const logOut = () => {
     .main-user-form {
         width: 60%;
         min-height: 84vh;
+        padding: 0 3vw;
         h1{
             padding: 1rem;
         }
@@ -163,6 +181,10 @@ const logOut = () => {
         }
 
     }
+}
+
+.active {
+    border-bottom: 2px solid #2e6bc692 !important;
 }
 @media screen and (max-width : 1024px) {
     .user-profile {

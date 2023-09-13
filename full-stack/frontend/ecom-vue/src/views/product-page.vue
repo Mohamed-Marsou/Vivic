@@ -221,7 +221,7 @@ const showMoreReviews = () => {
 
 // get discount %
 function getProductDiscount() {
-    if (!product.value.sale_price && product.value.sale_price != '0.00' ) {
+    if (!product.value.sale_price && product.value.sale_price != '0.00') {
         return;
     }
 
@@ -243,14 +243,60 @@ const addProductToWishlist = async (productId) => {
     router.push({ name: 'wishlist' })
 
 }
+
+function scrollToReviews() {
+    const reviewsElement = document.querySelector('.product-reviews');
+
+    if (reviewsElement) {
+        reviewsElement.scrollIntoView({
+            behavior: 'smooth', // You can use 'auto' for instant scrolling
+            block: 'start',     // Scroll to the top of the element
+        });
+    }
+}
+
+const showSticky = ref(false);
+const toggoleStickyProduct = ()=>{
+    showSticky.value = !showSticky.value
+}
 </script>
 
 
 <template>
     <div id="product-page-container">
 
+        <div class="sticky_product" :class="{showStickyProduct : showSticky}"  @mouseenter="toggoleStickyProduct" @mouseleave="toggoleStickyProduct">
+            <div class="img">
+                <img :src="productCover" alt="product-image">
+            </div>
+            <div class="product-info">
+                <p>
+                    {{ product.name }}
+                    
+                </p>
+                <div class="starts">
+                    <i @click="scrollToReviews" v-for="( index) in 5" :key="index" class="fa-solid fa-star"></i>
+                </div>
+            </div>
+            <div class="actions">
+                <span>
+                    <small>
+                        ${{ product.regular_price ?? product.regular_price }}
+                    </small>
+                        ${{ product.sale_price ? product.sale_price : product.price }}
+                </span>
+                <button @click="addToCart(product.id)" :disabled="quantity === 0">ADD TO CART</button>
+                <button @click="addProductToWishlist(product.id)">
+                    <i class="fa-regular fa-heart"></i>
+                    Add to wishlist
+                </button>
+
+
+            </div>
+        </div>
+
         <div @click="ShowOverLay" class="images-overlay" :class="{ ShowOverLay: isVisible }">
-            <div  class="image-box" @click.stop>
+            <div class="image-box" @click.stop>
                 <img :src="productCover" alt="product-image">
             </div>
             <!-- <i class="fa-solid fa-arrow-right"></i>
@@ -293,11 +339,11 @@ const addProductToWishlist = async (productId) => {
 
                 <div class="slot stars-reviews">
                     <h4>
-                        <span v-if="product.sale_price && product.sale_price != '0.00' ">${{ product.price }}</span>
+                        <span v-if="product.sale_price && product.sale_price != '0.00'">${{ product.price }}</span>
                         ${{ product.sale_price && product.sale_price != '0.00' ? product.sale_price : product.price }}
                     </h4>
                     <div class="stars-box">
-                        <i v-for="( index) in 5" :key="index" class="fa-solid fa-star"></i>
+                        <i @click="scrollToReviews" v-for="( index) in 5" :key="index" class="fa-solid fa-star"></i>
                     </div>
                     <p>({{ reviewsData.length }} Reviews)</p>
                 </div>
@@ -386,7 +432,7 @@ const addProductToWishlist = async (productId) => {
             </div>
         </div>
         <!-- // Description  -->
-        <div class="product-description">
+        <div class="product-description" @mouseenter="toggoleStickyProduct" @mouseleave="toggoleStickyProduct">
             <header class="section-header">
                 <h3>
                     Description
@@ -396,7 +442,7 @@ const addProductToWishlist = async (productId) => {
         </div>
 
         <!-- // Reviews  -->
-        <div class="product-reviews">
+        <div class="product-reviews"  @mouseenter="toggoleStickyProduct" @mouseleave="toggoleStickyProduct">
             <header class="section-header">
                 <h3>
                     Reviews
@@ -444,7 +490,8 @@ const addProductToWishlist = async (productId) => {
                     <div class="review-container">
 
 
-                        <div class="review" v-for="(reviewData, index) in visibleReviews" :key="index" :class="{'no-img-review' : !reviewData.body_urls}">
+                        <div class="review" v-for="(reviewData, index) in visibleReviews" :key="index"
+                            :class="{ 'no-img-review': !reviewData.body_urls }">
                             <div class="img-box">
                                 <img v-if="reviewData.body_urls" :src="reviewData.body_urls" alt="review-image">
                                 <div class="author">
@@ -501,6 +548,106 @@ const addProductToWishlist = async (productId) => {
     min-height: 100vh;
     font-family: $ff;
     position: relative;
+
+    i {
+        cursor: pointer;
+    }
+
+    .sticky_product {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        height: 4.5rem;
+        background-color: white;
+        border-top: rgba(0, 0, 0, 0.06) solid 1px;
+        z-index: 3;
+        transition: .3s ease-in;
+        display: flex;
+        padding: 0 2vw;
+        transform: translateY(100%);
+        opacity: .5;
+
+        &:hover {
+            border-top: rgba(0, 0, 0, 0.318) solid 1px;
+        }
+
+        >div {
+            height: 100%;
+        }
+
+        .img {
+            width: 15%;
+            display: flex;
+            justify-content: center;
+
+            >img {
+                height: 100%;
+                object-fit: contain;
+            }
+        }
+
+        .product-info {
+            min-width: 30%;
+            padding: 10px;
+
+            p {
+                font-size: .9rem;
+            }
+
+            .starts {
+                margin-top: 4px;
+
+                >i {
+                    color: gold;
+                    font-size: .8rem;
+                }
+            }
+        }
+
+        .actions {
+            width: 40%;
+            margin-left: 15%;
+            display: flex;
+            align-items: center;
+            gap: 2vw;
+            padding: 0 5px;
+            span {
+                    color: #0065fc;
+                    font-weight: bold;
+                    padding: 0 5px;
+                    display: flex;
+                    font-size: 1.2rem;
+                    >small{
+                        color: #555;
+                        text-decoration: line-through;
+                        padding: 0 3px;
+                    }
+                }
+                >button {
+                    width: 12rem;
+                    height: 2.5rem;
+                    color: white;
+                    border: none;
+                    background: #2e6bc6;
+                    border-radius: 5px;
+                    cursor: pointer;
+
+                    &:nth-child(3){
+                        background: transparent;
+                        color: #555;
+                        width: 8rem;
+
+                    }
+
+                }
+
+                button:disabled {
+                    cursor: default;
+                    opacity: .5;
+                }
+        }
+    }
 
     .images-overlay {
         width: 100%;
@@ -923,24 +1070,29 @@ const addProductToWishlist = async (productId) => {
             margin: 1.5rem 0;
             font-size: .9rem;
             color: #555;
-            @include flex($jc:flex-start);
-            >strong{
+            @include flex($jc: flex-start);
+
+            >strong {
                 color: #212121;
             }
         }
-        li{
+
+        li {
             color: #555;
             padding: 5px;
             list-style: inside;
         }
+
         li::marker {
-        color: #0065fc; 
+            color: #0065fc;
         }
-        p:has(img){
+
+        p:has(img) {
             justify-content: center;
-            >img{
-                height:20rem;
-                width:20rem;
+
+            >img {
+                height: 20rem;
+                width: 20rem;
                 object-fit: contain;
             }
 
@@ -987,6 +1139,7 @@ const addProductToWishlist = async (productId) => {
     .wrapper {
         width: 100%;
         min-height: 50vh;
+
         >div {
             width: 100%;
             min-height: 30vh;
@@ -1100,25 +1253,29 @@ const addProductToWishlist = async (productId) => {
                 margin: 10px auto;
                 display: flex;
                 justify-content: center;
-                
+
                 flex-wrap: wrap;
                 padding: 1rem 0;
                 gap: 1vw;
 
                 .review {
                     width: 21rem;
-                    min-height: 24rem;
+                    min-height: 26rem;
                     border: 1px solid rgba(71, 71, 71, 0.175);
-                    border-radius: 10px;
+                    border-radius: 5px;
+                    overflow: hidden;
 
+                    &:not(.img-box:has(img)) {
+                            height: 18rem;
+                        }
                     >.img-box {
                         width: 100%;
                         height: 14rem;
                         position: relative;
-
                         &:not(:has(img)) {
                             height: 5rem;
                         }
+
                         .author {
                             width: 85%;
                             height: 2.5rem;
@@ -1161,11 +1318,10 @@ const addProductToWishlist = async (productId) => {
                     >.review_body {
                         width: 100%;
                         min-height: 8rem;
-
                         .text {
                             width: 100%;
                             min-height: 8rem;
-                            
+
 
                             .stars-reveiws {
                                 width: 100%;
@@ -1178,7 +1334,8 @@ const addProductToWishlist = async (productId) => {
                                     margin-left: 8px;
                                 }
                             }
-                            >p{
+
+                            >p {
                                 color: #555;
                                 font-size: .8rem;
                                 padding: 1rem 10px;
@@ -1276,9 +1433,10 @@ const addProductToWishlist = async (productId) => {
     }
 }
 
-.no-img-review{
+.no-img-review {
     min-height: 15rem !important;
 }
+
 @media screen and (max-width: 1315px) {
     .product-details-box {
         width: 85% !important;
@@ -1320,20 +1478,23 @@ const addProductToWishlist = async (productId) => {
         }
     }
 }
+
 @media screen and (max-width : 768px) {
     .stat {
-            flex-direction: column;
-            >div {
-                width: 100% !important;
-            }
+        flex-direction: column;
 
+        >div {
+            width: 100% !important;
         }
+
+    }
 }
 
 @media screen and (max-width: 600px) {
     .product-images {
         height: 70vh !important;
     }
+
     .images-overlay {
 
 
@@ -1344,7 +1505,7 @@ const addProductToWishlist = async (productId) => {
             @include flex();
 
             >img {
-                width: 100%  !important;
+                width: 100% !important;
                 height: 100% !important;
                 margin: 0 !important;
             }
@@ -1440,17 +1601,25 @@ const addProductToWishlist = async (productId) => {
         padding: 1rem 5vw !important;
     }
 }
+
 @media screen and (max-width:320px) {
     .product-details-box {
         width: 98% !important;
     }
+
     #product-page-container .product-details-box .product-images {
-       height: 33rem !important;
+        height: 33rem !important;
     }
 }
+
 .ShowOverLay {
     display: flex !important;
     @include flex();
+}
+.showStickyProduct
+{
+    transform: translateY(0) !important;
+    opacity: 1 !important;
 }
 </style>
 

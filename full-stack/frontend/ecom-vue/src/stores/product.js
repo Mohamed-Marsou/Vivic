@@ -243,7 +243,6 @@ export const useProductStore = defineStore('product', {
           return false
         }
       } else {
-
         let localStorageInCart = JSON.parse(localStorage.getItem('inCart')) || []
         const itemIndex = localStorageInCart.findIndex((item) => item.productId === pId)
 
@@ -253,7 +252,7 @@ export const useProductStore = defineStore('product', {
           this.inCartCount = this.inCartCount - 1
           return true
         }
-        return false 
+        return false
       }
     },
     async removeWishlistItem(pId) {
@@ -268,7 +267,6 @@ export const useProductStore = defineStore('product', {
           return false
         }
       } else {
-
         let localStorageInCart = JSON.parse(localStorage.getItem('wishlist')) || []
         const itemIndex = localStorageInCart.findIndex((item) => item === pId)
 
@@ -278,8 +276,8 @@ export const useProductStore = defineStore('product', {
           this.whishListCount = this.whishListCount - 1
           return true
         }
-        return false 
+        return false
       }
-    },   
+    },
   }
 })

@@ -54,7 +54,8 @@ const login = async () => {
 onMounted(async()=>{
     authtStore.checkAuth();
     productStore.getWishlistProducts();
-    productStore.getInCartProducts();
+    productStore.getInCartProducts();   
+
 })
 watch(
   () => productStore.whishListCount,

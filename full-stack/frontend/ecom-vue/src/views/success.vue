@@ -86,23 +86,36 @@ const generatePdf = () => {
         startY: 60, // Set the y-coordinate for the table
         didParseCell: function (data) {
             if (data.section === 'head' && data.row.index === 0) {
-               // Apply custom styling to the header row 
-                data.cell.styles.fillColor = [1, 145, 97];  
+                // Apply custom styling to the header row 
+                data.cell.styles.fillColor = [1, 145, 97];
                 data.cell.styles.textColor = [255, 255, 255];
             }
         },
         styles: {
-            fontSize: 8, 
+            fontSize: 8,
             halign: 'left',
-            valign: 'middle', 
+            valign: 'middle',
         },
         columnStyles: {
-            0: { cellWidth: 50 }, 
+            0: { cellWidth: 50 },
         },
     });
 
     // Save the PDF
     doc.save('document.pdf');
+}
+
+function copyOrderID() {
+    const orderIdElement = document.getElementById('orderId');
+    const orderIdText = orderIdElement.innerText;
+    const tempTextarea = document.createElement('textarea');
+    tempTextarea.value = orderIdText;
+    document.body.appendChild(tempTextarea);
+    tempTextarea.select();
+    document.execCommand('copy');
+
+    document.body.removeChild(tempTextarea);
+    alert('Order ID copied to clipboard: ' + orderIdText);
 }
 </script>
 
@@ -110,8 +123,9 @@ const generatePdf = () => {
     <div class="sucss-main-container">
         <div class="sm-bx">
             <h2>Congratulations! Your payment was successful</h2>
-            <span>
-                <small>Transaction ID:</small> {{ orderInfo?.transaction_id }}
+            <span title="Copy" @click="copyOrderID" id="orderId">
+                <small>Order ID :</small>
+                {{ orderInfo?.wp_order_id }}
             </span>
             <p>Secure Your Purchase Details: Download a PDF Copy of Your Order to Keep a Record of Your Bought Items</p>
             <a @click="generatePdf" class="download-link">
@@ -139,7 +153,7 @@ const generatePdf = () => {
                         <tbody>
                             <tr v-for="product in orderInfo.products" :key="product.id">
                                 <td>{{ product.name }}</td>
-                                <td>${{ product.sale_price ? product.sale_price : product.price}}</td>
+                                <td>${{ product.sale_price ? product.sale_price : product.price }}</td>
                                 <td>{{ product.pivot.quantity }}</td>
                                 <td>${{ calculateTotal(product) }}</td>
                             </tr>
@@ -209,6 +223,15 @@ const generatePdf = () => {
             &:hover {
                 background-color: #2a7ffd;
                 border-radius: 5px;
+            }
+
+        }
+
+        #orderId {
+            cursor: pointer;
+
+            >small {
+                cursor: default;
             }
         }
 
@@ -323,5 +346,4 @@ const generatePdf = () => {
             }
         }
     }
-}
-</style>
+}</style>

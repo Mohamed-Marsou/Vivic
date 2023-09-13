@@ -5,9 +5,8 @@ import ProductsCarousel from "../components/build/products-carousel.vue";
 import Mail from "../components/build/mail-container.vue";
 import { ref, onMounted } from "vue";
 import { useProductStore } from '../stores/product'
-
+import Loading from "../components/build/loading.vue";
 const productStore = useProductStore()
-import api from '../http/api'
 
 const isLoaded = ref(false)
 
@@ -18,12 +17,12 @@ const newArrivals = ref([])
 const highRated = ref([])
 
 
-onMounted(() => {
+onMounted(async () => {
 
+    await getNewArrivals()
+    await getCategories()
+    await getHighRatedProducts()
     isLoaded.value = true
-    getNewArrivals()
-    getCategories()
-    getHighRatedProducts()
 })
 
 async function getNewArrivals() {
@@ -61,7 +60,10 @@ async function getHighRatedProducts() {
 
         <CategoryCarousel headerText="Popular Categories" :categoryList="categories" />
 
-        <Products smallHeader="Hurry up and Buy" headerText="New Arrivals" :productList="newArrivals" />
+        <Products v-if="isLoaded" smallHeader="Hurry up and Buy" headerText="New Arrivals" :productList="newArrivals" />
+        <div v-else class="loadingContainer">
+            <Loading />
+        </div>
 
         <div class="qua-box">
             <h2>We Provide High Quality Goods</h2>
@@ -84,8 +86,10 @@ async function getHighRatedProducts() {
                 </div>
             </div>
         </div>
-        <Products smallHeader="Only for you" headerText="Most wanted" :productList="newArrivals" />
-
+        <Products v-if="isLoaded" smallHeader="Only for you" headerText="Most wanted" :productList="highRated" />
+        <div v-else class="loadingContainer">
+            <Loading />
+        </div>
         <div class="deals-wrapper">
             <div class="div1">
                 <img src="../assets/images/accessories-banner-1.jpg.webp" alt="cover">
@@ -121,9 +125,11 @@ async function getHighRatedProducts() {
             </div>
         </div>
 
-        <ProductsCarousel smallHeader="Hot Picks: Bestselling and Highly Popular Products Right Nows"
-            headerText="Most Popular Products" :productList="highRated" />
-
+        <ProductsCarousel v-if="isLoaded" smallHeader="Hot Picks: Bestselling and Highly Popular Products Right Nows"
+            headerText="Most Popular Products" :productList="newArrivals" />
+        <div v-else class="loadingContainer">
+            <Loading />
+        </div>
         <Mail />
 
     </div>
@@ -303,6 +309,12 @@ async function getHighRatedProducts() {
             grid-area: 5 / 3 / 9 / 7;
         }
     }
+
+    .loadingContainer {
+        width: 80%;
+        height: 40vh;
+        margin: 1rem auto;
+    }
 }
 
 @media screen and (max-width: 1024px) {
@@ -334,6 +346,7 @@ async function getHighRatedProducts() {
             }
         }
     }
+
     .deals-wrapper {
         width: 95% !important;
     }
@@ -365,22 +378,24 @@ async function getHighRatedProducts() {
     .home-main .deals-wrapper {
         height: fit-content !important;
         display: flex !important;
-        flex-direction: column  !important;
+        flex-direction: column !important;
         gap: 10px;
 
         >div {
             width: 100%;
-           height: 15rem !important;
+            height: 15rem !important;
+
             &:hover {
                 z-index: 2;
                 transform: scale(1.01) !important;
             }
+
             .float {
                 width: 80% !important;
                 min-height: 70% !important;
             }
         }
-       
+
     }
 }
 
