@@ -2,7 +2,7 @@
 import { RouterLink, RouterView ,useRouter } from 'vue-router'
 import Nav from "./components/build/nav.vue"
 import Footer from "./components/build/footer.vue";
-import AdminBanner from "./components/build/admin-banner.vue";
+import AdminBanner from "./components/build/dashboard/admin-banner.vue";
 
 const router = useRouter();
 

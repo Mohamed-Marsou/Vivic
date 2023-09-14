@@ -6,7 +6,7 @@
   </RouterLink>
 
   <div class="admin_profile">
-    <p>Welcome , MTM</p>
+    <p>Welcome , {{ adminName }}</p>
     <i class="fa-solid fa-user"></i>
   </div>
 </div>
@@ -14,10 +14,13 @@
 <script setup>
 import { RouterLink } from 'vue-router'
 import { onMounted, ref, watch } from 'vue'
-import { useAdminStore } from '../../stores/admin'
+import { useAdminStore } from '../../../stores/admin'
+import jsCookie from 'js-cookie';
+       
 
 const adminStore = useAdminStore()
 const isAuth = ref(false)
+const adminName = ref("")
 
 // Watch for changes in the cookies and update the values accordingly
 watch(() =>adminStore.isAdmin, newVal => {
@@ -30,7 +33,7 @@ onMounted(async () => {
         behavior: 'smooth'
     });
     isAuth.value = adminStore.isAdmin
-
+    adminName.value = JSON.parse(jsCookie.get('auth-admin')).name
 })
 </script>
 

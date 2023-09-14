@@ -1,9 +1,7 @@
 <script setup>
 import DashVue from '../../components/build/dashboard/dash.vue'
 import ProductVue from '../../components/build/dashboard/products.vue'
-import CategoryVue from '../../components/build/dashboard/category.vue'
 import OrderVue from '../../components/build/dashboard/order.vue'
-import UserVue from '../../components/build/dashboard/user.vue'
 import AdminVue from '../../components/build/dashboard/admin.vue'
 import Cookies from 'js-cookie';
 
@@ -76,18 +74,6 @@ const logOut =()=>{
                         <p>Orders</p>
                     </a>
                 </li>
-                <li :class="{ activeLink: view === 'CategoryVue' }" @click="changeView('CategoryVue')">
-                    <a>
-                        <i title="Categories" class="fa-solid fa-cubes-stacked"></i>
-                        <p>Categories</p>
-                    </a>
-                </li>
-                <li :class="{ activeLink: view === 'UserVue' }" @click="changeView('UserVue')">
-                    <a>
-                        <i title="Users" class="fa-solid fa-user"></i>
-                        <p>Users</p>
-                    </a>
-                </li>
                 <li :class="{ activeLink: view === 'AdminVue' }" @click="changeView('AdminVue')">
                     <a>
                         <i  title="Admins" class="fa-solid fa-user-tag"></i>
@@ -127,9 +113,7 @@ const logOut =()=>{
             <div class="dash-view">
                 <DashVue v-if="view === 'Home'" />
                 <ProductVue v-if="view === 'ProductVue'" />
-                <CategoryVue v-if="view === 'CategoryVue'" />
                 <OrderVue v-if="view === 'OrderVue'" />
-                <UserVue v-if="view === 'UserVue'" />
                 <AdminVue v-if="view === 'AdminVue'" />
             </div>
         </main>
@@ -207,15 +191,14 @@ section {
         ul {
             width: 100%;
             min-height: 15rem;
-            margin-top: 4rem !important;
+            margin-top: 6rem !important;
             font-size: .9rem;
-
             li {
                 width: 100%;
                 height: 4.5rem;
                 padding: 1.3rem 1rem;
                 cursor: pointer;
-                margin-top: 5px;
+                margin-top: 20px;
                 transition: .3s ease-in;
                 cursor: pointer;
                 position: relative;

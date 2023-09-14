@@ -2,7 +2,6 @@
 import { defineProps } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useProductStore } from '../../stores/product'
-import { ref} from 'vue'
 const router = useRouter()
 const productStore = useProductStore()
 const props = defineProps({
@@ -10,7 +9,6 @@ const props = defineProps({
     headerText: String,
     productList: Array
 });
-
 
 
 const getCoverImg = (p) => {
@@ -50,6 +48,7 @@ const addToCart = async (productId) => {
         <div class="prods-conatiner">
             <div v-for="p in productList" :key="p.id" class="product-box" :class="{ 'product-outOfStock': p.inStock == 0 }">
                 <div class="img-box">
+
                     <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
                         <img :src="getCoverImg(p)" alt="Product image">
                     </RouterLink>

@@ -53,7 +53,7 @@ const changeView = (v) => {
             <div class="slot">
                 <RouterLink :to="{ name: 'trackOrders' }">
                     <i class="fa-solid fa-magnifying-glass-location"></i>
-                    Track Order
+                    Track Orders
                 </RouterLink>
             </div>
             <div class="slot logOut">
@@ -93,7 +93,7 @@ const changeView = (v) => {
     display: flex;
 
     aside {
-        width: 25%;
+        width: 15%;
         min-height: calc(100vh - 4.5rem);
         position: relative;
         border-right: 1px solid #5555550f;

@@ -11,14 +11,18 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::withCount('products')->get();
-
+        $categories = Category::withCount('products')
+        ->orderBy('created_at', 'desc') 
+        ->take(7)
+        ->get();
+    
         if($categories->isEmpty()){
             return response()->json(['response' => 'No Categories were Found !!!']);
         }
-
+    
         return response()->json(['response' =>  $categories]);
     }
+    
     
     public function getCategoryProducts($id)
     {   

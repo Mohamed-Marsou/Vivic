@@ -25,6 +25,26 @@ class OrderController extends Controller
         }
         return response()->json($orders, 200);
     }
+    public function getUserOrders($id): JsonResponse
+    {
+        // Retrieve the user by ID
+        $user = User::find($id);
+    
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+    
+        // Retrieve the user's orders, paginated, with products and cover images
+        $orders = $user->orders()
+            ->with(['products.images' => function ($query) {
+                $query->wherePivot('is_cover', true);
+            }])->orderBy('created_at', 'desc') 
+            ->paginate(7);
+    
+        return response()->json(['orders' => $orders]);
+    }
+
+
     public function getOrderProducts($order_id): JsonResponse
     {
         $order = Order::with('products')->where('wp_order_id', $order_id)->first();

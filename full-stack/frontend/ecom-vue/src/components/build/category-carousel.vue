@@ -6,7 +6,14 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { defineProps } from 'vue';
 import { RouterLink } from 'vue-router'
+import { onMounted } from 'vue';
 
+onMounted(() => {
+      const swiperWrapper = document.querySelector('.swiper-wrapper');
+      if (swiperWrapper.lenght > 4) {
+        swiperWrapper.style.justifyContent = 'center';
+      }
+    });
 const props = defineProps({
     headerText: String,
     categoryList: Array
@@ -64,7 +71,6 @@ const generateSlug = (name) => {
     width: 80%;
     margin: 2rem auto;
     min-height: 12rem;
-
     >p {
         font-size: 2rem;
         padding: 2rem 1rem;
@@ -72,9 +78,7 @@ const generateSlug = (name) => {
         text-transform: uppercase;
         color: #2e2d2d;
     }
-
     .slider-box {
-
         width: fit-content;
         padding: 0 3vw;
         height: 11.5rem;
@@ -82,7 +86,6 @@ const generateSlug = (name) => {
         @include flex();
         flex-direction: column;
         gap: 5px;
-
         >a div {
             width: 7rem;
             height: 7rem;

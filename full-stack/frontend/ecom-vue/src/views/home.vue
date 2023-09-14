@@ -127,6 +127,7 @@ async function getHighRatedProducts() {
 
         <ProductsCarousel v-if="isLoaded" smallHeader="Hot Picks: Bestselling and Highly Popular Products Right Nows"
             headerText="Most Popular Products" :productList="newArrivals" />
+            
         <div v-else class="loadingContainer">
             <Loading />
         </div>

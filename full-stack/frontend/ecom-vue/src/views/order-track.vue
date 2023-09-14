@@ -20,10 +20,11 @@ const costumerNote = ref('')
 const placedDate = ref('')
 async function trackOrder ()
 {
+    const id = (orderId.value).trim()
     try {
         submited.value = true
         const res = await axios.get(
-            `${import.meta.env.VITE_WOO_URL}/orders/${orderId.value}`,
+            `${import.meta.env.VITE_WOO_URL}/orders/${id}`,
             {
                 headers: {
                     Authorization: basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS)
@@ -39,7 +40,7 @@ async function trackOrder ()
         }
         
         const noteResponse = await axios.get(
-            `${import.meta.env.VITE_WOO_URL}/orders/${orderId.value}/notes`,
+            `${import.meta.env.VITE_WOO_URL}/orders/${id}/notes`,
             {
                 headers: {
                     Authorization: basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS)
