@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use DOMDocument;
 use App\Models\Cart;
 use App\Models\User;
 use App\Models\Image;
@@ -11,13 +12,13 @@ use App\Models\Wishlist;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use PhpParser\Node\Stmt\TryCatch;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use PhpParser\Node\Stmt\TryCatch;
 
 class ProductController extends Controller
 {
@@ -398,66 +399,69 @@ class ProductController extends Controller
     //* ********************************* import Woo Products to DATABASE 
 
 
-    // public function syncAllProductsFromWooCommerce(): JsonResponse
-    // {
-    //     $perPage = 50;
-    //     $currentPage = 1;
-    //     $successCount = 0;
-    //     do {
-    //         try {
-    //             $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
-    //                 ->get($this->baseUrl . $this->endpoint, [
-    //                     'per_page' => $perPage,
-    //                     'page' => $currentPage,
-    //                 ]);
+    public function syncAllProductsFromWooCommerce(): JsonResponse
+    {
+        $perPage = 50;
+        $currentPage = 1;
+        $successCount = 0;
+        do {
+            try {
+                $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
+                    ->get($this->baseUrl . $this->endpoint, [
+                        'per_page' => $perPage,
+                        'page' => $currentPage,
+                    ]);
 
-    //             $products = $response->json();
-    //             foreach ($products as $productData) {
-    //                 // Check if the product already exists in the database by slug
-    //                 $existingProduct = Product::where('slug', $productData['slug'])
-    //                     ->first();
-    //                 // Check if the status in $productData is 'publish'
-    //                 if (!$existingProduct && $productData['status'] === 'publish') {
+                $products = $response->json();
+                foreach ($products as $productData) {
+                    // Check if the product already exists in the database by slug
+                    $existingProduct = Product::where('slug', $productData['slug'])
+                        ->first();
+                    // Check if the status in $productData is 'publish'
+                    if (!$existingProduct && $productData['status'] === 'publish') {
 
-    //                     // Save the new product
-    //                     $newProduct = $this->saveProduct($productData);
-    //                     // Increment the successful count
-    //                     $successCount++;
-    //                     $isFirstImage = true;
+                        $categories = $productData['categories'][0]; // CHANGE LETER to handle multi categories
 
-    //                     if ($newProduct->id) {
+                        $categoryId = $this->saveCategories($categories);
+                        // Save the new product
+                        $newProduct = $this->saveProduct($productData, $categoryId);
+                        // Increment the successful count
+                        $successCount++;
+                        $isFirstImage = true;
 
-    //                         foreach ($productData['images'] as $image) {
-    //                             $imageInfo = $this->DownloadProductImages(
-    //                                 $image['src'],
-    //                                 $productData['slug']
-    //                             );
+                        if ($newProduct->id) {
 
-    //                             // Add the image ID to the product_images pivot table
-    //                             $newProduct->images()->attach($imageInfo['id'], ['product_id' => $newProduct->id]);
+                            foreach ($productData['images'] as $image) {
+                                $imageInfo = $this->DownloadProductImages(
+                                    $image['src'],
+                                    $productData['slug']
+                                );
 
-    //                             if ($isFirstImage) {
-    //                                 $newProduct->images()->updateExistingPivot($imageInfo['id'], ['is_cover' => true]);
-    //                                 $isFirstImage = false;
-    //                             }
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //             $currentPage++;
-    //         } catch (\Exception $e) {
-    //             // Handle any errors that occurred during the API request
-    //             Log::error('syncAllProductsFromWooCommerce API Request Error: ' . $e->getMessage());
-    //             return response()->json(['error' => $e->getMessage()], 500);
-    //         }
-    //     } while (!empty($products));
+                                // Add the image ID to the product_images pivot table
+                                $newProduct->images()->attach($imageInfo['id'], ['product_id' => $newProduct->id]);
 
-    //     // Synchronization completed, return success message
-    //     return response()->json([
-    //         'message' => 'Products retrieved and processed successfully.',
-    //         'successCount' => $successCount,
-    //     ]);
-    // }
+                                if ($isFirstImage) {
+                                    $newProduct->images()->updateExistingPivot($imageInfo['id'], ['is_cover' => true]);
+                                    $isFirstImage = false;
+                                }
+                            }
+                        }
+                    }
+                }
+                $currentPage++;
+            } catch (\Exception $e) {
+                // Handle any errors that occurred during the API request
+                Log::error('syncAllProductsFromWooCommerce API Request Error: ' . $e->getMessage());
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
+        } while (!empty($products));
+
+        // Synchronization completed, return success message
+        return response()->json([
+            'message' => 'Products retrieved and processed successfully.',
+            'successCount' => $successCount,
+        ]);
+    }
 
     // *********************************
     // ********************************* *********************************
@@ -482,14 +486,16 @@ class ProductController extends Controller
                 }
                 // Apply filtering to each fetched product
                 foreach ($products as $productData) {
+
                     if ($this->passesFilters($productData, $request)) {
                         // Check if a product with the same slug already exists
                         $existingProduct = Product::where('slug', $productData['slug'])->first();
                         if (!$existingProduct) {
-                            $categories = $productData['categories'][0]; // CHANGE LETER
+                            $categories = $productData['categories'][0]; // CHANGE LETER to handle multi categories if needed
+
                             $categoryId = $this->saveCategories($categories);
                             // Save the new product
-                            $newProduct = $this->saveProduct($productData , $categoryId);
+                            $newProduct = $this->saveProduct($productData, $categoryId);
 
                             $successCount++;
                             $isFirstImage = true;
@@ -514,6 +520,7 @@ class ProductController extends Controller
                         }
                     }
                 }
+
                 $currentPage++;
             } catch (\Exception $e) {
                 // Handle any errors that occurred during the API request
@@ -528,43 +535,45 @@ class ProductController extends Controller
             'successCount' => $successCount,
         ]);
     }
-    public function saveCategories($category)
+
+    private function saveCategories($category)
     {
         $id = [];
-            $existCategory = Category::where('name', $category['name'])->first();
+        $existCategory = Category::where('name', $category['name'])->first();
 
-            if ($existCategory) {
-                $id = $existCategory['id'];
-            } else {
-               
-                $urlEndPoint = '/products/categories/' . $category['id'];
+        if ($existCategory) {
+            $id = $existCategory['id'];
+        } else {
 
-                try {
-                    $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
+            $urlEndPoint = '/products/categories/' . $category['id'];
+
+            try {
+                $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
                     ->get($this->baseUrl . $urlEndPoint);
 
-                    $categoryDATA = $response->json();
-                  
-                    // ? Handle image download and storage
-                    $imgPath = $this->downloadCategoryImages($categoryDATA['image']['src'] , $categoryDATA['slug'] );
+                $categoryDATA = $response->json();
 
-                    // save category 
-                    $newCategory = new Category([
-                        'name' => $categoryDATA['name'],
-                        'description' => $categoryDATA['description'],
-                        'image' =>  $imgPath 
-                    ]);
+                // ? Handle image download and storage
+                $imgPath = $this->downloadCategoryImages($categoryDATA['image']['src'], $categoryDATA['slug']);
 
-                    $newCategory->save();
-                    $id = $newCategory['id'];
-                } catch (\Exception $e) {
-                    return response()->json(['error' => $e->getMessage()], 500);
-                }
+                // save category 
+                $newCategory = new Category([
+                    'name' => $categoryDATA['name'],
+                    'description' => $categoryDATA['description'],
+                    'image' =>  $imgPath
+                ]);
+
+                $newCategory->save();
+                $id = $newCategory['id'];
+            } catch (\Exception $e) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
         }
 
         return $id;
     }
-    public function downloadCategoryImages($src, $slug)
+
+    private function downloadCategoryImages($src, $slug)
     {
         $folderPath = 'public/category-images/' . $slug;
         $imageName = basename($src);
@@ -586,9 +595,9 @@ class ProductController extends Controller
         Storage::put('public/category-images/' . $slug . '/' . $imageName, $imageData);
         $imageUrl = url('/') . $imagePath;
 
-        return $imageUrl ;
+        return $imageUrl;
     }
-    public function DownloadProductImages($src, $slug): array
+    private function DownloadProductImages($src, $slug): array
     {
         $folderPath = 'public/product-images/' . $slug;
         $imageName = basename($src);
@@ -635,7 +644,7 @@ class ProductController extends Controller
 
         if (($startDate || $finishDate) && isset($product['date_created'])) {
             $createdAt = strtotime($product['date_created']);
-            if (($startDate && $createdAt <= strtotime($startDate)) || ($finishDate && $createdAt >= strtotime($finishDate))) {
+            if (($startDate && $createdAt >= strtotime($startDate)) || ($finishDate && $createdAt <= strtotime($finishDate))) {
                 return false;
             }
         }
@@ -646,8 +655,11 @@ class ProductController extends Controller
         }
         return true;
     }
-    private function saveProduct($productData ,  $categoryId): Product
+    private function saveProduct($productData,  $categoryId): Product
     {
+        // Pass the description to saveDescriptionImages and get the modified description with correct URLs
+        $descriptionWithUpdatedImages = $this->saveDescriptionImages($productData['description'] , $productData['slug']);
+
         $newProduct = new Product([
             'name' => $productData['name'],
             'price' => (float)$productData['price'],
@@ -655,7 +667,7 @@ class ProductController extends Controller
             'sale_price' => (float)$productData['sale_price'],
             'average_rating' => (float)$productData['average_rating'],
             'inStock' => $productData['stock_quantity'],
-            'description' => $productData['description'],
+            'description' =>  $descriptionWithUpdatedImages,
             'category_id' =>  $categoryId,
             'slug' => $productData['slug'],
             'status' => $productData['status'],
@@ -668,5 +680,63 @@ class ProductController extends Controller
         // Save the new product
         $newProduct->save();
         return  $newProduct;
+    }
+    private function saveDescriptionImages($description , $slug)
+    {
+        // Create a new DOMDocument
+        $dom = new DOMDocument();
+        // Suppress HTML5 validation warnings
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($description);
+        libxml_clear_errors();
+
+        // Find all <img> elements
+        $imgElements = $dom->getElementsByTagName('img');
+
+        // Initialize an array to store image URLs
+        $imageUrls = [];
+
+        // Loop through each <img> element and process the image URL
+        foreach ($imgElements as $imgElement) {
+            $imageUrl = $imgElement->getAttribute('src');
+
+            // Download the image and save it to the file system
+            $newImagePath = $this->downloadAndSaveImage($imageUrl , $slug);
+
+            // Replace the old URL with the new file path in the HTML
+            $imgElement->setAttribute('src', $newImagePath);
+
+            // Store the new image URL
+            $imageUrls[] = $newImagePath;
+        }
+
+        // Get the modified HTML content
+        $modifiedDescription = $dom->saveHTML();
+
+        return $modifiedDescription;
+    }
+    private function downloadAndSaveImage($src, $slug)
+    {
+        $folderPath = 'public/description-images/' . $slug;
+        $imageName = basename($src);
+
+        // Check if the folder exists and the image file exists within it
+        if (Storage::exists($folderPath) && Storage::exists($folderPath . '/' . $imageName)) {
+            Storage::delete($folderPath . '/' . $imageName);
+        }
+
+        // Create a context with SSL certificate verification disabled
+        $context = stream_context_create([
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+        $imageData = file_get_contents($src, false, $context);
+        $imagePath = '/storage/description-images/' . $slug . '/' . $imageName;
+        Storage::put('public/description-images/' . $slug . '/' . $imageName, $imageData);
+        $imageUrl = url('/') . $imagePath;
+
+        return $imageUrl;
     }
 }

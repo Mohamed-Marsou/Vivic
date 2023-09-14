@@ -223,6 +223,7 @@ const shipmentAddressError = ref('');
 // --------- payInit
 const paymentInit = ref(false)
 let cardElement = {}
+
 const payInit = async (e) => {
 
     if (validateUserData() && (!isShowingShippingFields.value || validateShipmentData())) {
@@ -237,7 +238,8 @@ const payInit = async (e) => {
             .Buttons({
                 style: {
                     layout: 'horizontal',
-                    tagline: 'false',
+                    tagline: 'true',
+                    color: 'black'
                 },
                 createOrder: (data, actions) => {
 
@@ -687,9 +689,9 @@ const handlePaypalSubmission = async (res) => {
                     <div class="full-w">
                         <button id="payInit" @click="payInit($event)">Chose Payment</button>
                     </div>
-
                     <!--????????????????????????? Pyament  ?????????????????????????-->
                     <div class="paymentFieldsHolder" :class="{ paymenFieldsVsible: paymentInit }">
+                        <p>Credit card : </p>
                         <!--? Stripe will create form elements here -->
                         <div class="p-cell">
                             <div id="payment-element"></div>
@@ -1068,7 +1070,7 @@ const handlePaypalSubmission = async (res) => {
 
                 >button {
                     width: 97%;
-                    height: 3rem;
+                    height: 3.5rem;
                     color: #fff;
                     border: none;
                     background: #2c2e2f;
@@ -1132,7 +1134,12 @@ const handlePaypalSubmission = async (res) => {
                     opacity: .5;
                     cursor: wait;
                 }
-
+                >p{
+                    color: #555;
+                    font-size: .9rem;
+                    align-self: flex-start;
+                    padding: 0 10px;
+                }
                 >span {
                     color: #55555578;
                     font-weight: bold;
