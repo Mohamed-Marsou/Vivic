@@ -24,7 +24,7 @@ function getProductDiscount(p) {
         return;
     }
 
-    const regularPrice = parseFloat(p.price);
+    const regularPrice = parseFloat(p.regular_price);
     const salePrice = parseFloat(p.sale_price);
 
     const discountPercentage = ((regularPrice - salePrice) / regularPrice) * 100;

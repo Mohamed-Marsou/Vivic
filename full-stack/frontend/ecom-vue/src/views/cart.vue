@@ -34,6 +34,7 @@ onMounted(async () => {
     });
     await getInCartProductsList()
     loaded.value = true;
+    getUserData()
 })
 async function getInCartProductsList() {
     const res = await productStore.getInCartProducts()
@@ -211,7 +212,7 @@ const shipmentFnameError = ref('');
 const shipmentLname = ref('');
 const shipmentLnameError = ref('');
 
-const shipmentCountry = ref('Select your shipment country');
+const shipmentCountry = ref('');
 const shipmentCountryError = ref('');
 
 const shipmentCity = ref('');
@@ -306,7 +307,63 @@ const validateShipmentData = () => {
     );
 };
 
+const saveUser = () => {
+    if (!authStore.isAuth) {
+        const userData = {
+            'user':
+            {
+                name: userFname.value + ' ' + userLname.value ,
+                email: userEmail.value,
+                country: userCountry.value,
+                address: userAddress.value,
+                city: userCity.value,
+            },
+            'shipment':
+            {
+                name: shipmentFname.value + ' ' + shipmentLname.value,
+                country: shipmentCountry.value,
+                city: shipmentCity.value,
+                address: shipmentAddress.value,
+            }
+        }
+        // Store user data in localStorage
+        localStorage.setItem('userData', JSON.stringify(userData));
+    }
+}
 
+const getUserData = async () => {
+    if (authStore.isAuth) {
+        const id = JSON.parse(Cookies.get('auth-user')).id;
+        const res = await api.get(`/user/data/${id}`);
+        assignUserData(res.data , null);
+    } else {
+        const storedData = localStorage.getItem('userData');
+        if (storedData) {
+            const userData = JSON.parse(storedData);
+            assignUserData(userData.user , userData.shipment);
+        }
+    }
+};
+const assignUserData = (userData, shipmentData) => {
+    if (userData) {
+        // User Data
+        userFname.value = userData.name.split(' ')[0];
+        userLname.value = userData.name.split(' ')[1];
+        userEmail.value = userData.email;
+        userCountry.value = userData.country ;
+        userAddress.value = userData.address;
+        userCity.value = userData.city;
+    }
+
+    if (shipmentData) {
+        // Shipment Data
+        shipmentFname.value = shipmentData.firstName;
+        shipmentLname.value = shipmentData.lastName;
+        shipmentCountry.value = shipmentData.country;
+        shipmentCity.value = shipmentData.city;
+        shipmentAddress.value = shipmentData.address;
+    }
+};
 ///////////////////////////// 
 ///////////////////////////// /////////////////////////////
 ///////////////////////////// ///////////////////////////// /////////////////////////////
@@ -316,7 +373,6 @@ const costomerOrder = ref({})
 const stripePaymentSubmit = async () => {
 
     isProcessing.value = true
-
     // Create a payment method using the Stripe API.
     const { paymentMethod, error } = await stripe.createPaymentMethod({
         type: 'card',
@@ -420,6 +476,7 @@ const stripePaymentSubmit = async () => {
         };
         // Fill Order Prods
         await api.post('/orders/add', laravelPayload)
+        saveUser();
         // Clear user Cart     
         clearUserCart()
         // Redirect user to the success page with the order ID.
@@ -956,7 +1013,7 @@ const handlePaypalSubmission = async (res) => {
                     border-radius: 20px;
                     border: 1px solid rgba(102, 85, 85, 0.227);
                     margin: .5rem 0;
-                    padding: 0 1vw;
+                    padding: 0 1rem;
                 }
 
                 >select {
@@ -1134,12 +1191,14 @@ const handlePaypalSubmission = async (res) => {
                     opacity: .5;
                     cursor: wait;
                 }
-                >p{
+
+                >p {
                     color: #555;
                     font-size: .9rem;
                     align-self: flex-start;
                     padding: 0 10px;
                 }
+
                 >span {
                     color: #55555578;
                     font-weight: bold;

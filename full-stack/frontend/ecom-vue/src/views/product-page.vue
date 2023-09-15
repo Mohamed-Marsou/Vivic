@@ -249,8 +249,8 @@ function scrollToReviews() {
 
     if (reviewsElement) {
         reviewsElement.scrollIntoView({
-            behavior: 'smooth', // You can use 'auto' for instant scrolling
-            block: 'start',     // Scroll to the top of the element
+            behavior: 'smooth', 
+            block: 'start',     
         });
     }
 }

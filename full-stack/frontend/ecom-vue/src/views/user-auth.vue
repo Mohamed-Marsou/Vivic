@@ -48,6 +48,10 @@ const register = async () => {
             Cookies.set('auth-user', userData, { expires: 7 });
 
             authPinia.checkAuth()
+            if (localStorage.getItem('userData')) {
+                localStorage.removeItem('userData');
+            }
+
             // Redirect or perform other actions after successful registration
             router.push('/')
         }
@@ -78,6 +82,9 @@ const login = async () => {
             const userData = JSON.stringify(res.data.user);
             Cookies.set('auth-user', userData, { expires: remember.value ? 21 : 7 });
             authPinia.checkAuth()
+            if (localStorage.getItem('userData')) {
+                localStorage.removeItem('userData');
+            }
             // Redirect or perform other actions after successful registration
             router.push('/')
         }

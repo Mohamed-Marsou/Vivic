@@ -33,7 +33,7 @@ onMounted(async () => {
         behavior: 'smooth'
     });
     isAuth.value = adminStore.isAdmin
-    adminName.value = JSON.parse(jsCookie.get('auth-admin')).name
+    if(isAuth.value) adminName.value = JSON.parse(jsCookie.get('auth-admin')).name
 })
 </script>
 

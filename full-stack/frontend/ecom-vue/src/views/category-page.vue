@@ -235,7 +235,7 @@ const  addToCart =async  (productId) =>
                 </div>
 
                 <div class="top-prods">
-                    <p>TOP RATED PRODUCTS</p>
+                    <p>TOP RELATED PRODUCTS</p>
                     <div v-for="i in 3" :key="i" class="top-prd-box">
                         <img src="https://images.squarespace-cdn.com/content/v1/5b56aa1da2772c2408dab0e6/1670822734917-0V4XWINJD2PJ8XFLB7T7/avery-snap-phone-case-by-talia-designs.jpg"
                             alt="">

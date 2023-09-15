@@ -83,4 +83,13 @@ class UserController extends Controller
 
         return response()->json(['message' => 'Login failed'], 401);
     }
+    public function search($id)
+    {
+        $user = User::find($id);
+        // Check if the user was found
+        if (!$user) {
+            abort(404, 'User not found');
+        }
+        return $user;
+    }
 }
