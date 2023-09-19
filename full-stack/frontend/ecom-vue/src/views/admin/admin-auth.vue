@@ -20,6 +20,8 @@ const showErr = ref(false)
 const router = useRouter();
 const rememberMe = ref(false)
 
+const submited = ref(false)
+
 const login = async () => {
     
     if (!email.value || !isValidEmail(email.value)) {
@@ -32,10 +34,12 @@ const login = async () => {
     }
     passwordErr.value = emailErr.value = '';
 
+    submited.value = true
     const payload = {
         email: email.value,
         password: password.value
     };
+
 
     try {
         const response = await api.post('/admin/login', payload);
@@ -52,6 +56,8 @@ const login = async () => {
       } catch (error) {
         // Handle errors 
         console.error(error);
+        emailErr.value = error.response.data.message ?? 'something went wrong please try again'
+        submited.value = false
       }
 }
 const isValidEmail = (value) => {
@@ -71,15 +77,15 @@ const isValidEmail = (value) => {
                 </p>
                 <label for="email">Email</label>
                 <small :class="{ showErrmsg: emailErr }">{{ emailErr }}</small>
-                <input :class="{ inputErr: emailErr }" type="email" placeholder="Email address" v-model="email">
+                <input :disabled="submited" :class="{ inputErr: emailErr }" type="email" placeholder="Email address" v-model="email">
                 <label for="password">Password</label>
                 <small :class="{ showErrmsg: passwordErr }">{{ passwordErr }}</small>
-                <input :class="{ inputErr: passwordErr }" type="password" placeholder="Password" v-model="password">
+                <input :disabled="submited" :class="{ inputErr: passwordErr }" type="password" placeholder="Password" v-model="password">
                 <div>
                     <input type="checkbox" v-model="rememberMe">
                     <p>remember me</p>
                 </div>
-                <button @click="login">
+                <button :disabled="submited" @click="login">
                     Login
                 </button>
                 <RouterLink to="/">
@@ -191,7 +197,11 @@ const isValidEmail = (value) => {
         }
     }
 }
-
+button:disabled,input:disabled
+{
+    opacity: .4 !important;
+    cursor: not-allowed !important;
+}
 .showErrmsg {
     display: block !important;
 }

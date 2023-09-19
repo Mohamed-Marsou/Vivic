@@ -3,7 +3,7 @@ import ProductsCarousel from '../components/build/products-carousel.vue';
 import { ref, onMounted, watch, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../http/api'
-
+import Loading from '../components/build/loading.vue';
 const route = useRoute();
 const router = useRouter();
 
@@ -15,17 +15,66 @@ const productCover = ref('');
 const props = defineProps({
     slug: String,
 });
-
+const isloaded = ref(false)
+const currentDate = ref(new Date());
+let targetDate = ref(null);
 // Fetch product data before mount
 onMounted(async () => {
     // Scroll to the top of the page
     scrollToTop()
     await getProductData();
     quantity.value = product.value.inStock
+    isloaded.value = true
     await getHighRatedProducts();
+    showDiscount()
+    //------------------------------------------------------- discount count down
+    if (showDiscount()) {
+    const endDate = new Date(product.value.date_on_sale_to + "T23:59:59");
+    const countdownInterval = setInterval(() => {
+        const currentTime = new Date();
+        const remainingTimeInSeconds = Math.max(0, Math.floor((endDate - currentTime) / 1000));
 
+        const remainingDays = Math.floor(remainingTimeInSeconds / (3600 * 24));
+        const remainingHours = Math.floor((remainingTimeInSeconds % (3600 * 24)) / 3600);
+        const remainingMinutes = Math.floor((remainingTimeInSeconds % 3600) / 60);
+        const remainingSeconds = remainingTimeInSeconds % 60;
 
+        targetDate.value = {
+            days: remainingDays,
+            hours: remainingHours,
+            minutes: remainingMinutes,
+            seconds: remainingSeconds,
+        };
+
+        // Check if the countdown has reached zero
+        if (remainingTimeInSeconds <= 0) {
+            clearInterval(countdownInterval);
+        }
+    }, 1000); // Update every 1 second
+}
+})
+
+const timeRemaining = computed(() => {
+    return targetDate.value || {
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+    };
+    
 });
+
+function showDiscount()
+{
+    if(product.value && product.value.on_sale && product.value.date_on_sale_from <= currentDate.value.toISOString().split('T')[0] &&
+    product.value.date_on_sale_to >= currentDate.value.toISOString().split('T')[0]) {
+        return true 
+    }else {
+        return false
+    }
+}
+
+// ------------------------------------------------------- discount count down
 
 watch(() => route.params.slug, async (newSlug) => {
     scrollToTop()
@@ -40,6 +89,7 @@ watch(() => route.params.slug, async (newSlug) => {
     }
     quantity.value = product.value.inStock
     await getHighRatedProducts();
+
 });
 function scrollToTop() {
     window.scrollTo({
@@ -90,37 +140,6 @@ const isVisible = ref(false)
 const ShowOverLay = () => {
     isVisible.value = !isVisible.value
 }
-
-//------------------------------------------------------- discount count down
-// TODO Change the hard coded value 
-const OrderdNumber = 24
-// TODO Change the hard coded value 
-const targetDate = new Date();
-targetDate.setDate(targetDate.getDate() + 7);
-
-const currentDate = ref(new Date());
-
-const timeRemaining = computed(() => {
-    const totalSeconds = Math.max(0, Math.floor((targetDate - currentDate.value) / 1000));
-    return {
-        days: Math.floor(totalSeconds / (3600 * 24)),
-        hours: Math.floor((totalSeconds % (3600 * 24)) / 3600),
-        minutes: Math.floor((totalSeconds % 3600) / 60),
-        seconds: totalSeconds % 60,
-    };
-});
-
-const { days, hours, minutes, seconds } = timeRemaining;
-
-const countdownInterval = setInterval(() => {
-    currentDate.value = new Date();
-}, 1000);
-
-onUnmounted(() => {
-    clearInterval(countdownInterval);
-});
-
-
 
 //* ----------------------------------------------------  Reviews ---------------------------------------------------- 
 import reviews from '../assets/products-reviews.json'
@@ -249,23 +268,24 @@ function scrollToReviews() {
 
     if (reviewsElement) {
         reviewsElement.scrollIntoView({
-            behavior: 'smooth', 
-            block: 'start',     
+            behavior: 'smooth',
+            block: 'start',
         });
     }
 }
 
 const showSticky = ref(false);
-const toggoleStickyProduct = ()=>{
+const toggoleStickyProduct = () => {
     showSticky.value = !showSticky.value
 }
 </script>
 
 
 <template>
-    <div id="product-page-container">
+    <div id="product-page-container" v-if="isloaded">
 
-        <div class="sticky_product" :class="{showStickyProduct : showSticky}"  @mouseenter="toggoleStickyProduct" @mouseleave="toggoleStickyProduct">
+        <div class="sticky_product" :class="{ showStickyProduct: showSticky }" @mouseenter="toggoleStickyProduct"
+            @mouseleave="toggoleStickyProduct">
             <div class="img">
                 <img :src="productCover" alt="product-image">
             </div>
@@ -282,7 +302,7 @@ const toggoleStickyProduct = ()=>{
                     <small>
                         ${{ product.regular_price ?? product.regular_price }}
                     </small>
-                        ${{ product.sale_price ? product.sale_price : product.price }}
+                    ${{ product.sale_price ? product.sale_price : product.price }}
                 </span>
                 <button @click="addToCart(product.id)" :disabled="quantity === 0">ADD TO CART</button>
                 <button @click="addProductToWishlist(product.id)">
@@ -291,7 +311,7 @@ const toggoleStickyProduct = ()=>{
                 </button>
             </div>
             <button id="mobileBtn" @click="scrollToTop">
-                <i class="fa-solid fa-hand-point-up"></i>
+                <i class="fa-solid fa-angles-up"></i>
                 Select Options
             </button>
         </div>
@@ -299,10 +319,8 @@ const toggoleStickyProduct = ()=>{
         <div @click="ShowOverLay" class="images-overlay" :class="{ ShowOverLay: isVisible }">
             <div class="image-box" @click.stop>
                 <img :src="productCover" alt="product-image">
+                <i @click="ShowOverLay" class="fa-solid fa-xmark"></i>
             </div>
-            <!-- <i class="fa-solid fa-arrow-right"></i>
-            <i class="fa-solid fa-arrow-left"></i> -->
-            <i @click="ShowOverLay" class="fa-solid fa-xmark"></i>
         </div>
 
         <div class="product-details-box">
@@ -352,7 +370,6 @@ const toggoleStickyProduct = ()=>{
                 <div class="slot small_description">
                     <p v-html="product.short_description"></p>
                 </div>
-
                 <div v-if="quantity > 1" class="slot inStock">
                     <i class="fa-solid fa-warehouse"></i> {{ quantity }} in stock
                 </div>
@@ -383,8 +400,9 @@ const toggoleStickyProduct = ()=>{
                         <i class="fa-brands fa-x-twitter"></i><i class="fa-brands fa-telegram"></i>
                     </div>
                 </div>
+                
 
-                <div class="slot discount">
+                <div class="slot discount" v-if="showDiscount()">
                     <p>Last chance! Sale ends in : </p>
                     <div class="count_down">
                         <div class="count">
@@ -422,12 +440,11 @@ const toggoleStickyProduct = ()=>{
                 </div>
 
                 <div class="slot acc_pay">
-                    <p>Guaranteed Safe Checkout</p>
+                    <p>Guaranteed Safe Checkout : </p>
                     <div class="icons">
                         <img src="../assets/icons/paypal-svgrepo-com.svg" alt="">
                         <img src="../assets/icons/mastercard-old-3-svgrepo-com.svg" alt="">
                         <img src="../assets/icons/visa-classic-svgrepo-com.svg" alt="">
-                        <img src="../assets/icons/icons8-apple-pay-50.png" alt="">
                     </div>
                 </div>
             </div>
@@ -443,7 +460,7 @@ const toggoleStickyProduct = ()=>{
         </div>
 
         <!-- // Reviews  -->
-        <div class="product-reviews"  @mouseenter="toggoleStickyProduct" @mouseleave="toggoleStickyProduct">
+        <div class="product-reviews" @mouseenter="toggoleStickyProduct" @mouseleave="toggoleStickyProduct">
             <header class="section-header">
                 <h3>
                     Reviews
@@ -539,11 +556,20 @@ const toggoleStickyProduct = ()=>{
         <ProductsCarousel smallHeader="Exploring Similar Delights? Start Here!" headerText="SIMILAR PRODUCTS"
             :productList="highRated" />
     </div>
+
+    <div v-else class="Loader-container">
+        <Loading />
+    </div>
 </template>
 
 <style lang="scss">
 @import '@/style/_global.scss';
 
+.Loader-container{
+    width: 100%;
+    height: 100vh;
+    @include flex();
+}
 #product-page-container {
     width: 100%;
     min-height: 100vh;
@@ -613,44 +639,47 @@ const toggoleStickyProduct = ()=>{
             align-items: center;
             gap: 2vw;
             padding: 0 5px;
+
             span {
-                    color: #0065fc;
-                    font-weight: bold;
-                    padding: 0 5px;
-                    display: flex;
-                    font-size: 1.5rem;
-                    >small{
-                        color: #555;
-                        text-decoration: line-through;
-                        padding: 0 3px;
-                        font-size: .75rem;
-                    }
+                color: #0065fc;
+                font-weight: bold;
+                padding: 0 5px;
+                display: flex;
+                font-size: 1.5rem;
+
+                >small {
+                    color: #555;
+                    text-decoration: line-through;
+                    padding: 0 3px;
+                    font-size: .75rem;
                 }
-                >button {
-                    width: 12rem;
-                    height: 2.5rem;
-                    color: white;
-                    border: none;
-                    background: #2e6bc6;
-                    border-radius: 5px;
-                    cursor: pointer;
+            }
 
-                    &:nth-child(3){
-                        background: transparent;
-                        color: #555;
-                        width: 8rem;
+            >button {
+                width: 12rem;
+                height: 2.5rem;
+                color: white;
+                border: none;
+                background: #2e6bc6;
+                border-radius: 5px;
+                cursor: pointer;
 
-                    }
+                &:nth-child(3) {
+                    background: transparent;
+                    color: #555;
+                    width: 8rem;
 
                 }
 
-                button:disabled {
-                    cursor: default;
-                    opacity: .5;
-                }
+            }
+
+            button:disabled {
+                cursor: default;
+                opacity: .5;
+            }
         }
 
-        #mobileBtn{
+        #mobileBtn {
             display: none;
         }
     }
@@ -1052,7 +1081,9 @@ const toggoleStickyProduct = ()=>{
                     width: 100%;
                     height: 3.5rem;
                     margin-top: 10px;
-
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 1vw;
                     >img {
                         height: 80%;
                         object-fit: contain;
@@ -1078,18 +1109,27 @@ const toggoleStickyProduct = ()=>{
             color: #555;
             @include flex($jc: flex-start);
             line-height: 2rem;
-            >strong {
-                color: #212121;
-            }
         }
-        ul{
+        h1,h2,h3,h4{
+        margin: 1rem;
+            color: #545454;
+    }
+        ul {
             margin: 0 2vw;
         }
+        
         li {
             color: #555555bd;
             padding: 5px;
             list-style: inside;
             font-size: .9rem;
+            line-height: 2rem;
+            em{
+                color: #555;
+                font-weight: bold;
+                font-style: normal;
+                padding: 0 5px;
+            }
         }
 
         li::marker {
@@ -1108,339 +1148,342 @@ const toggoleStickyProduct = ()=>{
     }
 }
 
-    .section-header {
-        width: 100%;
-        border-bottom: 1px solid rgba(68, 68, 68, 0.279);
-        @include flex($ai: flex-end);
-        margin-bottom: 2rem;
+.section-header {
+    width: 100%;
+    border-bottom: 1px solid rgba(68, 68, 68, 0.279);
+    @include flex($ai: flex-end);
+    margin-bottom: 2rem;
 
-        h3 {
-            font-size: 1.5rem;
-            text-transform: uppercase;
-            padding: 4rem 1vw 0 1vw;
-            color: #555;
-            position: relative;
-            user-select: none;
+    h3 {
+        font-size: 1.5rem;
+        text-transform: uppercase;
+        padding: 4rem 1vw 0 1vw;
+        color: #555;
+        position: relative;
+        user-select: none;
 
-            &::after {
-                content: '';
-                position: absolute;
-                bottom: -3px;
-                right: 0;
-                width: 100%;
-                height: 5px;
-                background: #0065fc;
-            }
+        &::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            right: 0;
+            width: 100%;
+            height: 5px;
+            background: #0065fc;
         }
-
     }
 
-    .product-reviews {
+}
 
+.product-reviews {
+
+    width: 100%;
+    min-height: 50vh;
+    margin-top: 1rem;
+
+    .wrapper {
         width: 100%;
         min-height: 50vh;
-        margin-top: 1rem;
 
-        .wrapper {
+        >div {
             width: 100%;
-            min-height: 50vh;
+            min-height: 30vh;
+            margin: 5px auto;
+        }
+
+        .stat {
+            width: 100%;
+            min-height: 30vh;
+            display: flex;
+
 
             >div {
-                width: 100%;
+                width: 50%;
                 min-height: 30vh;
-                margin: 5px auto;
+                padding: 1rem 1vw;
+                @include flex();
+                flex-direction: column;
+
             }
 
-            .stat {
-                width: 100%;
-                min-height: 30vh;
-                display: flex;
+            .stars {
+                i {
+                    width: 1.5rem !important;
+                    color: #FFD700;
+                    margin: 0.5rem 1px;
+                }
+            }
 
+            h1 {
+                font-size: 3rem;
+                padding: 0 10px;
+            }
+
+            p {
+                color: #555;
+                padding: .5rem 0;
+            }
+
+            small {
+                color: #555;
+                text-align: center;
+                padding: 0 1vw;
+            }
+
+
+            .review-slot {
+                width: 100%;
+                height: 3rem;
+                @include flex();
+
+
+                i {
+                    width: 1.2rem !important;
+                    color: #FFD700;
+                    margin: 0 .5rem;
+                }
 
                 >div {
-                    width: 50%;
-                    min-height: 30vh;
-                    padding: 1rem 1vw;
-                    @include flex();
-                    flex-direction: column;
-
-                }
-
-                .stars {
-                    i {
-                        width: 1.5rem !important;
-                        color: #FFD700;
-                        margin: 0.5rem 1px;
-                    }
-                }
-
-                h1 {
-                    font-size: 3rem;
-                    padding: 0 10px;
-                }
-
-                p {
-                    color: #555;
-                    padding: .5rem 0;
-                }
-
-                small {
-                    color: #555;
-                    text-align: center;
-                    padding: 0 1vw;
-                }
-
-
-                .review-slot {
-                    width: 100%;
-                    height: 3rem;
-                    @include flex();
-
-
-                    i {
-                        width: 1.2rem !important;
-                        color: #FFD700;
-                        margin: 0 .5rem;
-                    }
+                    width: 60%;
+                    height: 8px;
+                    background-color: #d1d1d1a1;
+                    margin: 0 1rem;
 
                     >div {
-                        width: 60%;
+                        width: 40%;
                         height: 8px;
-                        background-color: #d1d1d1a1;
-                        margin: 0 1rem;
-
-                        >div {
-                            width: 40%;
-                            height: 8px;
-                            background-color: #FFD700;
-                        }
-                    }
-
-                    h5 {
-                        padding: 5px;
-                        border: 1px solid #5555556c;
-                        border-radius: 5px;
-                        color: #555;
+                        background-color: #FFD700;
                     }
                 }
 
-            }
-
-            .reviews-box {
-                display: flex;
-                justify-content: center;
-                flex-wrap: wrap;
-                padding: 1rem 0;
-
-                .reviews-filters {
-                    width: 85%;
-                    height: 4rem;
-                    box-shadow: 0 0 0 0;
-                    @include flex($jc: space-between);
-                    border-bottom: 1px solid #00000018;
-
-                    p {
-                        font-size: .8rem;
-                    }
-
-                    >select {
-                        font-size: .9rem;
-                        border: 1px solid #00000025;
-                        padding: 5px 10px;
-                        border-radius: 5px;
-                        color: #555;
-                    }
-                }
-
-                .review-container {
-                    width: 90%;
-                    min-height: 40vh;
-                    margin: 10px auto;
-                    display: flex;
-                    justify-content: center;
-
-                    flex-wrap: wrap;
-                    padding: 1rem 0;
-                    gap: 1vw;
-
-                    .review {
-                        width: 21rem;
-                        min-height: 26rem;
-                        border: 1px solid rgba(71, 71, 71, 0.175);
-                        border-radius: 5px;
-                        overflow: hidden;
-
-                        &:not(.img-box:has(img)) {
-                                height: 18rem;
-                            }
-                        >.img-box {
-                            width: 100%;
-                            height: 14rem;
-                            position: relative;
-                            &:not(:has(img)) {
-                                height: 5rem;
-                            }
-
-                            .author {
-                                width: 85%;
-                                height: 2.5rem;
-                                background: #fff;
-                                position: absolute;
-                                bottom: 1rem;
-                                left: 1vw;
-                                display: flex;
-                                border-radius: 2.5rem;
-                                display: flex;
-                                align-items: center;
-                                user-select: none;
-
-                                >div {
-                                    color: #fff;
-                                    width: 2.5rem;
-                                    height: 2.4rem;
-                                    border-radius: 50%;
-                                    margin-left: 1px;
-                                    @include flex();
-                                    font-size: 1.2rem;
-                                }
-
-                                >p {
-                                    color: #555;
-                                    font-size: .9rem;
-                                    font-weight: bold;
-                                    margin-left: 1vw;
-                                }
-                            }
-
-                            >img {
-                                width: 100%;
-                                height: 100%;
-                                object-fit: cover;
-                            }
-
-                        }
-
-                        >.review_body {
-                            width: 100%;
-                            min-height: 8rem;
-                            .text {
-                                width: 100%;
-                                min-height: 8rem;
-
-
-                                .stars-reveiws {
-                                    width: 100%;
-                                    margin-top: 1rem;
-                                    color: #FFD700;
-                                    padding: 0 1vw;
-
-                                    .fa-circle-check {
-                                        color: rgba(0, 128, 0, 0.681);
-                                        margin-left: 8px;
-                                    }
-                                }
-
-                                >p {
-                                    color: #555;
-                                    font-size: .8rem;
-                                    padding: 1rem 10px;
-                                }
-                            }
-
-                            .comment {
-                                border-top: 1px solid rgba(71, 71, 71, 0.175);
-                                height: 3rem;
-                                display: flex;
-                                align-items: center;
-                                justify-content: flex-end;
-                                padding: 0 1rem;
-                                color: #555;
-                                font-size: .8rem;
-
-                                >i {
-                                    cursor: pointer;
-                                }
-                            }
-
-                        }
-                    }
-
-
-                }
-
-
-                .reviews-pagination {
-                    width: 100%;
-                    height: 4rem;
-                    box-shadow: 0 0 0 0;
-                    @include flex();
-                    padding: 0 1vw;
-                    margin-top: 1.5rem;
-
-                    >button {
-                        width: 10rem;
-                        height: 3rem;
-                        border: none;
-                        border-radius: 50px;
-                        background: #0065fc;
-                        color: #fff;
-                        cursor: pointer;
-                    }
-                }
-
-                .loader {
-                    min-height: 4rem;
-
-                    .lds-ring {
-                        display: inline-block;
-                        position: relative;
-                        width: 80px;
-                        height: 80px;
-                    }
-
-                    .lds-ring div {
-                        box-sizing: border-box;
-                        display: block;
-                        position: absolute;
-                        width: 64px;
-                        height: 64px;
-                        margin: 8px;
-                        border: 8px solid #488ffa;
-                        border-radius: 50%;
-                        animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-                        border-color: #488ffa transparent transparent transparent;
-                    }
-
-                    .lds-ring div:nth-child(1) {
-                        animation-delay: -0.45s;
-                    }
-
-                    .lds-ring div:nth-child(2) {
-                        animation-delay: -0.3s;
-                    }
-
-                    .lds-ring div:nth-child(3) {
-                        animation-delay: -0.15s;
-                    }
-
-                    @keyframes lds-ring {
-                        0% {
-                            transform: rotate(0deg);
-                        }
-
-                        100% {
-                            transform: rotate(360deg);
-                        }
-                    }
+                h5 {
+                    padding: 5px;
+                    border: 1px solid #5555556c;
+                    border-radius: 5px;
+                    color: #555;
                 }
             }
 
         }
-    }
 
-    .no-img-review {
-        min-height: 15rem !important;
+        .reviews-box {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 1rem 0;
+
+            .reviews-filters {
+                width: 85%;
+                height: 4rem;
+                box-shadow: 0 0 0 0;
+                @include flex($jc: space-between);
+                border-bottom: 1px solid #00000018;
+
+                p {
+                    font-size: .8rem;
+                }
+
+                >select {
+                    font-size: .9rem;
+                    border: 1px solid #00000025;
+                    padding: 5px 10px;
+                    border-radius: 5px;
+                    color: #555;
+                }
+            }
+
+            .review-container {
+                width: 90%;
+                min-height: 40vh;
+                margin: 10px auto;
+                display: flex;
+                justify-content: center;
+
+                flex-wrap: wrap;
+                padding: 1rem 0;
+                gap: 1vw;
+
+                .review {
+                    width: 21rem;
+                    min-height: 26rem;
+                    border: 1px solid rgba(71, 71, 71, 0.175);
+                    border-radius: 5px;
+                    overflow: hidden;
+
+                    &:not(.img-box:has(img)) {
+                        height: 18rem;
+                    }
+
+                    >.img-box {
+                        width: 100%;
+                        height: 14rem;
+                        position: relative;
+
+                        &:not(:has(img)) {
+                            height: 5rem;
+                        }
+
+                        .author {
+                            width: 85%;
+                            height: 2.5rem;
+                            background: #fff;
+                            position: absolute;
+                            bottom: 1rem;
+                            left: 1vw;
+                            display: flex;
+                            border-radius: 2.5rem;
+                            display: flex;
+                            align-items: center;
+                            user-select: none;
+
+                            >div {
+                                color: #fff;
+                                width: 2.5rem;
+                                height: 2.4rem;
+                                border-radius: 50%;
+                                margin-left: 1px;
+                                @include flex();
+                                font-size: 1.2rem;
+                            }
+
+                            >p {
+                                color: #555;
+                                font-size: .9rem;
+                                font-weight: bold;
+                                margin-left: 1vw;
+                            }
+                        }
+
+                        >img {
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                        }
+
+                    }
+
+                    >.review_body {
+                        width: 100%;
+                        min-height: 8rem;
+
+                        .text {
+                            width: 100%;
+                            min-height: 8rem;
+
+
+                            .stars-reveiws {
+                                width: 100%;
+                                margin-top: 1rem;
+                                color: #FFD700;
+                                padding: 0 1vw;
+
+                                .fa-circle-check {
+                                    color: rgba(0, 128, 0, 0.681);
+                                    margin-left: 8px;
+                                }
+                            }
+
+                            >p {
+                                color: #555;
+                                font-size: .8rem;
+                                padding: 1rem 10px;
+                            }
+                        }
+
+                        .comment {
+                            border-top: 1px solid rgba(71, 71, 71, 0.175);
+                            height: 3rem;
+                            display: flex;
+                            align-items: center;
+                            justify-content: flex-end;
+                            padding: 0 1rem;
+                            color: #555;
+                            font-size: .8rem;
+
+                            >i {
+                                cursor: pointer;
+                            }
+                        }
+
+                    }
+                }
+
+
+            }
+
+
+            .reviews-pagination {
+                width: 100%;
+                height: 4rem;
+                box-shadow: 0 0 0 0;
+                @include flex();
+                padding: 0 1vw;
+                margin-top: 1.5rem;
+
+                >button {
+                    width: 10rem;
+                    height: 3rem;
+                    border: none;
+                    border-radius: 50px;
+                    background: #0065fc;
+                    color: #fff;
+                    cursor: pointer;
+                }
+            }
+
+            .loader {
+                min-height: 4rem;
+
+                .lds-ring {
+                    display: inline-block;
+                    position: relative;
+                    width: 80px;
+                    height: 80px;
+                }
+
+                .lds-ring div {
+                    box-sizing: border-box;
+                    display: block;
+                    position: absolute;
+                    width: 64px;
+                    height: 64px;
+                    margin: 8px;
+                    border: 8px solid #488ffa;
+                    border-radius: 50%;
+                    animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+                    border-color: #488ffa transparent transparent transparent;
+                }
+
+                .lds-ring div:nth-child(1) {
+                    animation-delay: -0.45s;
+                }
+
+                .lds-ring div:nth-child(2) {
+                    animation-delay: -0.3s;
+                }
+
+                .lds-ring div:nth-child(3) {
+                    animation-delay: -0.15s;
+                }
+
+                @keyframes lds-ring {
+                    0% {
+                        transform: rotate(0deg);
+                    }
+
+                    100% {
+                        transform: rotate(360deg);
+                    }
+                }
+            }
+        }
+
     }
+}
+
+.no-img-review {
+    min-height: 15rem !important;
+}
 
 @media screen and (max-width: 1315px) {
     .product-details-box {
@@ -1451,7 +1494,6 @@ const toggoleStickyProduct = ()=>{
 @media screen and (max-width: 1024px) {
     .product-details-box {
         width: 90% !important;
-        flex-direction: column;
 
         >div {
             width: 100% !important;
@@ -1482,6 +1524,9 @@ const toggoleStickyProduct = ()=>{
 
         }
     }
+    .product-description{
+        width: 90% !important;
+    }
 }
 
 @media screen and (max-width : 768px) {
@@ -1496,25 +1541,31 @@ const toggoleStickyProduct = ()=>{
 
     .sticky_product {
         padding: 0 1.5vw !important;
+
         .img {
-          display: none !important;
+            display: none !important;
         }
+
         .product-info {
             min-width: 40% !important;
         }
+
         .actions {
             width: 60% !important;
             margin-left: 0% !important;
             gap: 1.5vw !important;
+
             span {
-                    font-size: 1.7rem !important;
-                    >small{
-                        font-size: 0.8rem !important;
-                    }
+                font-size: 1.7rem !important;
+
+                >small {
+                    font-size: 0.8rem !important;
                 }
-                >button {
-                    width: 10rem !important;
-                }
+            }
+
+            >button {
+                width: 10rem !important;
+            }
         }
     }
 }
@@ -1543,12 +1594,15 @@ const toggoleStickyProduct = ()=>{
 
     .sticky_product {
         padding: 0 1.5vw !important;
+
         .img {
-          display: none !important;
+            display: none !important;
         }
+
         .product-info {
             display: none !important;
         }
+
         .actions {
             width: 100% !important;
             justify-content: space-between;
@@ -1645,18 +1699,22 @@ const toggoleStickyProduct = ()=>{
     }
 
     .sticky_product {
-        padding: 0  !important;
+        padding: 0 !important;
         height: 3rem !important;
+
         .img {
-          display: none !important;
+            display: none !important;
         }
+
         .product-info {
             display: none !important;
         }
+
         .actions {
             display: none !important;
         }
-        #mobileBtn{
+
+        #mobileBtn {
             display: block !important;
             width: 100%;
             text-transform: uppercase;
@@ -1665,13 +1723,15 @@ const toggoleStickyProduct = ()=>{
             color: #fff;
             font-weight: bold;
             cursor: pointer;
-            >i{
+
+            >i {
                 transition: .3s ease-in-out;
                 transform: translateY(300%);
                 font-size: 1.2rem;
                 margin-right: 5px;
             }
-            &:hover > i{
+
+            &:hover>i {
                 transform: translateY(0);
             }
         }
@@ -1682,17 +1742,20 @@ const toggoleStickyProduct = ()=>{
     .product-description {
         width: 90% !important;
         padding: 0 5px;
-        h1{
-           font-size: 1.5rem !important;
+
+        h1 {
+            font-size: 1.5rem !important;
         }
     }
 }
+
 @media screen and (max-width:450px) {
     .product-description {
         width: 100% !important;
         padding: 0 5px;
     }
 }
+
 @media screen and (max-width:320px) {
     .product-details-box {
         width: 98% !important;
@@ -1707,8 +1770,8 @@ const toggoleStickyProduct = ()=>{
     display: flex !important;
     @include flex();
 }
-.showStickyProduct
-{
+
+.showStickyProduct {
     transform: translateY(0) !important;
     opacity: 1 !important;
 }

@@ -9,10 +9,8 @@ use App\Models\Image;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Wishlist;
-use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use PhpParser\Node\Stmt\TryCatch;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -29,10 +27,10 @@ class ProductController extends Controller
 
     public function __construct()
     {
-        $this->baseUrl = env('WOO_URL');
-        $this->endpoint = '/products';
-        $this->WOO_CK = env('WOOCOMMERCE_API_KEY');
-        $this->WOO_CS = env('WOOCOMMERCE_API_SECRET');
+        $this->baseUrl=env('WOO_URL');
+        $this->endpoint='/products';
+        $this->WOO_CK=env('WOOCOMMERCE_API_KEY');
+        $this->WOO_CS= env('WOOCOMMERCE_API_SECRET');
     }
     public function index()
     {
@@ -388,13 +386,36 @@ class ProductController extends Controller
         }
     }
 
-
-    public function destroy(Product $product)
+    public function destroy($id)
     {
+        // Find the product by its ID
+        $product = Product::find($id);
+    
+        // Check if the product exists
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
+    
+        // Retrieve the category associated with the product
+        $category = $product->category;
+    
+        // Delete the product
         $product->delete();
-
-        return response()->json(null, 204);
+    
+        // * Delete product-related images
+        $this->deleteDir('product-images', $product['slug']);
+        $this->deleteDir('description-images', $product['slug']);
+        $this->deleteDir('category-images', $category->name);
+    
+        //! Check if the category  has no products
+        if ( $category->products->isEmpty()) {
+            // Delete the category
+            $category->delete();
+        }
+    
+        return response()->json(['response' => 'Product was deleted !!'], 201);
     }
+    
 
     //* ********************************* import Woo Products to DATABASE 
 
@@ -404,6 +425,7 @@ class ProductController extends Controller
         $perPage = 50;
         $currentPage = 1;
         $successCount = 0;
+       
         do {
             try {
                 $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
@@ -420,7 +442,7 @@ class ProductController extends Controller
                     // Check if the status in $productData is 'publish'
                     if (!$existingProduct && $productData['status'] === 'publish') {
 
-                        $categories = $productData['categories'][0]; // CHANGE LETER to handle multi categories
+                        $categories = $productData['categories'][0]; //? CHANGE LETER to handle multi categories
 
                         $categoryId = $this->saveCategories($categories);
                         // Save the new product
@@ -430,7 +452,8 @@ class ProductController extends Controller
                         $isFirstImage = true;
 
                         if ($newProduct->id) {
-
+                            // Check if the folder exists 
+                            $this->deleteDir('product-images', $productData['slug']);
                             foreach ($productData['images'] as $image) {
                                 $imageInfo = $this->DownloadProductImages(
                                     $image['src'],
@@ -502,6 +525,9 @@ class ProductController extends Controller
 
                             if ($newProduct->id) {
 
+                                // Check if the folder exists 
+                                $this->deleteDir('product-images', $productData['slug']);
+
                                 foreach ($productData['images'] as $image) {
                                     $imageInfo = $this->DownloadProductImages(
                                         $image['src'],
@@ -535,7 +561,14 @@ class ProductController extends Controller
             'successCount' => $successCount,
         ]);
     }
-
+    // checks if image dir already exist and delete it 
+    private function deleteDir($folderName, $slug)
+    {
+        $folderPath = 'public/' . $folderName . '/' . $slug;
+        if (Storage::exists($folderPath)) {
+            Storage::deleteDirectory($folderPath);
+        }
+    }
     private function saveCategories($category)
     {
         $id = [];
@@ -575,14 +608,9 @@ class ProductController extends Controller
 
     private function downloadCategoryImages($src, $slug)
     {
-        $folderPath = 'public/category-images/' . $slug;
         $imageName = basename($src);
-
         // Check if the folder exists and the image file exists within it
-        if (Storage::exists($folderPath) && Storage::exists($folderPath . '/' . $imageName)) {
-            Storage::delete($folderPath . '/' . $imageName);
-        }
-
+        $this->deleteDir('category-images',$slug);
         // Create a context with SSL certificate verification disabled
         $context = stream_context_create([
             'ssl' => [
@@ -599,14 +627,7 @@ class ProductController extends Controller
     }
     private function DownloadProductImages($src, $slug): array
     {
-        $folderPath = 'public/product-images/' . $slug;
         $imageName = basename($src);
-
-        // Check if the folder exists and the image file exists within it
-        if (Storage::exists($folderPath) && Storage::exists($folderPath . '/' . $imageName)) {
-            Storage::delete($folderPath . '/' . $imageName);
-        }
-
         // Create a context with SSL certificate verification disabled
         $context = stream_context_create([
             'ssl' => [
@@ -657,8 +678,8 @@ class ProductController extends Controller
     }
     private function saveProduct($productData,  $categoryId): Product
     {
-        // Pass the description to saveDescriptionImages and get the modified description with correct URLs
-        $descriptionWithUpdatedImages = $this->saveDescriptionImages($productData['description'] , $productData['slug']);
+        // Pass the description to save Description Images and get the modified description with correct URLs
+        $descriptionWithUpdatedImages = $this->saveDescriptionImages($productData['description'], $productData['slug']);
 
         $newProduct = new Product([
             'name' => $productData['name'],
@@ -675,13 +696,18 @@ class ProductController extends Controller
             'weight' => $productData['weight'],
             'dimensions' => json_encode($productData['dimensions']),
             'specification' => json_encode($productData['attributes']),
+
+            'on_sale' => $productData['on_sale'],
+            'date_on_sale_from' => $productData['date_on_sale_from'],
+            'date_on_sale_to' =>  $productData['date_on_sale_to'],
+
         ]);
 
         // Save the new product
         $newProduct->save();
         return  $newProduct;
     }
-    private function saveDescriptionImages($description , $slug)
+    private function saveDescriptionImages($description, $slug)
     {
         // Create a new DOMDocument
         $dom = new DOMDocument();
@@ -696,12 +722,14 @@ class ProductController extends Controller
         // Initialize an array to store image URLs
         $imageUrls = [];
 
+        // Check if the folder exists and the image file exists within it
+        $this->deleteDir('description-images', $slug);
         // Loop through each <img> element and process the image URL
         foreach ($imgElements as $imgElement) {
             $imageUrl = $imgElement->getAttribute('src');
 
             // Download the image and save it to the file system
-            $newImagePath = $this->downloadAndSaveImage($imageUrl , $slug);
+            $newImagePath = $this->downloadAndSaveImage($imageUrl, $slug);
 
             // Replace the old URL with the new file path in the HTML
             $imgElement->setAttribute('src', $newImagePath);
@@ -717,14 +745,7 @@ class ProductController extends Controller
     }
     private function downloadAndSaveImage($src, $slug)
     {
-        $folderPath = 'public/description-images/' . $slug;
         $imageName = basename($src);
-
-        // Check if the folder exists and the image file exists within it
-        if (Storage::exists($folderPath) && Storage::exists($folderPath . '/' . $imageName)) {
-            Storage::delete($folderPath . '/' . $imageName);
-        }
-
         // Create a context with SSL certificate verification disabled
         $context = stream_context_create([
             'ssl' => [

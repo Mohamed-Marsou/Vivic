@@ -86,16 +86,16 @@ const advanceImport = async () => {
 
         // Toggle the import view
         toggoleImport();
-        
+
         // Mark the import process as completed
         isImporting.value = false;
-        
+
         // Retrieve updated product data
         await getProductsDATA();
 
         // Toggle the display of the synchronization response message
         toggoleSyncResponse();
-        
+
         // Reset the input values
         restValue();
 
@@ -109,7 +109,7 @@ const advanceImport = async () => {
     }
 };
 
-function toggoleSyncResponse (){
+function toggoleSyncResponse() {
     showCount.value = !showCount.value
 }
 const validateAndFormatProductIds = (ids) => {
@@ -124,6 +124,11 @@ const validateAndFormatProductIds = (ids) => {
 
     if (!isValid) {
         errorMessage.value = 'Invalid IDs. Please enter positive integers separated by commas or leave it empty.';
+        setTimeout(() => {
+            isImporting.value = false
+            errorMessage.value = ''
+        }, 2000)
+
         return '';
     }
 
@@ -140,10 +145,38 @@ function restValue() {
     productIds.value = '';
     errorMessage.value = '';
 }
+
+const showDelete = ref(false)
+const productName = ref("")
+
+const toggoleDelete = (id, name) => {
+
+    if (!showDelete.value) {
+        showDelete.value = true
+        productName.value = id + ' ' + name
+    } else {
+        showDelete.value = false
+        productName.value = ''
+    }
+}
+
+async function deleteProduct(string) {
+    const id = string.split(' ')[0]
+    loading.value = true
+    try {
+        await api.delete(`/product/${id}`)
+        await getProductsDATA()
+        showDelete.value = false
+        loading.value = false
+    } catch (error) {
+        console.log(error);
+    }
+}
 </script>
 
 <template>
     <div v-if="!loading" class="products-wrapper">
+        <!--* IMPORT WRAPPER  -->
         <div class="overlay" :class="{ showOverlay: overlay }">
 
             <div class="import-container">
@@ -183,7 +216,8 @@ function restValue() {
                     </div>
                     <div class="slot">
                         <small v-if="errorMessage">Invalid IDs. Please enter positive integers separated by commas.</small>
-                        <textarea :disabled="isImporting" placeholder="Enter ids sapreted by ','" v-model="productIds"></textarea>
+                        <textarea :disabled="isImporting" placeholder="Enter ids sapreted by ','"
+                            v-model="productIds"></textarea>
                     </div>
                     <div class="slot btns">
                         <button :disabled="isImporting" @click="advanceImport">
@@ -198,6 +232,8 @@ function restValue() {
             </div>
 
         </div>
+
+        <!--* IMPORT BTN  -->
         <header>
             <h1>Products</h1>
 
@@ -206,6 +242,7 @@ function restValue() {
             </button>
         </header>
 
+        <!--* IMPORT RESPONSE MESSAGE  -->
         <div class="syncResponse " :class="{ show: showCount }">
             <p v-if="count > 0">
                 {{ count }} Products retrieved and processed successfully.
@@ -213,9 +250,10 @@ function restValue() {
             <p v-else>
                 No products were imported !!
             </p>
-           
         </div>
-        <div class="table-container">
+
+        <!--* PRODUCTS TABLE  -->
+        <div v-if="products" class="table-container">
             <div class="search-div">
                 <input type="text" placeholder="search">
                 <button>
@@ -232,6 +270,7 @@ function restValue() {
                         <th>Quantity</th>
                         <th>Average Rating</th>
                         <th>Category</th>
+                        <th colspan="2">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -243,17 +282,43 @@ function restValue() {
                             </RouterLink>
                         </td>
                         <td>{{ p.price }}</td>
-                        <td>{{ p.sale_price ? p.sale_price : 'null' }}</td>
+                        <td>{{ p.sale_price != '0.00' ? p.sale_price : 'null' }}</td>
                         <td>{{ p.inStock }}</td>
                         <td>{{ p.average_rating ? p.average_rating : 'null' }}</td>
                         <td>{{ p.category.name }}</td>
-                    </tr>
 
+                        <td><button id="edit">EDIT</button></td>
+                        <td>
+                            <button id="delete" @click="toggoleDelete(p.id, p.name)">
+                                DELETE
+                            </button>
+                        </td>
+                    </tr>
 
                 </tbody>
             </table>
 
             <button>Load more</button>
+        </div>
+
+        <!--* NO PRODUCTS CONTAINER  -->
+        <div class="emptyProducts" v-else>
+            <p>No products available at the moment...<br /> You can add new products.</p>
+        </div>
+
+        <!--* DELETE CONTAINER  -->
+        <div class="actionsOverlay" :class="{ showOverlay: showDelete }">
+            <div class="actionsOverlay_wrapper_del">
+                <p>Are you sure you want to DELETE</p>
+                <p>
+                    {{ productName }} ?
+                </p>
+
+                <div>
+                    <button @click="deleteProduct(productName)">DELETE</button>
+                    <button @click="toggoleDelete">CANCEL</button>
+                </div>
+            </div>
         </div>
     </div>
     <div v-else class="loading">
@@ -271,6 +336,73 @@ function restValue() {
     border-radius: 5px;
     overflow-x: scroll;
     position: relative;
+
+    .emptyProducts{
+        width: 100%;
+        height: 70%;
+        @include flex();
+        font-size: 1.5rem;
+        color: #555;
+        text-align: center;
+    }
+    .actionsOverlay {
+        width: 100%;
+        height: 100vh;
+        position: fixed;
+        background: #00000041;
+        top: 0;
+        right: 0;
+        @include flex();
+        display: none;
+
+        .actionsOverlay_wrapper_del {
+            width: 30rem;
+            height: 18rem;
+            background: #ffffff;
+            border-radius: 5px;
+            padding: 2rem;
+            text-align: center;
+
+            p {
+                margin-bottom: 1rem;
+
+                &:nth-child(2) {
+                    background: #f1174d;
+                    width: fit-content;
+                    margin: 2rem auto;
+                    color: white;
+                    padding: 5px;
+                }
+            }
+
+            >div {
+                width: 88%;
+                display: flex;
+                justify-content: space-between;
+                margin: 15% auto;
+
+                button {
+                    width: 8rem;
+                    height: 2.7rem;
+                    border: none;
+                    color: white;
+                    cursor: pointer;
+                    border-radius: 5px;
+
+                    &:nth-child(1) {
+                        background: #f1174d;
+                    }
+
+                    &:nth-child(2) {
+                        background: transparent;
+                        border: 2px solid #2c2e3eac;
+                        color: #2c2e3eac;
+
+                    }
+                }
+            }
+        }
+    }
 
     /* Hide scrollbar for Chrome, Safari and Opera */
     &::-webkit-scrollbar {
@@ -294,6 +426,7 @@ function restValue() {
         right: 0;
         @include flex();
         display: none;
+        z-index: 3;
 
         .import-container {
             width: 40rem;
@@ -363,7 +496,7 @@ function restValue() {
                 margin: 1rem 0;
                 padding: 10px;
                 display: none;
-              
+
                 .slot {
                     width: 95%;
                     min-height: 4rem;
@@ -434,16 +567,17 @@ function restValue() {
                             align-items: flex-end;
                         }
                     }
-                    button:disabled {
-                    cursor: not-allowed;
-                    opacity: 0.5;
 
-                    &:hover {
-                        background-color: #2c2e3e;
-                        color: #fff;
-                        border: none;
+                    button:disabled {
+                        cursor: not-allowed;
+                        opacity: 0.5;
+
+                        &:hover {
+                            background-color: #2c2e3e;
+                            color: #fff;
+                            border: none;
+                        }
                     }
-                }
                 }
 
                 .slot:has(small) {
@@ -561,6 +695,35 @@ function restValue() {
                         text-decoration: underline;
                     }
                 }
+
+            }
+
+            td:has(button) {
+                padding: 0;
+
+                button {
+                    width: 100%;
+                    height: 100%;
+                    padding: 0 0.5rem;
+                    border: none;
+                    border: none;
+                    background: transparent;
+                    color: #555;
+                    font-weight: bold;
+                    opacity: .7;
+                    cursor: pointer;
+                    transition: .3s ease-out;
+                }
+
+                #edit:hover {
+                    background: #03c94f;
+                    color: white;
+                }
+
+                #delete:hover {
+                    background: #c90324;
+                    color: white;
+                }
             }
 
             tbody tr {
@@ -579,16 +742,16 @@ function restValue() {
             background: #2c2e3e;
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 20px;
             width: 8rem;
             height: 3rem;
             cursor: pointer;
             box-shadow: #2c2e3e3d 1px 1px 5px 1px;
+            text-transform: uppercase;
         }
     }
 
 }
-
 .syncResponse {
     width: 80%;
     height: 3.5rem;
@@ -600,6 +763,7 @@ function restValue() {
     position: relative;
     display: none;
     transition: .3s ease-in-out;
+
     p {
         padding: 1.1rem;
         font-size: .9rem;

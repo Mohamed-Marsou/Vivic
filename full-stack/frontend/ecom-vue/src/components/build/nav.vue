@@ -30,7 +30,7 @@ const login = async () => {
     }
     try {
         const res = await api.post('/user/login' , payload)
-        console.log(res);
+        
         if (res.data.token) {
             if (localStorage.getItem('wishlist')) {
                 localStorage.removeItem('wishlist');  
@@ -43,9 +43,12 @@ const login = async () => {
             authtStore.checkAuth()
             // Redirect 
             clearPage()
+            if (localStorage.getItem('userData')) {
+                localStorage.removeItem('userData');
+            }
             router.push('/profile')
         }
-        console.log(res);
+        
     } catch (error) {
         console.log(error);
         errMsg.value = error.response.data.message ? error.response.data.message : 'Something went wrong please try again '
@@ -294,8 +297,9 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
         >div {
             transition: .3s ease-in;
             width: 100%;
-            height: 5px;
-            background: black;
+            height: 4px;
+            background: rgb(53, 53, 53);
+            border-radius: 5px;
         }
     }
 
@@ -487,7 +491,7 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
             width: 30vw;
             min-height: calc(100vh - 4.5rem) !important;
             flex-direction: column;
-            align-items: flex-start;
+            justify-content: flex-start;
             gap: 0;
             padding: 0;
             z-index: 3;
@@ -495,7 +499,6 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
             transition: .3s ease-in;
             transform: translateX(-100%);
             overflow-y: scroll;
-
             >li {
                 width: 100%;
                 height: 4rem;
@@ -520,11 +523,10 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
 
             #search {
                 width: 100%;
-                height: 3.5rem;
+                height: 3.3rem;
                 border-bottom: 1px solid #5555554a;
                 display: flex !important;
-                margin-bottom: 1rem;
-
+               
                 >i {
                     width: 20%;
                     height: 100%;
@@ -627,7 +629,8 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
         }
 .clickedHam {
     >div:nth-child(1) {
-        transform: rotate(-45deg) translate(-8px, 5px);
+        transform: rotate(-45deg) translate(-7px, 4px);
+        width: 2rem !important;
     }
 
     >div:nth-child(2) {
@@ -636,5 +639,7 @@ const profileRoute = isUserAuth.value ? { name: 'user-auth' } : { name: 'profile
 
     >div:nth-child(3) {
         transform: rotate(45deg) translate(-8px, -6px);
+        width: 2rem !important;
+
     }
 }</style>

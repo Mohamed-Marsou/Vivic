@@ -133,7 +133,7 @@ section {
     display: flex;
 
     aside {
-        width: 20%;
+        width: 12%;
         height: 100vh;
         background-color: #2c2e3e;
         color: azure;
@@ -220,7 +220,7 @@ section {
     }
 
     main {
-        width: 80%;
+        width: 88%;
         height: 100vh;
         transition: .3s ease-in;
         header {

@@ -7,62 +7,68 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-
 class UserController extends Controller
 {
 
     public function register(Request $request)
     {
-        $validatedData = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'email', 'max:255', 'unique:users'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+            ]);
     
-        // Check if a user with this email already exists
-        $existingUser = User::where('email', $validatedData['email'])->first();
+            // Check if a user with this email already exists
+            $existingUser = User::where('email', $validatedData['email'])->first();
     
-        if ($existingUser) {
-            // User with the same email exists, update the user's data
-            $existingUser->name = $validatedData['name'];
-            $existingUser->password = Hash::make($validatedData['password']);
-            $existingUser->is_guest = false; 
-            $existingUser->save();
+            if ($existingUser) {
+                if ($existingUser->is_guest) {
+                    // User with the same email is a guest, update the user's data
+                    $existingUser->name = $validatedData['name'];
+                    $existingUser->password = Hash::make($validatedData['password']);
+                    $existingUser->is_guest = false;
+                    $existingUser->save();
+                    // Authenticate the user
+                    Auth::login($existingUser);
+                    // Generate and return an API token for the user
+                    $token = $existingUser->createToken('api-token')->plainTextToken;
+                    return response()->json([
+                        'message' => 'User data updated and authenticated',
+                        'user' => $existingUser->only(['id', 'name']),
+                        'token' => $token,
+                    ], 200);
+                } else {
+                    // User with this email already exists and is not a guest
+                    return response()->json(['error' => 'Email is already taken'], 409);
+                }
+            } else {
+                // User with this email doesn't exist, create a new user
+                $user = new User();
+                $user->name = $validatedData['name'];
+                $user->email = $validatedData['email'];
+                $user->password = Hash::make($validatedData['password']);
+                $user->is_guest = false;
+                $user->save();
     
-            // Authenticate the user
-            Auth::login($existingUser);
+                // Authenticate the new user
+                Auth::login($user);
     
-            // Generate and return an API token for the user
-            $token = $existingUser->createToken('api-token')->plainTextToken;
+                // Generate and return an API token for the new user
+                $token = $user->createToken('api-token')->plainTextToken;
     
-            return response()->json([
-                'message' => 'User data updated and authenticated',
-                'user' => $existingUser->only(['id', 'name']),
-                'token' => $token,
-            ], 200);
-        } else {
-            // User with this email doesn't exist, create a new user
-            $user = new User();
-            $user->name = $validatedData['name'];
-            $user->email = $validatedData['email'];
-            $user->password = Hash::make($validatedData['password']);
-            $user->is_guest = false;
-            $user->save();
-    
-            // Authenticate the new user
-            Auth::login($user);
-    
-            // Generate and return an API token for the new user
-            $token = $user->createToken('api-token')->plainTextToken;
-    
-            return response()->json([
-                'message' => 'Registration successful',
-                'user' => $user->only(['id', 'name']),
-                'token' => $token,
-            ], 201);
+                return response()->json([
+                    'message' => 'Registration successful',
+                    'user' => $user->only(['id', 'name']),
+                    'token' => $token,
+                ], 201);
+            }
+        } catch (\Exception $e) {
+            // Handle the exception and return an error response
+            return response()->json(['error' => $e], 500);
         }
     }
+    
     public function login(Request $request)
     {
         $credentials = $request->validate([

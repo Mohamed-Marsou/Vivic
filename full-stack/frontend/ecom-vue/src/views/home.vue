@@ -3,6 +3,7 @@ import CategoryCarousel from "../components/build/category-carousel.vue"
 import Products from '../components/build/products.vue'
 import ProductsCarousel from "../components/build/products-carousel.vue";
 import Mail from "../components/build/mail-container.vue";
+import { RouterLink } from "vue-router";
 import { ref, onMounted } from "vue";
 import { useProductStore } from '../stores/product'
 import Loading from "../components/build/loading.vue";
@@ -18,11 +19,11 @@ const highRated = ref([])
 
 
 onMounted(async () => {
-
+    
+    isLoaded.value = true
     await getNewArrivals()
     await getCategories()
     await getHighRatedProducts()
-    isLoaded.value = true
 })
 
 async function getNewArrivals() {
@@ -48,12 +49,11 @@ async function getHighRatedProducts() {
                     Get the best Products With best Offres !
                 </h2>
                 <p>
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                    Obcaecati nihil molestiae, unde laborum magnam esse
-                    Obcaecati nihil molestiae, unde laborum magnam esse
+                    Welcome to our store, where you can find a wide range of high-quality products that cater to all your needs. Whether you're looking for the latest gadgets, stylish fashion, or home essentials, we've got you covered. 
+                    <br />Our commitment to excellence ensures that you'll always get the best value for your money.
                 </p>
                 <button id="CTA">
-                    Shop Now
+                    <RouterLink :to="{ name: 'new' }">SHOP NOW </RouterLink>
                 </button>
             </div>
         </div>
@@ -180,10 +180,16 @@ async function getHighRatedProducts() {
                 width: 8rem;
                 height: 3rem;
                 border: none;
-                background: #2E6BC6;
-                color: #fff;
                 border-radius: 5px;
+                background: #2E6BC6;
                 cursor: pointer;
+                transition: .3s ease-in-out;
+                &:hover{
+                    background: #347deb;
+                }
+                a{
+                    color: #fff;
+                }
             }
         }
     }
@@ -239,7 +245,7 @@ async function getHighRatedProducts() {
     }
 
     .deals-wrapper {
-        width: 80%;
+        width: 85%;
         height: 80vh;
         margin: 1rem auto;
         display: grid;

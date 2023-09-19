@@ -1,7 +1,8 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
-import { useRoute, RouterLink , useRouter} from 'vue-router'
+import { useRoute, RouterLink, useRouter } from 'vue-router'
 import { useProductStore } from '../stores/product';
+import Loading from '../components/build/loading.vue';
 import api from '../http/api';
 
 const title = ref('Discover Our Stunning Product Collection')
@@ -13,6 +14,7 @@ const router = useRouter()
 const productStore = useProductStore()
 const products = ref([])
 const total = ref(0)
+const loaded = ref(0)
 const category = ref(null)
 onMounted(async () => {
     scrollToTop()
@@ -38,6 +40,7 @@ onMounted(async () => {
 
         maxPrice.value = Math.floor(res.data.maxPrice) + 1
     }
+    loaded.value = true
 })
 function scrollToTop() {
     window.scrollTo({
@@ -167,37 +170,37 @@ const sendCheckedCheckboxes = async () => {
 };
 // toggoleFilters
 const visibleFilters = ref(false)
-const toggoleFilters = ()=>{
-    visibleFilters.value = !visibleFilters.value 
+const toggoleFilters = () => {
+    visibleFilters.value = !visibleFilters.value
 }
 // add to Cart
-const  addToCart =async  (productId) =>
-{
+const addToCart = async (productId) => {
     productStore.addToCart(productId)
-    router.push({name : 'cart'})
+    router.push({ name: 'cart' })
 
 }
 </script>
 <template>
-    <div class="category-main">
+    <div v-if="loaded" class="category-main">
         <div class="banner-cut">
-            <div>
+            <div :class="{ banner__text: loaded }">
                 <h1>
                     {{ title }}
                 </h1>
 
                 <button>Shop now</button>
             </div>
-            <img :src="bannerImg" alt="cover-image">
+            <img :class="{ banner__image: loaded }" :src="bannerImg" alt="cover-image">
         </div>
+
         <div id="main-prds-box">
-            <div class="filter" :class="{ showFilters : visibleFilters}">
+            <div class="filter" :class="{ showFilters: visibleFilters }">
 
                 <div class="filterToggle">
-                        <p title="Show Filters" @click="toggoleFilters">Filters
-                            <i v-if="!visibleFilters" class="fa-solid fa-filter"></i>
-                            <i v-else class="fa-regular fa-circle-xmark"></i>
-                        </p>
+                    <p title="Show Filters" @click="toggoleFilters">Filters
+                        <i v-if="!visibleFilters" class="fa-solid fa-filter"></i>
+                        <i v-else class="fa-regular fa-circle-xmark"></i>
+                    </p>
                 </div>
 
                 <div class="price-filter">
@@ -254,7 +257,7 @@ const  addToCart =async  (productId) =>
             </div>
 
 
-            <div class="prds-wrapper" :class="{'full-width' : visibleFilters}">
+            <div class="prds-wrapper" :class="{ 'full-width': visibleFilters }">
                 <div class="dropDownFilters">
                     <p>Showing {{ products.length }} results out of {{ total }}</p>
                     <select>
@@ -276,14 +279,14 @@ const  addToCart =async  (productId) =>
                                 <i class="fa-solid fa-cart-plus"></i>
                             </div>
 
-                            <div v-if="p.sale_price" class="badge">
+                            <div v-if="p.sale_price & p.sale_price != 0" class="badge">
                                 -{{ getProductDiscount(p) }}%
                             </div>
                         </div>
                         <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
                             {{ p.name }}
                         </RouterLink>
-                        <p v-if="p.sale_price">
+                        <p v-if="p.sale_price & p.sale_price != 0">
                             ${{ p.sale_price }}
                         </p>
                         <p v-else>
@@ -310,6 +313,9 @@ const  addToCart =async  (productId) =>
             </div>
         </div>
     </div>
+    <div v-else class="loading">
+        <Loading />
+    </div>
 </template>
 
 <style lang="scss">
@@ -321,23 +327,31 @@ const  addToCart =async  (productId) =>
     font-family: $ff;
 
     .banner-cut {
-        width: 90%;
-        height: 20rem;
-        background-color: #fcf0e4;
-        margin: 1rem auto;
+        width: 100%;
+        height: 60vh;
+        background-color: #fcf0e481;
+        margin: 0 auto;
         @include flex($jc: space-between);
-        padding: 1rem 5vw;
+        padding: 1rem 2vw;
+        margin-bottom: 5rem;
+        overflow: hidden;
 
         >img {
-            width: 17rem;
-            height: 17rem;
-            object-fit: cover;
+            width: 40%;
+            height: 70%;
+            object-fit: contain;
             mix-blend-mode: multiply;
+            transform: translateY(-150%);
+            opacity: 0;
         }
 
         >div {
+            width: 58%;
+            transform: translateX(-150%);
+            opacity: 0;
+
             h1 {
-                padding: 1rem 0;
+                padding: 2rem 0;
                 text-transform: uppercase;
             }
 
@@ -385,6 +399,7 @@ const  addToCart =async  (productId) =>
                 min-height: 3rem !important;
                 justify-content: flex-end;
                 display: none;
+
                 >p {
                     font-size: .9rem;
                     display: flex;
@@ -394,7 +409,8 @@ const  addToCart =async  (productId) =>
                     cursor: pointer;
                     color: #488ffa;
                     position: relative;
-                    &::after{
+
+                    &::after {
                         content: '';
                         width: 0;
                         height: 2px;
@@ -404,7 +420,8 @@ const  addToCart =async  (productId) =>
                         left: 0;
                         transition: .3s ease-in-out;
                     }
-                    &:hover::after{
+
+                    &:hover::after {
                         width: 100%;
                     }
                 }
@@ -562,6 +579,7 @@ const  addToCart =async  (productId) =>
         .prds-wrapper {
             width: calc(100% - 18rem);
             min-height: 50vh;
+
             .dropDownFilters {
                 width: 95%;
                 height: 3rem;
@@ -756,57 +774,92 @@ const  addToCart =async  (productId) =>
     }
 }
 
+.banner__text {
+    animation: slideIn 0.3s ease-in-out .5s forwards;
+}
+.banner__image {
+    animation: fromTop 0.3s ease-in-out .5s forwards;
+}
+
+@keyframes slideIn {
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fromTop {
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+
+
+.loading {
+    width: 100%;
+    height: 100vH;
+}
+
 @media screen and (max-width: 768px) {
-  
+
     .category-main {
         .banner-cut {
-        width: 100%;
-        padding: 1rem 2vw;
-        >div {
-            h1 {
-                font-size: 1.5rem;
+            width: 100%;
+            padding: 1rem 2vw;
+
+            >div {
+                h1 {
+                    font-size: 1.5rem;
+                }
             }
         }
-    }
+
         #main-prds-box {
 
             .filter {
                 width: 5rem;
                 padding: 0 !important;
-                
-                >div{
-                    display: none;
-                }
-            }
-            .prds-wrapper {
-                width: calc(100% - 7rem ) !important;
-                transition: .3s ease-in-out;
-            .dropDownFilters {
-                width: 100%;
-                justify-content: flex-end;
-                >p {
+
+                >div {
                     display: none;
                 }
             }
 
-            .section-products {
-                .prd-silde {
-                    width: 18rem;
-                    height: 24rem !important;
-                    .image-ctx {
-                        width: 100%;
-                        >a img {
+            .prds-wrapper {
+                width: calc(100% - 7rem) !important;
+                transition: .3s ease-in-out;
+
+                .dropDownFilters {
+                    width: 100%;
+                    justify-content: flex-end;
+
+                    >p {
+                        display: none;
+                    }
+                }
+
+                .section-products {
+                    .prd-silde {
+                        width: 18rem;
+                        height: 24rem !important;
+
+                        .image-ctx {
+                            width: 100%;
+
+                            >a img {
+                                width: 100%;
+                            }
+                        }
+
+                        >.stars {
                             width: 100%;
                         }
                     }
 
-                    >.stars {
-                        width: 100%;
-                    }
                 }
-
             }
-        }
         }
     }
 
@@ -819,24 +872,26 @@ const  addToCart =async  (productId) =>
 
 
 @media screen and (max-width:600px) {
-  
+
     .category-main {
         .banner-cut {
-        img{
+            img {
                 display: none !important;
             }
-        >div {
-            h1 {
-                font-size: 1.5rem;
+
+            >div {
+                width: 100% !important;
+
+                h1 {
+                    font-size: 1.5rem;
+                }
+
             }
-            
         }
     }
 }
-}
 
-.showFilters 
-{
+.showFilters {
     width: 50vw !important;
     z-index: 4 !important;
     height: 100% !important;
@@ -846,38 +901,40 @@ const  addToCart =async  (productId) =>
     transition: .3s ease-in-out;
     border-right: 1px solid #5555552d;
     background: #fff;
-    >div:not(.filterToggle){
+
+    >div:not(.filterToggle) {
         z-index: 4 !important;
         display: block !important;
     }
 }
-.full-width
-{
+
+.full-width {
     min-width: 100% !important;
 }
+
 @media screen and (max-width: 450px) {
     .prd-silde {
         width: 100% !important;
-              
+
     }
-    .showFilters 
-    {
+
+    .showFilters {
         width: 70vw !important;
     }
 
     .category-main {
         .banner-cut {
-        >div {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            h1 {
-                font-size: 1.3rem;
-                text-align: center;
+            >div {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+
+                h1 {
+                    font-size: 1.3rem;
+                    text-align: center;
+                }
+
             }
-            
         }
     }
-}
-}
-</style>
+}</style>

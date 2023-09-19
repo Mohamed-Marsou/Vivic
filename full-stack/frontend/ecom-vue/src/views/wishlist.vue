@@ -64,7 +64,7 @@ const removeFromWishList = async (productId)=>{
                 <p>You don't have any products in the wishlist yet.<br />
                     You will find a lot of interesting products on our "Shop" page.
                 </p>
-                <RouterLink :to="{ name: 'home' }">
+                <RouterLink :to="{ name: 'new' }">
                     RETURN TO SHOP
                 </RouterLink>
             </div>

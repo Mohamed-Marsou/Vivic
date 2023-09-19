@@ -37,6 +37,7 @@ const register = async () => {
     };
     try {
         const res = await api.post('/user/register', payload);
+        console.log(res);
         if (res.data.token) {
             if (localStorage.getItem('wishlist')) {
                 localStorage.removeItem('wishlist');  
@@ -52,12 +53,12 @@ const register = async () => {
                 localStorage.removeItem('userData');
             }
 
-            // Redirect or perform other actions after successful registration
+            // Redirect
             router.push('/')
         }
     } catch (error) {
         console.error('Error during registration:', error);
-        errMsg.value = error.response.data.message
+        // errMsg.value = error.response.data.message
     }
 }
 const loginEmail = ref('')
@@ -70,7 +71,7 @@ const login = async () => {
         password : loginPassword.value
     }
     try {
-        const res = await api.post('/user/login' , payload)
+        const res = await api.post('/user/login', payload)
         errMsg.value =''
         if (res.data.token) {
             if (localStorage.getItem('wishlist')) {
@@ -85,7 +86,7 @@ const login = async () => {
             if (localStorage.getItem('userData')) {
                 localStorage.removeItem('userData');
             }
-            // Redirect or perform other actions after successful registration
+            // Redirect
             router.push('/')
         }
         console.log(res);

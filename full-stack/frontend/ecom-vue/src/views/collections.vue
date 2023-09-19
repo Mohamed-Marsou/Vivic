@@ -4,8 +4,9 @@ import Mail from "../components/build/mail-container.vue";
 import { ref, onMounted } from "vue";
 import { useProductStore } from '../stores/product'
 import { useRouter } from 'vue-router';
-import api from '../http/api'
-
+ 
+import Loading from '../components/build/loading.vue';
+const loaded = ref(false)
 
 const productStore = useProductStore()
 
@@ -22,6 +23,7 @@ onMounted(() => {
 async function getCategories() {
     const res = await productStore.getCategories()
     categories.value = res.data.response
+    loaded.value = true
 }
 </script>
 
@@ -35,11 +37,15 @@ async function getCategories() {
                 <h2>Collections</h2>
             </div>
         </div>
+
         <div class="heading">
             <p>Explore our diverse range of categories for your interests</p>
             <h2>Recommended Categories</h2>
         </div>
-        <categoryCarousel headerText="" :categoryList="categories" />
+        <categoryCarousel headerText="" :categoryList="categories" v-if="loaded"/>
+        <div v-else class="loadingCategories">
+            <Loading />
+        </div>
         <div class="mega-bx">
             <div>
                 <img src="../assets/images/accessories-banner-1.jpg.webp" alt="cover">
@@ -161,15 +167,16 @@ async function getCategories() {
         margin: 1rem auto;
         display: flex;
         justify-content: space-evenly;
-        box-shadow: 0px 5px 13px 2px rgba(0, 0, 0, 0.168627451);
-
-        // --- todo show 4th el in >768px
+        
         >div {
-            width: 33%;
+            width: 32.5%;
             height: 55vh;
             position: relative;
             transition: .3s ease-in-out;
             overflow: hidden;
+            box-shadow: 0px 5px 13px 2px rgba(0, 0, 0, 0.115);
+            border-radius: 10px;
+            margin-right: 5px;
 
             >img {
                 width: 100%;
@@ -186,26 +193,27 @@ async function getCategories() {
 
             >div {
                 position: absolute;
-                top: 10px;
+                top: 20px;
                 left: 1rem;
-
-                p {
+                width: 100%;
+                user-select: none;
+                p { 
                     color: #2E6BC6;
                     font-size: .9rem;
                 }
 
                 h2 {
                     text-transform: uppercase;
-                    font-size: 2rem;
+                    font-size: 2.5rem;
                     padding: 1rem 0;
                 }
 
                 button {
                     color: #fff;
                     background: #2E6BC6;
-                    width: 6rem;
-                    height: 2rem;
-                    border-radius: 10px;
+                    width: 8rem;
+                    height: 3rem;
+                    border-radius: 20px;
                     border: none;
                     cursor: pointer;
                 }
@@ -267,6 +275,12 @@ async function getCategories() {
     .Carousel>p {
         display: none;
     }
+}
+.loadingCategories{
+    width: 90%;
+    height: 14rem ;
+    margin: 2rem auto;
+    @include flex();
 }
 
 @media screen and (max-width:1024px) {

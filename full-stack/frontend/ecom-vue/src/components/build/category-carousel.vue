@@ -112,9 +112,13 @@ const generateSlug = (name) => {
                 opacity: 0;
                 transition: .2s ease-in;
                 border-radius: 50%;
+                transform-origin: center;
 
             }
 
+            &:hover {
+            border: 0;
+            }
             &:hover::after {
                 width: 100%;
                 height: 100%;
@@ -125,8 +129,8 @@ const generateSlug = (name) => {
             }
 
             >img {
-                width: 95%;
-                height: 95%;
+                width: 90%;
+                height: 90%;
                 object-fit: cover;
                 transition: .2s ease-in;
             }

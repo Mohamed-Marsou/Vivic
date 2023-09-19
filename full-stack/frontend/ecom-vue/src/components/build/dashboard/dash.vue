@@ -2,6 +2,7 @@
 import BarChart from './Charts/Bar.vue'
 import LineChart from './Charts/Line.vue'
 import api from '../../../http/api';
+import { RouterLink } from 'vue-router';
 import { ref, onMounted, reactive } from 'vue'
 const LineChartLabel1 = ref('New Users')
 const LineChartData1 = ref([])
@@ -51,7 +52,7 @@ onMounted(async () => {
 </script>
 <template>
     <div class="Comp__Container">
-        <div class="mainHeader">
+        <div class="mainHeader" v-if="dataLoaded">
             <div class="box">
                 <div class="Bicon">
                     <i class="fa-solid fa-chart-column"></i>
@@ -115,24 +116,28 @@ onMounted(async () => {
             </div>
             <div class="Ord-Prd">
                 <h6>Recent Orders</h6>
-                <div v-if="recentOrders">
+                <div v-if="recentOrders.length > 1 ">
                     <div v-for="(o, index) in recentOrders" :key="index" class="slot">
-                        <img :src="o.cover_image.url" alt="Product-image">
-                        <p>
-                            {{  o.product_name.lenght > 20 ?
-                                o.product_name.slice(0, 20) + '...' : 
-                                o.product_name
-                            }}
-                        </p>
-                        <span>{{ o.quantity }}</span>
-                        <p>
-                            ${{ o.product_price }}
-                        </p>
+                        <div>
+                            <img :src="o.cover_image.url" alt="Product-image">
+                            <RouterLink :to="{ name: 'product-page', params: { slug: o.slug } }">
+                                {{ o.product_name.length > 15 ?
+                                    o.product_name.slice(0, 15) + '...' :
+                                    o.product_name
+                                }}
+                            </RouterLink>
+                        </div>
+                        <div>
+                            <span>{{ o.quantity }}</span>
+                            <p>
+                                ${{ o.product_price }}
+                            </p>
+                        </div>
 
                     </div>
                 </div>
                 <div v-else>
-                    <p style="padding: 0 2vw; color: #555;">No Orders yet !</p>
+                    <p style="text-align: center; font-size: 1rem; color: #555;">No Orders yet !</p>
                 </div>
             </div>
         </div>
@@ -184,7 +189,6 @@ onMounted(async () => {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-
 
             }
 
@@ -260,7 +264,7 @@ onMounted(async () => {
             display: flex;
             gap: 1vw;
             flex-direction: column;
-            
+
         }
 
         .Ord-Prd {
@@ -295,9 +299,20 @@ onMounted(async () => {
                 height: 4rem;
                 border-bottom: 1px solid #66666638;
                 display: flex;
-                align-items: center;
-                justify-content: space-between;
                 padding: 1rem 1vw;
+                justify-content: space-between;
+
+                >div {
+                    display: flex;
+                    align-items: center;
+                    width: 70%;
+                    gap: 1vw;
+
+                    &:nth-child(2) {
+                        width: 25%;
+                    }
+
+                }
 
                 img {
                     width: 3rem;
@@ -305,8 +320,13 @@ onMounted(async () => {
                     object-fit: contain;
                 }
 
-                p {
+                a {
                     font-size: .9rem;
+                    color: #555;
+
+                    &:hover {
+                        text-decoration: underline;
+                    }
                 }
             }
         }
@@ -340,7 +360,6 @@ onMounted(async () => {
             }
         }
     }
-
 
     .Charts-container {
         width: 100%;
@@ -388,6 +407,49 @@ onMounted(async () => {
 
     }
 }
+
+@media screen and (max-width : 1024px) {
+    .mainHeader {
+        flex-wrap: wrap;
+        height: fit-content !important;
+        margin: 1rem 0;
+
+        >div {
+            width: 90% !important;
+            padding: 2vw !important;
+        }
+    }
+
+    .Charts-container {
+        width: 90% !important;
+        margin: 0 auto;
+        height: fit-content !important;
+        flex-wrap: wrap !important;
+
+
+        .barChart {
+            width: 100% !important;
+            height: 25rem !important;
+        }
+
+        .LineChartContainer {
+            width: 100% !important;
+            height: 40rem !important;
+        }
+
+        .Ord-Prd {
+            width: 100% !important;
+            height: 60vh;
+            h6 {
+                font-size:2rem !important;
+            }
+        }
+    }
+
+}
+
+
+
 
 .spinner-c {
     width: 100%;
@@ -513,4 +575,5 @@ onMounted(async () => {
         left: 37px;
         animation-duration: 442ms;
     }
-}</style>
+}
+</style>

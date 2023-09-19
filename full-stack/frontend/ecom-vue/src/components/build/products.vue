@@ -123,8 +123,6 @@ const addToCart = async (productId) => {
                 width: 100%;
                 height: 14rem;
                 position: relative;
-
-
                 &:hover .actions {
                     transform: translateX(0);
                 }
@@ -135,15 +133,21 @@ const addToCart = async (productId) => {
 
                 }
 
-                >a>img {
+                a{
+                    @include flex();
+                    overflow: hidden;
                     width: 100%;
                     height: 100%;
-                    object-fit: contain;
-                    margin: auto;
-                    transition: .3s ease-in-out;
-
-                    &:hover {
-                        transform: scale(1.08);
+                    img {
+                        width: 80%;
+                        height: 80%;
+                        object-fit: contain;
+                        margin: auto;
+                        transition: .3s ease-in-out;
+                        
+                        &:hover {
+                            transform: scale(1.08);
+                        }
                     }
 
                 }

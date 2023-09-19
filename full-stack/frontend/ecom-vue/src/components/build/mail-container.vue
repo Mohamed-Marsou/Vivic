@@ -223,11 +223,11 @@ const submit = async () => {
 
 
             >i {
-                width: 10%;
+                width: 15% !important;
             }
 
             >input {
-                width: 90%;
+                width: 85% !important;
             }
         }
     }
@@ -242,20 +242,20 @@ const submit = async () => {
         }
 
         .inptCont {
-            width: 95%;
+            width: 90% !important;
 
             >i {
-                width: 13%;
+                width: 13% !important;
             }
 
             >input {
-                width: 87%;
+                width: 87% !important;
             }
         }
     }
 }
 
-@media screen and (max-width: 550px) {
+@media screen and (max-width: 450px) {
     .mail-caontainer {
         height: 35vh;
         gap: 1rem;
@@ -266,15 +266,15 @@ const submit = async () => {
         }
 
         .inptCont {
-            width: 98%;
-            height: 3.2rem;
+            width: 95% !important;
+            height:3.5rem !important;
 
             >i {
-                width: 15%;
+                width: 17% !important;
             }
 
             >input {
-                width: 85%;
+                width: 83% !important;
             }
         }
     }
