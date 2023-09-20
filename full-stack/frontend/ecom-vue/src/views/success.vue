@@ -22,6 +22,7 @@ onMounted(async () => {
         const orderId = route.query.orderId;
         const response = await api.get(`/order/products/${orderId}`);
         orderInfo.value = response.data;
+        console.log(orderInfo.value);
         loading.value = false;
     } catch (error) {
         console.error(error);
@@ -30,9 +31,9 @@ onMounted(async () => {
     // Define table data
     tableData.value = orderInfo.value.products ? orderInfo.value.products.map((product) => [
         product.name,
-        `$${product.sale_price ? product.sale_price : product.price}`,
+        `$${product.sale_price != '0.00' ? product.sale_price : product.price}`,
         product.pivot.quantity.toString(),
-        `$${((product.sale_price ? product.sale_price : product.price) * product.pivot.quantity).toFixed(2)}`,
+        `$${((product.sale_price!= '0.00' ? product.sale_price : product.price) * product.pivot.quantity).toFixed(2)}`,
     ]) : [];
 
     console.log(orderInfo.value);
@@ -40,13 +41,11 @@ onMounted(async () => {
 });
 
 const calculateTotal = (product) => {
-    return product.pivot.quantity * parseFloat(product.sale_price ? product.sale_price : product.price);
+    return product.pivot.quantity * parseFloat(product.sale_price!= '0.00' ? product.sale_price : product.price);
 };
 
 const generatePdf = () => {
-
     const doc = new jsPDF();
-
     const table = myTable.value;
 
     // Convert the table element to HTML string
@@ -59,7 +58,7 @@ const generatePdf = () => {
 
     // Set the font size for title, transaction ID, and date
     doc.setFontSize(8);
-    // TODO CHANGE 
+    // TODO CHANGE
     doc.text(storeUrl, 15, 10);
 
     doc.setFontSize(20);
@@ -83,10 +82,10 @@ const generatePdf = () => {
     doc.autoTable({
         head: [headers],
         body: data,
-        startY: 60, // Set the y-coordinate for the table
+        startY: 60,
         didParseCell: function (data) {
             if (data.section === 'head' && data.row.index === 0) {
-                // Apply custom styling to the header row 
+                // Apply custom styling to the header row
                 data.cell.styles.fillColor = [1, 145, 97];
                 data.cell.styles.textColor = [255, 255, 255];
             }
@@ -99,17 +98,23 @@ const generatePdf = () => {
         columnStyles: {
             0: { cellWidth: 50 },
         },
+        // Add a hook to calculate and display the grand total
+        didDrawPage : function (data) {
+            const grandTotal = orderInfo.value.amount;
+            doc.text(`Grand Total: $${grandTotal}`, 15, doc.internal.pageSize.height - 15);
+        },
     });
 
     // Save the PDF
     doc.save('document.pdf');
 }
 
+
 function copyOrderID() {
     const orderIdElement = document.getElementById('orderId');
     const orderIdText = orderIdElement.innerText;
     const tempTextarea = document.createElement('textarea');
-    tempTextarea.value = orderIdText;
+    tempTextarea.value = orderIdText.split(':')[1];
     document.body.appendChild(tempTextarea);
     tempTextarea.select();
     document.execCommand('copy');
@@ -147,17 +152,23 @@ function copyOrderID() {
                                 <th>Product</th>
                                 <th>Price</th>
                                 <th>Quantity</th>
-                                <th>Total</th>
+                                <th>Sub-Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="product in orderInfo.products" :key="product.id">
                                 <td>{{ product.name }}</td>
-                                <td>${{ product.sale_price ? product.sale_price : product.price }}</td>
+                                <td>${{ product.sale_price != '0.00' ? product.sale_price : product.price }}</td>
                                 <td>{{ product.pivot.quantity }}</td>
                                 <td>${{ calculateTotal(product) }}</td>
                             </tr>
                         </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3">Total</td>
+                                <td>$ {{ orderInfo.amount }}</td>
+                            </tr>
+                    </tfoot>
                     </table>
                 </template>
                 <template v-else>

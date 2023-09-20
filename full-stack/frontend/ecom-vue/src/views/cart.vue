@@ -13,12 +13,10 @@ import axios from 'axios';
 const router = useRouter()
 const productStore = useProductStore()
 const authStore = useAuthtStore()
-let products = ref([])
+const products = ref([])
 const loaded = ref(false)
 const VITE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_PK_STRIPE
 
-const showCouponMsg = ref(false)
-const couponCode = ref('')
 let stripe = {}
 
 onMounted(async () => {
@@ -33,8 +31,11 @@ onMounted(async () => {
         cardElement = elements.create('card');
     });
     await getInCartProductsList()
+    getTotalAmount()
     loaded.value = true;
     getUserData()
+    console.log(products.value);
+
 })
 async function getInCartProductsList() {
     const res = await productStore.getInCartProducts()
@@ -57,6 +58,10 @@ const getCoverImg = (p) => {
 const removeItem = async (pId) => {
     await productStore.removeCartItem(pId)
     await getInCartProductsList()
+    getTotalAmount()
+    if (couponAdded.value) {
+        calcDiscount(discountType.value, amount.value)
+    }
 }
 
 const decreaseCount = async (product) => {
@@ -88,6 +93,10 @@ const decreaseCount = async (product) => {
             products.value = updatedProducts;
             if (response.status === 200) {
                 product.quantity--
+                getTotalAmount()
+                if (couponAdded.value) {
+                    calcDiscount(discountType.value, amount.value)
+                }
             }
         } catch (error) {
             console.error('Error updating item quantity in cart:', error);
@@ -102,12 +111,18 @@ const decreaseCount = async (product) => {
             // Update the quantity in localStorage and products array
             product.quantity--;
             updateLocalStorage(product.product.id, -1);
-            console.log('Quantity decreased successfully.');
+            getTotalAmount()
+            if (couponAdded.value) {
+                calcDiscount(discountType.value, amount.value)
+            }
         } else if (quantity === 1) {
             // Remove the product from localStorage and products array
             products = products.filter(item => item.product.id !== product.product.id);
             updateLocalStorage(product.product.id, 0);
-            console.log('Product removed successfully.');
+            getTotalAmount()
+            if (couponAdded.value) {
+                calcDiscount(discountType.value, amount.value)
+            }
         } else {
             console.log('Cannot decrease quantity. Stock and quantity are equal or less than 1.');
         }
@@ -127,6 +142,11 @@ const increaseCount = async (product) => {
         })
         if (response.status === 200) {
             product.quantity++
+            getTotalAmount()
+            if (couponAdded.value) {
+                calcDiscount(discountType.value, amount.value)
+            }
+
         }
     } else {
         // GUEST USER
@@ -136,7 +156,10 @@ const increaseCount = async (product) => {
             // Update the quantity in localStorage and products array
             product.quantity++;
             updateLocalStorage(product.product.id, 1);
-            console.log('Quantity increased successfully.');
+            getTotalAmount()
+            if (couponAdded.value) {
+                calcDiscount(discountType.value, amount.value)
+            }
         } else {
             console.log('Cannot increase quantity. Exceeds stock limit.');
         }
@@ -158,27 +181,6 @@ const updateLocalStorage = (productId, quantityChange) => {
         localStorage.setItem('inCart', JSON.stringify(inCart));
     }
 };
-
-function getTotalAmount() {
-    let totalAmount = 0;
-
-    products.value.forEach(product => {
-        const price = product.product.sale_price ? parseFloat(product.product.sale_price) : parseFloat(product.product.price);
-        totalAmount += price * product.quantity;
-    });
-
-    return totalAmount.toFixed(2);
-}
-
-const handleCouponSub = () => {
-    showCouponMsg.value = true
-    setTimeout(() => {
-        showCouponMsg.value = false
-        couponCode.value = ''
-    }, 3000)
-}
-
-
 // ------- user form
 const countries = ref(countryCodes)
 
@@ -200,7 +202,7 @@ const userAddressError = ref('');
 
 const userCity = ref('');
 const userCityError = ref('');
-// is Diffrent address 
+// is Different address 
 const isShowingShippingFields = ref(false)
 const showShippingFields = () => {
     isShowingShippingFields.value = !isShowingShippingFields.value
@@ -249,7 +251,7 @@ const payInit = async (e) => {
                             {
                                 amount: {
                                     currency_code: 'USD',
-                                    value: getTotalAmount(),
+                                    value: cartTotalAmount.value,
                                 },
                             },
                         ],
@@ -312,7 +314,7 @@ const saveUser = () => {
         const userData = {
             'user':
             {
-                name: userFname.value + ' ' + userLname.value ,
+                name: userFname.value + ' ' + userLname.value,
                 email: userEmail.value,
                 country: userCountry.value,
                 address: userAddress.value,
@@ -335,12 +337,12 @@ const getUserData = async () => {
     if (authStore.isAuth) {
         const id = JSON.parse(Cookies.get('auth-user')).id;
         const res = await api.get(`/user/data/${id}`);
-        assignUserData(res.data , null);
+        assignUserData(res.data, null);
     } else {
         const storedData = localStorage.getItem('userData');
         if (storedData) {
             const userData = JSON.parse(storedData);
-            assignUserData(userData.user , userData.shipment);
+            assignUserData(userData.user, userData.shipment);
         }
     }
 };
@@ -350,7 +352,7 @@ const assignUserData = (userData, shipmentData) => {
         userFname.value = userData.name.split(' ')[0];
         userLname.value = userData.name.split(' ')[1];
         userEmail.value = userData.email;
-        userCountry.value = userData.country ;
+        userCountry.value = userData.country;
         userAddress.value = userData.address;
         userCity.value = userData.city;
     }
@@ -368,7 +370,7 @@ const assignUserData = (userData, shipmentData) => {
 ///////////////////////////// /////////////////////////////
 ///////////////////////////// ///////////////////////////// /////////////////////////////
 const isProcessing = ref(false)
-const costomerOrder = ref({})
+const costumerOrder = ref({})
 // handling Stripe payment
 const stripePaymentSubmit = async () => {
 
@@ -394,26 +396,25 @@ const stripePaymentSubmit = async () => {
     }
 
     // Prepare the payload for the WordPress API.
-    const orderdProducts = products.value.map(item => ({
+    const orderedProducts = products.value.map(item => ({
         quantity: item.quantity,
-        product_id: item.product.id,
         name: item.product.name,
+        sku: item.product.SKU,
         price: item.product.sale_price ? (item.product.sale_price).toString() : (item.product.price).toString(),
-        total: item.product.sale_price ?
+        total: item.product.sale_price != '0.00' ?
             (item.product.sale_price * item.quantity).toString() : (item.product.price * item.quantity).toString()
     }));
-
     // order details for the customer.
-    costomerOrder.value.payment_method_id = paymentMethod.id;
-    costomerOrder.value.amount = getTotalAmount();
-    costomerOrder.value.userId = authStore.isAuth ? JSON.parse(Cookies.get('auth-user')).id : null;
+    costumerOrder.value.payment_method_id = paymentMethod.id;
+    costumerOrder.value.amount = +cartTotalAmount.value;
+    costumerOrder.value.userId = authStore.isAuth ? JSON.parse(Cookies.get('auth-user')).id : null;
 
 
     const wordpressPayload = {
         status: 'processing',
         currency: 'USD',
-        total: costomerOrder.value.amount,
-        customer_id: costomerOrder.value.userId,
+        total: costumerOrder.value.amount,
+        customer_id: costumerOrder.value.userId,
         billing: {
             first_name: userFname.value,
             last_name: userLname.value,
@@ -429,30 +430,36 @@ const stripePaymentSubmit = async () => {
             country: shipmentCountry.value ? shipmentCountry.value.split(":")[0] : userCountry.value.split(":")[0],
             city: shipmentCity.value ? shipmentCity.value : shipmentCity.value,
         },
-        user_id: costomerOrder.value.userId,
-        line_items: orderdProducts,
+        user_id: costumerOrder.value.userId,
+        line_items: orderedProducts,
     };
+    // Add the coupon_lines field conditionally
+    if (couponCode.value) {
+    wordpressPayload.coupon_lines = [
+        {
+        code: couponCode.value,
+        },
+    ];
+    }
+    console.log(wordpressPayload);
     try {
-
-
         // Post order details to the WordPress API.
         const wordpressResponse = await axios.post(`${import.meta.env.VITE_WOO_URL}/orders`, wordpressPayload
             , {
                 headers: { "Authorization": basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS) }
             });
-
         // 
-        costomerOrder.value.wp_order_id = wordpressResponse.data.id;
-        costomerOrder.value.costumerName = wordpressResponse.data.billing.first_name + " " + wordpressResponse.data.billing.last_name
-        costomerOrder.value.costumerEmail = wordpressResponse.data.billing.email
-        costomerOrder.value.costumerAddress = wordpressResponse.data.billing.address_1
-        costomerOrder.value.costumerCity = wordpressResponse.data.billing.city
-        costomerOrder.value.costumerCountry = userCountry.value
+        costumerOrder.value.wp_order_id = wordpressResponse.data.id;
+        costumerOrder.value.costumerName = wordpressResponse.data.billing.first_name + " " + wordpressResponse.data.billing.last_name
+        costumerOrder.value.costumerEmail = wordpressResponse.data.billing.email
+        costumerOrder.value.costumerAddress = wordpressResponse.data.billing.address_1
+        costumerOrder.value.costumerCity = wordpressResponse.data.billing.city
+        costumerOrder.value.costumerCountry = userCountry.value
 
         // --  add a private note to the WooCommerce order
-        const note = `Order Tracking Number is : ${costomerOrder.value.wp_order_id}`
+        const note = `Order Tracking Number is : ${costumerOrder.value.wp_order_id}`
         await axios.post(
-            `${import.meta.env.VITE_WOO_URL}/orders/${costomerOrder.value.wp_order_id}/notes`,
+            `${import.meta.env.VITE_WOO_URL}/orders/${costumerOrder.value.wp_order_id}/notes`,
             {
                 note: note,
                 customer_note: true
@@ -465,13 +472,22 @@ const stripePaymentSubmit = async () => {
         )
         /* ***  
          * HERE WE POST THE OUR API 
-         * TO HANDLE SUBMITING ORDER DETAILS
-         * TO OUR DATABASE AND STRIPE
+         * TO HANDLE SUBMITTING ORDER DETAILS
+         * TO OUR DATABASE AND STRIPE 
          * ***/
-        const res = await api.post('/order', costomerOrder.value);
+        const res = await api.post('/order', costumerOrder.value);
 
+        // Prepare the payload for the WordPress API.
+        const DB_PAYLOAD = products.value.map(item => ({
+            quantity: item.quantity,
+            name: item.product.name,
+            product_id: item.product.id,
+            price: item.product.sale_price ? (item.product.sale_price).toString() : (item.product.price).toString(),
+            total: item.product.sale_price != '0.00' ?
+                (item.product.sale_price * item.quantity).toString() : (item.product.price * item.quantity).toString()
+        }));
         const laravelPayload = {
-            products: orderdProducts,
+            products: DB_PAYLOAD,
             order_id: res.data.order_id
         };
         // Fill Order Prods
@@ -483,7 +499,7 @@ const stripePaymentSubmit = async () => {
         router.push({
             path: '/success',
             query: {
-                orderId: costomerOrder.value.wp_order_id
+                orderId: costumerOrder.value.wp_order_id
             }
         });
 
@@ -523,8 +539,8 @@ async function clearUserCart() {
 }
 
 
-// TODO implemention needed //TODO implemention needed
-//* handel Paypal on succ payment
+// TODO implementing needed //TODO implementing needed
+//* ------------------------ handel Paypal on succ payment
 const handlePaypalSubmission = async (res) => {
     console.log(res);
     // if (res.status === "COMPLETED")
@@ -535,6 +551,110 @@ const handlePaypalSubmission = async (res) => {
     //             orderId: res.id
     //         }
     //     });  
+}
+
+
+// * COUPON ------------------------
+// ------------------------ ------------------------
+const showCouponMsg = ref(false)
+const couponCode = ref('')
+const discount = ref(0)
+const cartTotalAmount = ref(0)
+const cartSubTotal = ref(0)
+const showDiscountLabel = ref(false)
+const ProcessingCoupon = ref(false)
+const couponAdded = ref(false)
+
+const couponErrorResponse = ref('')
+const discountType = ref('')
+const amount = ref(0)
+
+function getTotalAmount() {
+    let totalAmount = 0;
+
+    products.value.forEach(product => {
+        const price = product.product.sale_price != '0.00' ? parseFloat(product.product.sale_price) : parseFloat(product.product.price);
+        totalAmount += price * product.quantity;
+    });
+
+    cartSubTotal.value = cartTotalAmount.value = totalAmount.toFixed(2);
+}
+function calcDiscount(type, amount) {
+
+    if (!isNaN(amount) && !isNaN(cartTotalAmount.value)) {
+        if (type === 'percent') {
+
+            const discountPercent = amount / 100;
+            discount.value = (cartTotalAmount.value * discountPercent).toFixed(2);
+
+            // Subtract the discount amount from the cart total
+            cartTotalAmount.value = (cartTotalAmount.value - Number(discount.value)).toFixed(2);
+            showDiscountLabel.value = true
+            ProcessingCoupon.value = false
+            couponAdded.value = true
+        }
+    } else {
+        // Handle invalid amount or cartTotalAmount
+        console.error('Invalid amount or cartTotalAmount');
+    }
+}
+const handleCouponSub = async () => {
+    ProcessingCoupon.value = true
+    try {
+        const res = await axios.get(`${import.meta.env.VITE_WOO_URL}/coupons?code=${couponCode.value}`, {
+            headers: { "Authorization": basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS) }
+        });
+        console.log(res);
+        //* check for valid response 
+        if (res.status === 200 && res.data.length > 0) {
+            // Get the current date
+            const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+            const expirationDate = res.data[0].date_expires;
+
+            if (expirationDate > currentDate) {
+                // The coupon WITH a valid date
+                discountType.value = res.data[0].discount_type
+                amount.value = +res.data[0].amount
+
+                calcDiscount(discountType.value, amount.value)
+
+            } else {
+                // The coupon has expired
+                ProcessingCoupon.value = false
+                couponErrorResponse.value = 'Sorry Coupon has Expired !!!'
+                showCouponMsg.value = true;
+                couponCode.value = '';
+                setTimeout(() => {
+                    showCouponMsg.value = false;
+                    couponCode.value = '';
+                }, 3000);
+            }
+        } else {
+            // Handle coupon not found or other errors
+            couponErrorResponse.value = 'Sorry no coupon matched , try again'
+            ProcessingCoupon.value = false
+            showCouponMsg.value = true;
+            setTimeout(() => {
+                showCouponMsg.value = false;
+                couponCode.value = '';
+            }, 3000);
+        }
+    } catch (error) {
+        console.error(error);
+
+        couponErrorResponse.value =
+            'Sorry something went wrong with your coupon , please try again later'
+
+        showCouponMsg.value = true;
+        setTimeout(() => {
+            showCouponMsg.value = false;
+            couponCode.value = '';
+        }, 6000);
+        showDiscountLabel.value = false
+        ProcessingCoupon.value = false
+
+    }
 }
 </script>
 <template>
@@ -560,8 +680,8 @@ const handlePaypalSubmission = async (res) => {
                         </div>
                         <div class="price">
                             <h4>Price</h4>
-                            <h6><small v-if="p.product.sale_price">${{ p.product.price }}</small>
-                                ${{ p.product.sale_price ? p.product.sale_price : p.product.price }} </h6>
+                            <h6><small v-if="p.product.sale_price != '0.00'">${{ p.product.regular_price }}</small>
+                                ${{ p.product.sale_price != '0.00' ? p.product.sale_price : p.product.price }} </h6>
                         </div>
                         <div class="quantity">
                             <h4>Quantity</h4>
@@ -573,7 +693,7 @@ const handlePaypalSubmission = async (res) => {
                         </div>
                         <div class="sub-total">
                             <h4>Subtotal</h4>
-                            <h5>${{ p.product.sale_price ?
+                            <h5>${{ p.product.sale_price != '0.00' ?
                                 (p.product.sale_price * p.quantity).toFixed(2) :
                                 (p.product.price * p.quantity).toFixed(2)
                             }}</h5>
@@ -593,7 +713,7 @@ const handlePaypalSubmission = async (res) => {
                         <div class="full-box">
                             <p>Price</p>
                             <p>
-                                ${{ p.product.sale_price ? p.product.sale_price : p.product.price }}
+                                ${{ p.product.sale_price != '0.00' ? p.product.sale_price : p.product.regular_price }}
                             </p>
                         </div>
                         <div class="full-box">
@@ -604,9 +724,9 @@ const handlePaypalSubmission = async (res) => {
                                 <button :disabled="p.quantity == p.product.inStock" @click="increaseCount(p)">+</button>
                             </div>
                         </div>
-                        <div class="full-box">
+                        <div class="full-box box-subTot">
                             <p>Subtotal</p>
-                            <h6>${{ p.product.sale_price ?
+                            <h6>${{ p.product.sale_price != '0.00' ?
                                 (p.product.sale_price * p.quantity).toFixed(2) :
                                 (p.product.price * p.quantity).toFixed(2)
                             }}</h6>
@@ -616,15 +736,23 @@ const handlePaypalSubmission = async (res) => {
             </div>
             <!-- * mob version  -->
 
-            <div class="copun-container">
+            <!-- * Coupons  -->
+            <div v-if="!couponAdded" class="copun-container">
                 <p>Coupon :</p>
-                <small v-if="showCouponMsg">Sorry no coupon matched , try again</small>
-                <div>
-                    <input type="text" placeholder="Coupon Code " v-model="couponCode">
+                <small v-if="showCouponMsg">{{ couponErrorResponse }}</small>
+                <div v-if="!ProcessingCoupon">
+                    <input type="text" placeholder="Coupon Code " v-model="couponCode" @keyup.enter="handleCouponSub">
                     <button @click="handleCouponSub">Applay coupon</button>
                 </div>
+                <div v-else>
+                    <Loading />
+                </div>
             </div>
-
+            <div v-else class="copun-container addedCoupon-msg">
+                <i class="fa-solid fa-check"></i>
+                <p>Congratulations! Your coupon has been applied successfully!</p>
+            </div>
+            <!-- * Coupons  -->
 
             <div class="checkout-container">
                 <div class="shipping-details">
@@ -717,15 +845,16 @@ const handlePaypalSubmission = async (res) => {
                     </div>
 
                 </div>
+
                 <div class="shipping-summ">
                     <h1>Your Order</h1>
                     <div class="full-w">
                         <h4>Product</h4>
-                        <h4>Subtotal</h4>
+                        <h4>Amount</h4>
                     </div>
                     <div v-for="p in products" :key="p.id" class="full-w">
                         <p>{{ p.product.name }}</p>
-                        <h4>${{ p.product.sale_price ?
+                        <h4>${{ p.product.sale_price != '0.00' ?
                             (p.product.sale_price * p.quantity).toFixed(2) :
                             (p.product.price * p.quantity).toFixed(2)
                         }}
@@ -734,11 +863,18 @@ const handlePaypalSubmission = async (res) => {
 
                     <div class="full-w">
                         <h5>Subtotal </h5>
-                        <span>${{ getTotalAmount() }}</span>
+                        <span>${{ cartSubTotal }}</span>
                     </div>
+                    <!--* discount wrrapper  -->
+                    <div class="full-w discount " :class="{ showDiscount: showDiscountLabel }">
+                        <h5>Discount </h5>
+                        <p id="discountNumber">-${{ discount }}</p>
+                    </div>
+                    <!--* discount wrrapper  -->
+
                     <div class="full-w total">
                         <h2>total </h2>
-                        <span id="total">${{ getTotalAmount() }}</span>
+                        <span id="total">${{ cartTotalAmount }}</span>
                     </div>
                     <div class="full-w">
                         <img src="https://packnrun.com/wp-content/uploads/2020/12/Payment-Logo-01.png" alt="">
@@ -770,8 +906,12 @@ const handlePaypalSubmission = async (res) => {
                         </div>
                     </div>
                 </div>
+
             </div>
+
         </div>
+
+        <!-- * Empty Cart UI  -->
         <div class="EmptyCart" v-else>
             <h1>Your Cart is Empty</h1>
             <p>
@@ -784,6 +924,8 @@ const handlePaypalSubmission = async (res) => {
             </button>
             <img src="../assets/images/wired-outline-146-basket-trolley-shopping-card.gif" alt="">
         </div>
+        <!-- * Empty Cart UI  -->
+
     </div>
 </template>
 
@@ -880,15 +1022,16 @@ const handlePaypalSubmission = async (res) => {
 
                     h6 {
                         display: flex;
-                        font-size: 1rem;
+                        font-size: 1.1rem;
+                        position: relative;
 
                         >small {
-                            font-weight: normal;
-                            font-size: .8rem;
-                            padding: 0 5px;
+                            font-size: .75rem;
                             text-decoration: line-through;
-                            color: #555;
-
+                            color: #0000008b;
+                            position: absolute;
+                            top: -10px;
+                            right: 80%;
                         }
                     }
 
@@ -974,6 +1117,20 @@ const handlePaypalSubmission = async (res) => {
 
     }
 
+    .addedCoupon-msg {
+        min-height: 2.5rem !important;
+        padding: 0 1rem;
+        @include flex();
+        gap: .5vw;
+        color: #01ff38;
+        font-size: 1.5rem;
+
+        p,
+        i {
+            padding-bottom: 1rem;
+        }
+    }
+
     .checkout-container {
         width: 80vw;
         min-height: 30vh;
@@ -998,14 +1155,15 @@ const handlePaypalSubmission = async (res) => {
 
 
                 label {
-                    font-size: .9rem;
+                    font-size: .85rem;
                     color: #555;
                     margin-left: .5vw;
-                    margin-top: 5px;
+                    margin: 15px 0 5px 8px;
                 }
 
                 small {
                     color: red;
+                    font-weight: bold;
                 }
 
                 >input {
@@ -1017,8 +1175,8 @@ const handlePaypalSubmission = async (res) => {
                 }
 
                 >select {
-                    width: 10rem;
-                    height: 3rem;
+                    width: 9rem;
+                    height: 2.5rem;
                     padding: 0 5px;
                     border-radius: 50px;
                     border: 1px solid rgba(102, 85, 85, 0.227);
@@ -1049,6 +1207,8 @@ const handlePaypalSubmission = async (res) => {
         }
 
         .shipping-summ {
+            overflow: hidden;
+            position: relative;
 
             >h1 {
                 font-size: 1.5rem;
@@ -1085,6 +1245,10 @@ const handlePaypalSubmission = async (res) => {
                     font-size: 1.5rem;
                 }
 
+                #discountNumber {
+                    color: red;
+                }
+
                 >img {
                     margin: 1rem auto;
                     height: 8rem;
@@ -1093,7 +1257,7 @@ const handlePaypalSubmission = async (res) => {
 
                 #payInit {
                     width: 100%;
-                    height: 3rem;
+                    height: 2.9rem;
                     color: #fff;
                     border: #007AFF;
                     background: #2c2e2f;
@@ -1101,6 +1265,7 @@ const handlePaypalSubmission = async (res) => {
                     text-transform: uppercase;
                     font-weight: bold;
                     transition: .3s ease;
+                    margin-top: 2rem;
 
                     &:hover {
                         background: #000;
@@ -1226,8 +1391,24 @@ const handlePaypalSubmission = async (res) => {
                     }
                 }
             }
+
+            .full-w.discount {
+                opacity: 0.5;
+                transform: translateX(-120%);
+                transition: .3s ease-in-out;
+                position: absolute;
+                bottom: 0;
+            }
         }
+
     }
+}
+
+.showDiscount {
+    display: flex !important;
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+    position: relative !important;
 }
 
 input[disabled] {
@@ -1377,7 +1558,7 @@ input[disabled] {
             >img {
                 width: 20%;
                 object-fit: contain;
-
+                margin-right: 15px;
             }
 
             .prd {
@@ -1432,6 +1613,10 @@ input[disabled] {
                         }
                     }
                 }
+
+                .box-subTot {
+                    border: none !important;
+                }
             }
         }
     }
@@ -1447,7 +1632,7 @@ input[disabled] {
 
 }
 
-@media screen and (max-width :500px) {
+@media screen and (max-width :550px) {
 
 
     #product-table-mobile {
@@ -1456,13 +1641,17 @@ input[disabled] {
         .mb-slot {
             width: 100%;
             min-height: 14rem;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
 
             >img {
-                width: 25%;
+                width: 80%;
+                margin: 1rem;
             }
 
             .prd {
-                width: 75%;
+                width: 90%;
                 height: fit-content !important;
 
                 .p-header,
@@ -1486,6 +1675,7 @@ input[disabled] {
                 }
             }
         }
+
     }
 
     .copun-container {
@@ -1512,5 +1702,15 @@ input[disabled] {
         }
 
     }
-}
-</style>
+
+    .addedCoupon-msg {
+        i {
+            margin: 10px;
+        }
+
+        p {
+            font-size: .8rem !important;
+            margin: 0 0 1rem 5px;
+        }
+    }
+}</style>

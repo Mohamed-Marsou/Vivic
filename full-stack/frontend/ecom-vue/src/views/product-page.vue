@@ -403,7 +403,7 @@ const toggoleStickyProduct = () => {
                 
 
                 <div class="slot discount" v-if="showDiscount()">
-                    <p>Last chance! Sale ends in : </p>
+                    <p>Last chance ! Sale ends in : </p>
                     <div class="count_down">
                         <div class="count">
                             <p>
@@ -425,7 +425,6 @@ const toggoleStickyProduct = () => {
                         </div>
                         <div class="left">
                             <div>
-                                <p>Orderd : <span>14</span></p>
                                 <p>Items available: : <span>
                                         {{ quantity }}
                                     </span></p>
@@ -1030,18 +1029,17 @@ const toggoleStickyProduct = () => {
                     .left {
                         width: 50%;
                         height: 100%;
-
                         >div {
-                            @include flex($jc: space-between);
+                            @include flex($jc: flex-end);
                             height: 50%;
 
                             p {
                                 color: #555;
                                 font-size: .8rem;
-
                                 span {
                                     font-size: 1rem;
                                     font-weight: bold;
+
                                     color: #000;
                                 }
                             }
@@ -1056,7 +1054,7 @@ const toggoleStickyProduct = () => {
 
                                 >div {
                                     background: #2e6bc6;
-                                    width: 30%;
+                                    width: 62%;
                                     height: 10px;
                                 }
                             }
@@ -1161,7 +1159,7 @@ const toggoleStickyProduct = () => {
         color: #555;
         position: relative;
         user-select: none;
-
+        margin: 0 !important;
         &::after {
             content: '';
             position: absolute;

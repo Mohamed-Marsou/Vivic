@@ -514,7 +514,7 @@ class ProductController extends Controller
                         // Check if a product with the same slug already exists
                         $existingProduct = Product::where('slug', $productData['slug'])->first();
                         if (!$existingProduct) {
-                            $categories = $productData['categories'][0]; // CHANGE LETER to handle multi categories if needed
+                            $categories = $productData['categories'][0]; // CHANGE LATER to handle multi categories if needed
 
                             $categoryId = $this->saveCategories($categories);
                             // Save the new product
@@ -700,6 +700,8 @@ class ProductController extends Controller
             'on_sale' => $productData['on_sale'],
             'date_on_sale_from' => $productData['date_on_sale_from'],
             'date_on_sale_to' =>  $productData['date_on_sale_to'],
+            
+            'SKU' => $productData['sku'],
 
         ]);
 

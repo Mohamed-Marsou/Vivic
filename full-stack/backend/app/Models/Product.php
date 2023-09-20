@@ -14,7 +14,7 @@ class Product extends Model
     use HasFactory;
     protected $fillable = [
         'name', 'price','sale_price','regular_price', 'slug','average_rating', 'short_description', 'specification', 'status',
-        'weight', 'dimensions', 'inStock', 'description','category_id','on_sale','date_on_sale_from','date_on_sale_to'
+        'weight', 'dimensions', 'inStock', 'description','category_id','on_sale','date_on_sale_from','date_on_sale_to', 'SKU'
     ];
     public function category()
     {
