@@ -63,13 +63,27 @@ export const useProductStore = defineStore('product', {
         throw error
       }
     },
+    async getFeaturedProducts() {
+      try {
+        const res = await api.get('/products/featured')
+
+        if (res.status === 200) {
+          return res
+        } else {
+          throw new Error('Failed to fetch Featured Products ')
+        }
+      } catch (error) {
+        console.error('An error occurred while fetching Featured Products :', error)
+        throw error
+      }
+    },
     async getCategoryProducts(id) {
       try {
         const res = await api.get(`/products/category/${id}`)
         if (res.status === 200) {
           return res
         } else {
-          throw new Error('Failed to fetch new arrivals')
+          throw new Error('Failed to fetch Featured Products ')
         }
       } catch (error) {
         console.error('An error occurred while fetching new category Products:', error)

@@ -56,7 +56,7 @@ function getProductDiscount(p) {
     },
 }" class="mySwiper">
             <swiper-slide v-for="p  in productList " :key="p.id">
-                <div class="prd-silde">
+                <div class="prd-slide">
                     <div class="image-ctx">
                         <RouterLink :to="{ name: 'product-page',  params: { slug: p.slug } }">
                             <img :src="getCover(p)" alt="Product image">
@@ -113,7 +113,7 @@ function getProductDiscount(p) {
 
     .mySwiper {
 
-        .prd-silde {
+        .prd-slide {
             width: 16rem;
             height: 18rem;
             display: flex;

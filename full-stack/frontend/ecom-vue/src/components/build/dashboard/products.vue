@@ -5,6 +5,7 @@ import { RouterLink } from 'vue-router';
 import Loading from '../../build/loading.vue';
 const loading = ref(true)
 const overlay = ref(false)
+import axios from 'axios';
 
 const isImporting = ref(false)
 
@@ -16,15 +17,15 @@ onMounted(async () => {
 
 async function getProductsDATA() {
     const res = await api.get('/products')
-    products.value = res.data.data
-    // sett loding to fasle 
+    products.value = res.data
+    // sett loading to false 
     loading.value = false
 }
 function toggoleImport() {
     overlay.value = !overlay.value
     showAdvanceOpt.value = false
 }
-function toggoleAdvImport() {
+function toggleAdvImport() {
     showAdvanceOpt.value = !showAdvanceOpt.value
     restValue()
 
@@ -172,6 +173,25 @@ async function deleteProduct(string) {
         console.log(error);
     }
 }
+async function loadMore(btn) {
+    btn.target.disabled = true;
+try {
+    // Check if there is a next_page_url available
+    if (products.value.next_page_url) {
+        const response = await axios.get(products.value.next_page_url);
+        products.value.data = products.value.data.concat(response.data.data);
+        products.value.next_page_url = response.data.next_page_url;
+
+        if (!products.value.next_page_url) {
+            btn.target.style.display = 'none';
+        }
+    }
+    btn.target.disabled = false;
+
+} catch (error) {
+    console.error('Error loading more data:', error);
+}
+}
 </script>
 
 <template>
@@ -185,7 +205,7 @@ async function deleteProduct(string) {
                     <button :disabled="isImporting" @click="quickImport">
                         Quick import
                     </button>
-                    <button :disabled="isImporting" @click="toggoleAdvImport">
+                    <button :disabled="isImporting" @click="toggleAdvImport">
                         Advance import
                     </button>
                 </div>
@@ -223,7 +243,7 @@ async function deleteProduct(string) {
                         <button :disabled="isImporting" @click="advanceImport">
                             import
                         </button>
-                        <button :disabled="isImporting" @click="toggoleAdvImport">
+                        <button :disabled="isImporting" @click="toggleAdvImport">
                             cancel
                         </button>
                     </div>
@@ -253,7 +273,7 @@ async function deleteProduct(string) {
         </div>
 
         <!--* PRODUCTS TABLE  -->
-        <div v-if="products" class="table-container">
+        <div v-if="products.data" class="table-container">
             <div class="search-div">
                 <input type="text" placeholder="search">
                 <button>
@@ -270,11 +290,11 @@ async function deleteProduct(string) {
                         <th>Quantity</th>
                         <th>Average Rating</th>
                         <th>Category</th>
-                        <th colspan="2">Action</th>
+                        <th >Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="p in products" :key="p.id">
+                    <tr v-for="p in products.data" :key="p.id">
                         <td>{{ p.id }}</td>
                         <td>
                             <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
@@ -286,8 +306,6 @@ async function deleteProduct(string) {
                         <td>{{ p.inStock }}</td>
                         <td>{{ p.average_rating ? p.average_rating : 'null' }}</td>
                         <td>{{ p.category.name }}</td>
-
-                        <td><button id="edit">EDIT</button></td>
                         <td>
                             <button id="delete" @click="toggoleDelete(p.id, p.name)">
                                 DELETE
@@ -298,7 +316,10 @@ async function deleteProduct(string) {
                 </tbody>
             </table>
 
-            <button>Load more</button>
+            <button @click="loadMore($event)">
+                <i class="fa-solid fa-angles-down"></i>
+                Load more
+            </button>
         </div>
 
         <!--* NO PRODUCTS CONTAINER  -->
@@ -715,11 +736,6 @@ async function deleteProduct(string) {
                     transition: .3s ease-out;
                 }
 
-                #edit:hover {
-                    background: #03c94f;
-                    color: white;
-                }
-
                 #delete:hover {
                     background: #c90324;
                     color: white;
@@ -739,15 +755,29 @@ async function deleteProduct(string) {
 
         >button {
             margin: 2rem auto;
-            background: #2c2e3e;
-            color: white;
+            color: #2c2e3e52;
+            background: transparent;
             border: none;
-            border-radius: 20px;
-            width: 8rem;
+            width: 9rem;
             height: 3rem;
             cursor: pointer;
-            box-shadow: #2c2e3e3d 1px 1px 5px 1px;
-            text-transform: uppercase;
+            font-weight: bold;
+            border: 2px solid #2c2e3e31;
+            transition: .3s ease-out;
+
+            i {
+                margin-left: 5px;
+                color: #2c2e3e52;
+            }
+
+            &:hover {
+                border: 2px solid #2c2e3eb1;
+                color: #2c2e3eb1;
+
+                i {
+                    color: #2c2e3eb1;
+                }
+            }
         }
     }
 
@@ -768,6 +798,10 @@ async function deleteProduct(string) {
         padding: 1.1rem;
         font-size: .9rem;
     }
+}
+button:disabled {
+    opacity: .05 !important;
+    cursor: not-allowed !important;
 }
 
 .show {

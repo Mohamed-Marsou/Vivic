@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class AdminController extends Controller
 {
@@ -22,7 +21,7 @@ class AdminController extends Controller
         try {
             // Retrieve admins in descending order
             $admins = Admin::orderBy('created_at', 'desc')
-                ->paginate(6);
+                ->paginate(3);
     
             return response()->json(['admins' => $admins], 200);
         } catch (\Exception $e) {

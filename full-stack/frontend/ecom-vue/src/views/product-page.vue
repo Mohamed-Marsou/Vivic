@@ -25,33 +25,33 @@ onMounted(async () => {
     await getProductData();
     quantity.value = product.value.inStock
     isloaded.value = true
-    await getHighRatedProducts();
+    await getSimilarProducts();
     showDiscount()
     //------------------------------------------------------- discount count down
     if (showDiscount()) {
-    const endDate = new Date(product.value.date_on_sale_to + "T23:59:59");
-    const countdownInterval = setInterval(() => {
-        const currentTime = new Date();
-        const remainingTimeInSeconds = Math.max(0, Math.floor((endDate - currentTime) / 1000));
+        const endDate = new Date(product.value.date_on_sale_to + "T23:59:59");
+        const countdownInterval = setInterval(() => {
+            const currentTime = new Date();
+            const remainingTimeInSeconds = Math.max(0, Math.floor((endDate - currentTime) / 1000));
 
-        const remainingDays = Math.floor(remainingTimeInSeconds / (3600 * 24));
-        const remainingHours = Math.floor((remainingTimeInSeconds % (3600 * 24)) / 3600);
-        const remainingMinutes = Math.floor((remainingTimeInSeconds % 3600) / 60);
-        const remainingSeconds = remainingTimeInSeconds % 60;
+            const remainingDays = Math.floor(remainingTimeInSeconds / (3600 * 24));
+            const remainingHours = Math.floor((remainingTimeInSeconds % (3600 * 24)) / 3600);
+            const remainingMinutes = Math.floor((remainingTimeInSeconds % 3600) / 60);
+            const remainingSeconds = remainingTimeInSeconds % 60;
 
-        targetDate.value = {
-            days: remainingDays,
-            hours: remainingHours,
-            minutes: remainingMinutes,
-            seconds: remainingSeconds,
-        };
+            targetDate.value = {
+                days: remainingDays,
+                hours: remainingHours,
+                minutes: remainingMinutes,
+                seconds: remainingSeconds,
+            };
 
-        // Check if the countdown has reached zero
-        if (remainingTimeInSeconds <= 0) {
-            clearInterval(countdownInterval);
-        }
-    }, 1000); // Update every 1 second
-}
+            // Check if the countdown has reached zero
+            if (remainingTimeInSeconds <= 0) {
+                clearInterval(countdownInterval);
+            }
+        }, 1000); // Update every 1 second
+    }
 })
 
 const timeRemaining = computed(() => {
@@ -61,15 +61,14 @@ const timeRemaining = computed(() => {
         minutes: 0,
         seconds: 0,
     };
-    
+
 });
 
-function showDiscount()
-{
-    if(product.value && product.value.on_sale && product.value.date_on_sale_from <= currentDate.value.toISOString().split('T')[0] &&
-    product.value.date_on_sale_to >= currentDate.value.toISOString().split('T')[0]) {
-        return true 
-    }else {
+function showDiscount() {
+    if (product.value && product.value.on_sale && product.value.date_on_sale_from <= currentDate.value.toISOString().split('T')[0] &&
+        product.value.date_on_sale_to >= currentDate.value.toISOString().split('T')[0]) {
+        return true
+    } else {
         return false
     }
 }
@@ -88,7 +87,7 @@ watch(() => route.params.slug, async (newSlug) => {
         console.error('Error fetching product data:', error);
     }
     quantity.value = product.value.inStock
-    await getHighRatedProducts();
+    await getSimilarProducts();
 
 });
 function scrollToTop() {
@@ -109,13 +108,23 @@ async function getProductData() {
         console.error('Error fetching product data:', error);
     }
 }
-// TODO CHANGE IT TO SIMILAR PRODUCTS ASAP
+
 import { useProductStore } from '../stores/product'
 const productStore = useProductStore()
-const highRated = ref([])
-async function getHighRatedProducts() {
-    const res = await productStore.getHighRated()
-    highRated.value = res.data.data
+const similarProducts = ref([])
+async function getSimilarProducts() {
+    const id = product.value.category_id
+    try {
+        // todo Change to the comment line 
+        // const res = await productStore.getCategoryProducts(id)
+        // similarProducts.value = res.data.products.data
+
+        // todo DELETE -----------
+        const res = await productStore.getHighRated()
+        similarProducts.value = res.data.data
+    } catch (error) {
+        console.log(error);
+    }
 }
 
 // Product Quantity Controllers 
@@ -275,7 +284,7 @@ function scrollToReviews() {
 }
 
 const showSticky = ref(false);
-const toggoleStickyProduct = () => {
+const toggleStickyProduct = () => {
     showSticky.value = !showSticky.value
 }
 </script>
@@ -284,8 +293,8 @@ const toggoleStickyProduct = () => {
 <template>
     <div id="product-page-container" v-if="isloaded">
 
-        <div class="sticky_product" :class="{ showStickyProduct: showSticky }" @mouseenter="toggoleStickyProduct"
-            @mouseleave="toggoleStickyProduct">
+        <div class="sticky_product" :class="{ showStickyProduct: showSticky }" @mouseenter="toggleStickyProduct"
+            @mouseleave="toggleStickyProduct">
             <div class="img">
                 <img :src="productCover" alt="product-image">
             </div>
@@ -400,7 +409,7 @@ const toggoleStickyProduct = () => {
                         <i class="fa-brands fa-x-twitter"></i><i class="fa-brands fa-telegram"></i>
                     </div>
                 </div>
-                
+
 
                 <div class="slot discount" v-if="showDiscount()">
                     <p>Last chance ! Sale ends in : </p>
@@ -429,11 +438,6 @@ const toggoleStickyProduct = () => {
                                         {{ quantity }}
                                     </span></p>
                             </div>
-                            <div class="chart">
-                                <div>
-                                    <div></div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -449,7 +453,7 @@ const toggoleStickyProduct = () => {
             </div>
         </div>
         <!-- // Description  -->
-        <div class="product-description" @mouseenter="toggoleStickyProduct" @mouseleave="toggoleStickyProduct">
+        <div class="product-description" @mouseenter="toggleStickyProduct" @mouseleave="toggleStickyProduct">
             <header class="section-header">
                 <h3>
                     Description
@@ -459,7 +463,7 @@ const toggoleStickyProduct = () => {
         </div>
 
         <!-- // Reviews  -->
-        <div class="product-reviews" @mouseenter="toggoleStickyProduct" @mouseleave="toggoleStickyProduct">
+        <div class="product-reviews" @mouseenter="toggleStickyProduct" @mouseleave="toggleStickyProduct">
             <header class="section-header">
                 <h3>
                     Reviews
@@ -506,30 +510,32 @@ const toggoleStickyProduct = () => {
 
                     <div class="review-container">
 
-
-                        <div class="review" v-for="(reviewData, index) in visibleReviews" :key="index"
-                            :class="{ 'no-img-review': !reviewData.body_urls }">
-                            <div class="img-box">
+                        <div class="review__box" :class="{ 'no-img-review': !reviewData.body_urls }"
+                            v-for="(reviewData, index) in visibleReviews" :key="index">
+                            <div class="review-img-box">
                                 <img v-if="reviewData.body_urls" :src="reviewData.body_urls" alt="review-image">
+
                                 <div class="author">
                                     <div :style="{ backgroundColor: getColor(index) }">{{ reviewData.author.charAt(0) }}
                                     </div>
                                     <p>{{ reviewData.author }}</p>
                                 </div>
+
                             </div>
-                            <div class="review_body">
-                                <div class="text">
-                                    <div class="stars-reveiws">
+
+                            <div class="review-txt-box">
+                                <div class="r-text">
+                                    <div class="reviews_starts">
                                         <i v-for="(star, index) in Math.round(reviewData.rating)" :key="index"
                                             class="fa-solid fa-star">
                                         </i>
                                         <i class="fa-solid fa-circle-check"></i>
                                     </div>
-                                    <p> {{ reviewData.body_text.length > 150 ? reviewData.body_text.slice(0, 150) + '...' :
+                                    <p> {{ reviewData.body_text.length > 100 ? reviewData.body_text.slice(0, 100) + '...' :
                                         reviewData.body_text
                                     }}</p>
                                 </div>
-                                <div class="comment">
+                                <div class="r-comment">
                                     <i class="fa-solid fa-comments"></i>
                                 </div>
                             </div>
@@ -553,7 +559,7 @@ const toggoleStickyProduct = () => {
         </div>
 
         <ProductsCarousel smallHeader="Exploring Similar Delights? Start Here!" headerText="SIMILAR PRODUCTS"
-            :productList="highRated" />
+            :productList="similarProducts" />
     </div>
 
     <div v-else class="Loader-container">
@@ -564,11 +570,12 @@ const toggoleStickyProduct = () => {
 <style lang="scss">
 @import '@/style/_global.scss';
 
-.Loader-container{
+.Loader-container {
     width: 100%;
     height: 100vh;
     @include flex();
 }
+
 #product-page-container {
     width: 100%;
     min-height: 100vh;
@@ -1029,33 +1036,20 @@ const toggoleStickyProduct = () => {
                     .left {
                         width: 50%;
                         height: 100%;
+
                         >div {
                             @include flex($jc: flex-end);
-                            height: 50%;
+                            height: 100%;
+                            padding: 10px;
 
                             p {
                                 color: #555;
                                 font-size: .8rem;
+
                                 span {
                                     font-size: 1rem;
                                     font-weight: bold;
-
                                     color: #000;
-                                }
-                            }
-
-                            >div {
-                                width: 100%;
-                                height: 10px;
-                                background: #5e5e5e6f;
-                                border-radius: 10px;
-                                margin: 0 auto;
-                                overflow: hidden;
-
-                                >div {
-                                    background: #2e6bc6;
-                                    width: 62%;
-                                    height: 10px;
                                 }
                             }
                         }
@@ -1082,6 +1076,7 @@ const toggoleStickyProduct = () => {
                     display: flex;
                     justify-content: flex-end;
                     gap: 1vw;
+
                     >img {
                         height: 80%;
                         object-fit: contain;
@@ -1108,21 +1103,27 @@ const toggoleStickyProduct = () => {
             @include flex($jc: flex-start);
             line-height: 2rem;
         }
-        h1,h2,h3,h4{
-        margin: 1rem;
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            margin: 1rem;
             color: #545454;
-    }
+        }
+
         ul {
             margin: 0 2vw;
         }
-        
+
         li {
             color: #555555bd;
             padding: 5px;
             list-style: inside;
             font-size: .9rem;
             line-height: 2rem;
-            em{
+
+            em {
                 color: #555;
                 font-weight: bold;
                 font-style: normal;
@@ -1160,6 +1161,7 @@ const toggoleStickyProduct = () => {
         position: relative;
         user-select: none;
         margin: 0 !important;
+
         &::after {
             content: '';
             position: absolute;
@@ -1193,7 +1195,6 @@ const toggoleStickyProduct = () => {
             width: 100%;
             min-height: 30vh;
             display: flex;
-
 
             >div {
                 width: 50%;
@@ -1234,7 +1235,6 @@ const toggoleStickyProduct = () => {
                 height: 3rem;
                 @include flex();
 
-
                 i {
                     width: 1.2rem !important;
                     color: #FFD700;
@@ -1270,15 +1270,26 @@ const toggoleStickyProduct = () => {
             flex-wrap: wrap;
             padding: 1rem 0;
 
+            .review-container {
+                display: flex;
+                gap: 1vw;
+                max-width: 90%;
+                @include flex($ai: flex-start);
+                flex-wrap: wrap;
+
+            }
+
+            //* --- Review filters ---
             .reviews-filters {
-                width: 85%;
+                width: 90%;
                 height: 4rem;
                 box-shadow: 0 0 0 0;
                 @include flex($jc: space-between);
-                border-bottom: 1px solid #00000018;
+                border-bottom: 1px solid #0000000e;
 
                 p {
                     font-size: .8rem;
+                    color: #00000099;
                 }
 
                 >select {
@@ -1290,125 +1301,110 @@ const toggoleStickyProduct = () => {
                 }
             }
 
-            .review-container {
-                width: 90%;
-                min-height: 40vh;
-                margin: 10px auto;
-                display: flex;
-                justify-content: center;
+            //* --- Review box ---
+            .review__box {
+                width: 20rem;
+                height: 24rem;
+                margin: 1rem 0;
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid #0000000e;
 
-                flex-wrap: wrap;
-                padding: 1rem 0;
-                gap: 1vw;
+                >div {
+                    width: 100%;
+                }
 
-                .review {
-                    width: 21rem;
-                    min-height: 26rem;
-                    border: 1px solid rgba(71, 71, 71, 0.175);
-                    border-radius: 5px;
-                    overflow: hidden;
+                .review-img-box {
+                    height: 60%;
+                    position: relative;
 
-                    &:not(.img-box:has(img)) {
-                        height: 18rem;
+                    >img {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
                     }
 
-                    >.img-box {
-                        width: 100%;
-                        height: 14rem;
-                        position: relative;
+                    .author {
+                        position: absolute;
+                        bottom: 1rem;
+                        left: 3%;
+                        width: 90%;
+                        background: #fff;
+                        display: flex;
+                        border-radius: 50px;
+                        height: 2.2rem;
+                        overflow: hidden;
+                        gap: 5px;
+                        user-select: none;
+                        align-items: center;
 
-                        &:not(:has(img)) {
-                            height: 5rem;
+                        >div {
+                            border-radius: 50%;
+                            color: #fff;
+                            width: 2rem;
+                            height: 2rem;
+                            @include flex();
+                            margin-left: 2px;
                         }
 
-                        .author {
-                            width: 85%;
-                            height: 2.5rem;
-                            background: #fff;
-                            position: absolute;
-                            bottom: 1rem;
-                            left: 1vw;
-                            display: flex;
-                            border-radius: 2.5rem;
-                            display: flex;
-                            align-items: center;
-                            user-select: none;
-
-                            >div {
-                                color: #fff;
-                                width: 2.5rem;
-                                height: 2.4rem;
-                                border-radius: 50%;
-                                margin-left: 1px;
-                                @include flex();
-                                font-size: 1.2rem;
-                            }
-
-                            >p {
-                                color: #555;
-                                font-size: .9rem;
-                                font-weight: bold;
-                                margin-left: 1vw;
-                            }
-                        }
-
-                        >img {
-                            width: 100%;
-                            height: 100%;
-                            object-fit: cover;
+                        p {
+                            font-size: .9rem;
                         }
 
                     }
 
-                    >.review_body {
+                }
+
+                .review-txt-box {
+                    height: 40%;
+
+                    >div {
                         width: 100%;
-                        min-height: 8rem;
+                    }
 
-                        .text {
-                            width: 100%;
-                            min-height: 8rem;
+                    .r-text {
+                        height: 75%;
 
+                        .reviews_starts {
+                            width: 90%;
+                            color: gold;
+                            margin-left: 5px;
+                            margin-top: 5px;
+                            font-size: 1rem;
 
-                            .stars-reveiws {
-                                width: 100%;
-                                margin-top: 1rem;
-                                color: #FFD700;
-                                padding: 0 1vw;
-
-                                .fa-circle-check {
-                                    color: rgba(0, 128, 0, 0.681);
-                                    margin-left: 8px;
+                            i {
+                                &:first-child {
+                                    margin-left: 5px;
                                 }
                             }
 
-                            >p {
-                                color: #555;
-                                font-size: .8rem;
-                                padding: 1rem 10px;
+                            .fa-circle-check {
+                                color: rgb(9, 228, 9);
+                                margin-left: 5px;
                             }
                         }
 
-                        .comment {
-                            border-top: 1px solid rgba(71, 71, 71, 0.175);
-                            height: 3rem;
-                            display: flex;
-                            align-items: center;
-                            justify-content: flex-end;
-                            padding: 0 1rem;
+                        >p {
                             color: #555;
-                            font-size: .8rem;
-
-                            >i {
-                                cursor: pointer;
-                            }
+                            font-size: .85rem;
+                            padding: 10px;
                         }
 
                     }
+
+                    .r-comment {
+                        height: 25%;
+                        border-top: 1px solid #0000000e;
+
+                        i {
+                            float: right;
+                            padding: 10px 15px;
+                            font-size: .9rem;
+                            color: #555;
+                        }
+                    }
                 }
-
-
             }
-
 
             .reviews-pagination {
                 width: 100%;
@@ -1480,7 +1476,15 @@ const toggoleStickyProduct = () => {
 }
 
 .no-img-review {
-    min-height: 15rem !important;
+    height: 14rem !important;
+
+    .review-img-box {
+        height: 30% !important;
+    }
+
+    .review-txt-box {
+        height: 70% !important;
+    }
 }
 
 @media screen and (max-width: 1315px) {
@@ -1492,21 +1496,28 @@ const toggoleStickyProduct = () => {
 @media screen and (max-width: 1024px) {
     .product-details-box {
         width: 90% !important;
+        flex-direction: column;
 
         >div {
             width: 100% !important;
         }
 
         .product-images {
+            margin-top: 2rem;
+            height: 60vh !important;
+
             .main {
+                height: 50vh !important;
 
                 >img {
-                    width: 70% !important;
-                    height: 70% !important;
+                    width: 80% !important;
+                    height: 80% !important;
+
                 }
             }
 
             .options {
+                height: 10vh !important;
 
                 >div {
                     width: 25%;
@@ -1522,7 +1533,8 @@ const toggoleStickyProduct = () => {
 
         }
     }
-    .product-description{
+
+    .product-description {
         width: 90% !important;
     }
 }
@@ -1736,6 +1748,40 @@ const toggoleStickyProduct = () => {
     }
 }
 
+@media screen and (max-width: 350px) {
+    .product-details-box {
+        width: 95% !important;
+        margin: 0 auto !important;
+    }
+
+    .product-images {
+        height: 40vh !important;
+        margin: 0 auto !important;
+
+
+        .main {
+            max-height: 50vh !important;
+
+            >img {
+                min-width: 100% !important;
+            }
+        }
+    }
+
+    .badge {
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+        left: 1rem !important;
+        top: 4rem !important;
+    }
+
+    .count_down {
+        >.left {
+            display: none;
+        }
+    }
+}
+
 @media screen and (max-width:768px) {
     .product-description {
         width: 90% !important;
@@ -1772,8 +1818,7 @@ const toggoleStickyProduct = () => {
 .showStickyProduct {
     transform: translateY(0) !important;
     opacity: 1 !important;
-}
-</style>
+}</style>
 
 
 

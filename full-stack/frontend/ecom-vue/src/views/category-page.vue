@@ -124,38 +124,40 @@ const rangeFilterSubmit = async () => {
 
 const checkBox = reactive({});
 
-const checkedCheckboxes = [];
+const checkedCheckboxesArr = [];
 
 const handleCheckboxChange = (checkboxName) => {
     if (checkBox[checkboxName]) {
-        checkedCheckboxes.push(checkboxName);
+        checkedCheckboxesArr.push(checkboxName);
     } else {
-        const index = checkedCheckboxes.indexOf(checkboxName);
+        const index = checkedCheckboxesArr.indexOf(checkboxName);
         if (index !== -1) {
-            checkedCheckboxes.splice(index, 1);
+            checkedCheckboxesArr.splice(index, 1);
         }
     }
     sendCheckedCheckboxes()
 };
 
 const sendCheckedCheckboxes = async () => {
-    if (checkedCheckboxes.length === 0) {
+    if (checkedCheckboxesArr.length === 0) {
         return;
     }
     let id = route.params.id
     try {
         const checkedData = {
-            checkboxes: checkedCheckboxes,
+            checkboxes: checkedCheckboxesArr,
             categoryId: id
         };
+        console.log(checkedData);
         loading.value = true;
-        api.get('/products/filterd', {
+        api.get('/products/filtered', {
             params: checkedData
         }).then((res) => {
+            console.log(res);
             if (res.data.data.length > 1) {
                 products.value = []
-                loading.value = false;
                 products.value = res.data.data
+                loading.value = false;
             } else {
                 loading.value = false;
                 alert('No products with Selected Filters')
@@ -177,7 +179,6 @@ const toggoleFilters = () => {
 const addToCart = async (productId) => {
     productStore.addToCart(productId)
     router.push({ name: 'cart' })
-
 }
 </script>
 <template>

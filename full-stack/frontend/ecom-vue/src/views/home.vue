@@ -16,14 +16,16 @@ const isLoaded = ref(false)
 const categories = ref([])
 const newArrivals = ref([])
 const highRated = ref([])
+const featuredProducts = ref([])
 
 
 onMounted(async () => {
     
-    isLoaded.value = true
-    await getNewArrivals()
     await getCategories()
+    await getNewArrivals()
     await getHighRatedProducts()
+    await getFeaturedProducts()
+    isLoaded.value = true
 })
 
 async function getNewArrivals() {
@@ -34,11 +36,16 @@ async function getCategories() {
     const res = await productStore.getCategories()
     categories.value = res.data.response
 }
+
 async function getHighRatedProducts() {
     const res = await productStore.getHighRated()
     highRated.value = res.data.data
 }
 
+async function getFeaturedProducts() {
+    const res = await productStore.getFeaturedProducts()
+    featuredProducts.value = res.data.data
+}
 </script>
 <template>
     <div class="home-main">
@@ -46,7 +53,7 @@ async function getHighRatedProducts() {
             <img src="../assets/images/hero.jpg" alt="hero-image">
             <div class="ctx" :class="{ 'animate-l-t-r': isLoaded }">
                 <h2>
-                    Get the best Products With best Offres !
+                    Get the best Products With best Offers !
                 </h2>
                 <p>
                     Welcome to our store, where you can find a wide range of high-quality products that cater to all your needs. Whether you're looking for the latest gadgets, stylish fashion, or home essentials, we've got you covered. 
@@ -125,8 +132,8 @@ async function getHighRatedProducts() {
             </div>
         </div>
 
-        <ProductsCarousel v-if="isLoaded" smallHeader="Hot Picks: Bestselling and Highly Popular Products Right Nows"
-            headerText="Most Popular Products" :productList="newArrivals" />
+        <ProductsCarousel v-if="isLoaded" smallHeader="Check Out Our Featured Products"
+            headerText="Featured Products" :productList="featuredProducts" />
             
         <div v-else class="loadingContainer">
             <Loading />

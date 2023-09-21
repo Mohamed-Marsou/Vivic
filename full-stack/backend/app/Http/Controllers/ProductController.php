@@ -73,6 +73,35 @@ class ProductController extends Controller
         }
         return response()->json($products);
     }
+    public function getFeatured()
+    {
+        try {
+            $onSaleProducts = Product::where('on_sale', true)->with('images')->take(10)->get();
+    
+            // Count the number of products on sale
+            $countOnSale = $onSaleProducts->count();
+    
+            if ($countOnSale < 10) {
+                $remainingProductsCount = 10 - $countOnSale;
+                // Query the database to get unique regular products that are not already included
+                $regularProducts = Product::where('on_sale', false)
+                    ->whereNotIn('id', $onSaleProducts->pluck('id'))
+                    ->with('images')
+                    ->take($remainingProductsCount)
+                    ->get();
+    
+                // Combine on-sale and unique regular products
+                $featuredProducts = $onSaleProducts->concat($regularProducts);
+            } else {
+                $featuredProducts = $onSaleProducts;
+            }
+            return response()->json(['data' => $featuredProducts]);
+        } catch (\Exception $e) {
+            // Handle any exceptions that occur during the process
+            return response()->json(['error' => 'An error occurred while fetching featured products' . $e], 500);
+        }
+    }
+
     public function getProduct($slug)
     {
         $product =  Product::with('images')->where('slug', $slug)->first();
@@ -86,17 +115,21 @@ class ProductController extends Controller
     {
         $products = Product::with('images')
             ->where(function ($query) use ($minPrice) {
-                $query->whereRaw("COALESCE(sale_price, price) >= ?", [$minPrice]);
+                $query->where(function ($subquery) use ($minPrice) {
+                    $subquery->where('sale_price', '!=', '0.00')
+                        ->where('sale_price', '>=', $minPrice);
+                })->orWhere(function ($subquery) use ($minPrice) {
+                    $subquery->where('price', '>=', $minPrice);
+                });
             })
             ->get();
-
+    
         if ($products->isEmpty()) {
             return response()->json(['response' => "No products found within the specified price range"], 404);
         }
-
+    
         return response()->json($products);
     }
-
     public function getFilteredProducts(Request $request)
     {
         $query = Product::query();
@@ -105,7 +138,9 @@ class ProductController extends Controller
         $categoryId = $request->input('categoryId');
 
         // Filter by Category ID
-        $query->where('category_id', $categoryId);
+        if($categoryId ){
+            $query->where('category_id', $categoryId);
+        }
 
         // Checkboxes selected in the request
         $selectedCheckboxes = $request->input('checkboxes', []);
@@ -133,39 +168,6 @@ class ProductController extends Controller
 
         return response()->json(['data' => $filteredProducts], 200);
     }
-    public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|max:255',
-            'price' => 'required|numeric',
-            'description' => 'nullable',
-            'category_id' => 'required|exists:categories,id',
-        ]);
-
-        $product = Product::create($validatedData);
-
-        return response()->json($product, 201);
-    }
-
-    public function show(Product $product)
-    {
-        return response()->json($product);
-    }
-
-    public function update(Request $request, Product $product)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|max:255',
-            'price' => 'required|numeric',
-            'description' => 'nullable',
-            'category_id' => 'required|exists:categories,id',
-        ]);
-
-        $product->update($validatedData);
-
-        return response()->json($product, 200);
-    }
-
     public function addToWishlist(Request $request)
     {
         try {
@@ -224,7 +226,6 @@ class ProductController extends Controller
             return response()->json(['message' => 'Failed to add item to Cart', 'error' => $e->getMessage()], 500);
         }
     }
-
     public function getProducts(Request $request)
     {
         try {
@@ -242,8 +243,6 @@ class ProductController extends Controller
             return response()->json(['message' => 'Error retrieving products', 'error' => $e->getMessage()], 500);
         }
     }
-
-
     public function getUserWishListProducts($id)
     {
         $wishlistItems = Wishlist::where('user_id', $id)
@@ -268,7 +267,6 @@ class ProductController extends Controller
             'products' => $productsWithImages
         ], 200);
     }
-
     public function getInCartProducts($id)
     {
         $inCartItems = Cart::where('user_id', $id)
@@ -385,7 +383,6 @@ class ProductController extends Controller
             return response()->json(['message' => 'Failed to clear user cart: ' . $e->getMessage()], 500);
         }
     }
-
     public function destroy($id)
     {
         // Find the product by its ID
@@ -415,10 +412,8 @@ class ProductController extends Controller
     
         return response()->json(['response' => 'Product was deleted !!'], 201);
     }
-    
 
     //* ********************************* import Woo Products to DATABASE 
-
 
     public function syncAllProductsFromWooCommerce(): JsonResponse
     {
@@ -488,7 +483,6 @@ class ProductController extends Controller
 
     // *********************************
     // ********************************* *********************************
-    // ********************************* ********************************* *********************************
     public function syncProductsFromWooCommerce(Request $request): JsonResponse
     {
         $perPage = 35;
@@ -561,7 +555,9 @@ class ProductController extends Controller
             'successCount' => $successCount,
         ]);
     }
-    // checks if image dir already exist and delete it 
+
+    // *********************************
+    //? checks if image dir already exist and deleting it 
     private function deleteDir($folderName, $slug)
     {
         $folderPath = 'public/' . $folderName . '/' . $slug;

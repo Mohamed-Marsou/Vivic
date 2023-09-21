@@ -1,7 +1,6 @@
 <script setup>
 import DashVue from '../../components/build/dashboard/dash.vue'
 import ProductVue from '../../components/build/dashboard/products.vue'
-import OrderVue from '../../components/build/dashboard/order.vue'
 import AdminVue from '../../components/build/dashboard/admin.vue'
 import Cookies from 'js-cookie';
 
@@ -68,12 +67,6 @@ const logOut =()=>{
                         <p>Products</p>
                     </a>
                 </li>
-                <li :class="{ activeLink: view === 'OrderVue' }" @click="changeView('OrderVue')">
-                    <a>
-                        <i  title="Orders" class="fa-solid fa-coins"></i>
-                        <p>Orders</p>
-                    </a>
-                </li>
                 <li :class="{ activeLink: view === 'AdminVue' }" @click="changeView('AdminVue')">
                     <a>
                         <i  title="Admins" class="fa-solid fa-user-tag"></i>
@@ -113,7 +106,6 @@ const logOut =()=>{
             <div class="dash-view">
                 <DashVue v-if="view === 'Home'" />
                 <ProductVue v-if="view === 'ProductVue'" />
-                <OrderVue v-if="view === 'OrderVue'" />
                 <AdminVue v-if="view === 'AdminVue'" />
             </div>
         </main>

@@ -30,7 +30,7 @@ class CategoryController extends Controller
         $category = Category::with('products')->find($id);
         
         if ($category) {
-            $products = $category->products()->with('images')->paginate(1);
+            $products = $category->products()->with('images')->paginate(8);
     
             // Retrieve the maximum price using a subquery
             $maxPrice = DB::table('products')

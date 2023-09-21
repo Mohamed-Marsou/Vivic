@@ -36,7 +36,6 @@ onMounted(async () => {
         `$${((product.sale_price!= '0.00' ? product.sale_price : product.price) * product.pivot.quantity).toFixed(2)}`,
     ]) : [];
 
-    console.log(orderInfo.value);
 
 });
 

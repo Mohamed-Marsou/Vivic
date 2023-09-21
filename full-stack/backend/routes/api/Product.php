@@ -12,6 +12,8 @@ Route::get('/products/category/{id}', [CategoryController::class, 'getCategoryPr
 
 // All Products
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+// All Get featured
+Route::get('/products/featured', [ProductController::class, 'getFeatured'])->name('products.getFeatured');
 
 // New Arrivals Products
 Route::get('/products/new-arrivals', [ProductController::class, 'newProducts'])->name('products.newProducts');
@@ -26,7 +28,7 @@ Route::get('/product/{slug}', [ProductController::class, 'getProduct'])->name('p
 Route::get('/products/range/{minPrice}', [ProductController::class, 'getRange'])->name('products.getRange');
 
 // Filtered Products
-Route::get('/products/filterd', [ProductController::class, 'getFilteredProducts'])->name('products.getFilteredProducts');
+Route::get('/products/filtered', [ProductController::class, 'getFilteredProducts'])->name('products.getFilteredProducts');
 
 // Add Product to Wishlist
 Route::post('/product/wishlist', [ProductController::class, 'addToWishlist'])->name('products.addToWishlist');
@@ -43,9 +45,9 @@ Route::get('/get/products', [ProductController::class, 'getProducts'])->name('pr
 // Get User InCart Products
 Route::get('/get/cart-products/{id}', [ProductController::class, 'getInCartProducts'])->name('products.getInCartProducts');
 
-// decrase User InCart Product quantity
+// decrease User InCart Product quantity
 Route::put('/product/cart/decrease/{userId}/{id}', [ProductController::class, 'decreaseCartProductQuantity'])->name('products.decreaseCartProductQuantity');
-// incrase User InCart Product quantity
+// increase User InCart Product quantity
 Route::put('/product/cart/increase/{userId}/{id}', [ProductController::class, 'increaseCartProductQuantity'])->name('products.increaseCartProductQuantity');
 
 // Remove User InCart Product

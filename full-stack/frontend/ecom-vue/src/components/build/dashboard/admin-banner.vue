@@ -143,11 +143,29 @@ function loagOut() {
 
 .show {
   display: flex !important;
-  ;
 }
 
 .showQuickActions {
   display: block !important;
   ;
+}
+@media screen and (max-width : 350px) {
+  .dashboard {
+    >a{
+      margin-left: 5px;
+      p{
+        display: none;
+      }
+    }
+    >div{
+      margin-right: 5px;
+      >p{
+        display: none;
+      }
+      i{
+        font-size: large;
+      }
+    }
+  }
 }
 </style>

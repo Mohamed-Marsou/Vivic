@@ -2,7 +2,7 @@
 import { ref, onMounted, reactive } from 'vue'
 import api from '../../../http/api';
 import Loading from '../../build/loading.vue';
-
+import axios from 'axios';
 
 const loading = ref(true)
 const overlay = ref(false)
@@ -11,13 +11,31 @@ const adminsDATA = ref([])
 const responseMessage = ref('')
 onMounted(async () => {
     await getAdminData()
-    // sett loding to fasle 
+    // sett loading to false 
     loading.value = false
 })
 
 async function getAdminData() {
     const res = await api.get('/admins')
-    adminsDATA.value = res.data.admins.data
+    adminsDATA.value = res.data.admins
+}
+async function loadMore(btn) {
+    try {
+        // Check if there is a next_page_url available
+        if (adminsDATA.value.next_page_url) {
+            const response = await axios.get(adminsDATA.value.next_page_url);
+
+            adminsDATA.value.data = adminsDATA.value.data.concat(response.data.admins.data);
+
+            adminsDATA.value.next_page_url = response.data.admins.next_page_url;
+
+            if (!adminsDATA.value.next_page_url) {
+                btn.target.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading more data:', error);
+    }
 }
 
 function toggoleModel() {
@@ -92,7 +110,7 @@ async function addNewAdmin() {
         getAdminData()
     } catch (error) {
         // Handle any errors that occur during the API request
-        console.error( 'something went wrong in "addNewAdmin" : ' );
+        console.error('something went wrong in "addNewAdmin" : ');
         console.error(error);
 
         responseMessage.value = error.response.data.message
@@ -151,16 +169,20 @@ async function addNewAdmin() {
                 Admins
             </h1>
 
-            <button @click="toggoleModel">
-                Add new
-            </button>
         </header>
 
-        <div v-if="adminsDATA.length > 0" class="table-container">
-            <div class="search-div">
-                <input type="text" placeholder="search">
-                <button>
-                    <i class="fa-solid fa-magnifying-glass"></i>
+        <div v-if="adminsDATA.data.length > 0" class="table-container">
+            <div class="t-head">
+                <div class="search-div">
+                    <input type="text" placeholder="search">
+                    <button>
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+
+                </div>
+                <button @click="toggoleModel">
+                    <i class="fa-solid fa-user-plus"></i>
+                    new
                 </button>
             </div>
             <table>
@@ -173,7 +195,7 @@ async function addNewAdmin() {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="admin in adminsDATA" :key="admin.id">
+                    <tr v-for="admin in adminsDATA.data" :key="admin.id">
                         <td>{{ admin.id }}</td>
                         <td>
                             {{ admin.name }}
@@ -184,13 +206,13 @@ async function addNewAdmin() {
                 </tbody>
             </table>
 
-            <button>
+            <button @click="loadMore($event)">
                 LOAD MORE
                 <i class="fa-solid fa-angles-down"></i>
             </button>
         </div>
         <div v-else class="empty-table">
-            <img src="../../../assets/images/wired-flat-57-server.gif" alt="">
+            <img src="../../../assets/images/wired-flat-57-server.gif" alt="empty Cart">
             <h1>NO DATA AVAILABLE</h1>
         </div>
     </div>
@@ -246,12 +268,14 @@ async function addNewAdmin() {
                 padding: 1.5rem;
                 text-transform: uppercase;
             }
-            >span{
+
+            >span {
                 font-size: .9rem;
                 color: red;
-                padding:0 1.5rem;
+                padding: 0 1.5rem;
 
             }
+
             .add-wrapper {
                 width: 100%;
                 display: flex;
@@ -350,21 +374,6 @@ async function addNewAdmin() {
             }
         }
 
-        >button {
-            width: 7rem;
-            height: 2.5rem;
-            border: none;
-            color: #fff;
-            background: #2c2e3e;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: .3s ease-in-out;
-            text-transform: uppercase;
-
-            &:hover {
-                background: rgb(21, 135, 228);
-            }
-        }
 
     }
 
@@ -374,34 +383,58 @@ async function addNewAdmin() {
         margin: 2rem auto;
         display: flex;
         flex-direction: column;
-
-        .search-div {
-            border: 1px solid rgba(57, 57, 57, 0.07);
-            width: 22rem;
-            height: 2.8rem;
-            margin: 0 2.7%;
+        .t-head{
+            width: 100%;
             display: flex;
-            overflow: hidden;
-
-            input {
-                width: 82%;
-                border: none;
-                outline: none;
-                padding: 0 1rem;
-            }
-
-            >button {
-                width: 18%;
-                background: #40445cfd;
-                color: #fff;
-                border: none;
-                cursor: pointer;
-                transition: .3s ease-in-out;
-
-                &:hover {
-                    background: #2c2e3e;
+            justify-content: space-between;
+            padding-right:  2.3rem;
+            .search-div {
+                border: 1px solid rgba(57, 57, 57, 0.07);
+                width: 22rem;
+                height: 2.8rem;
+                margin: 0 2.7%;
+                display: flex;
+                overflow: hidden;
+    
+                input {
+                    width: 82%;
+                    border: none;
+                    outline: none;
+                    padding: 0 1rem;
+                }
+    
+                >button {
+                    width: 18%;
+                    background: #40445cfd;
+                    color: #fff;
+                    border: none;
+                    cursor: pointer;
+                    transition: .3s ease-in-out;
+    
+                    &:hover {
+                        background: #2c2e3e;
+                    }
                 }
             }
+
+            
+        >button {
+            width: 7rem;
+            height: 2.5rem;
+            border: none;
+            color: #fff;
+            background: #2c2e3e;
+            cursor: pointer;
+            transition: .3s ease-in-out;
+            text-transform: capitalize;
+            i{
+                margin-right: 5px;
+            }
+
+            &:hover {
+                background: rgb(21, 135, 228);
+            }
+        }
         }
 
         table {
@@ -439,6 +472,19 @@ async function addNewAdmin() {
 
             }
 
+            button {
+                color: #2c2e3e52;
+                background: transparent;
+                border: none;
+                width: 100%;
+                height: 100%;
+                cursor: pointer;
+
+                &:hover {
+                    color: #000;
+                    font-weight: bold;
+                }
+            }
         }
 
         >button {
@@ -451,9 +497,20 @@ async function addNewAdmin() {
             cursor: pointer;
             font-weight: bold;
             border: 2px solid #2c2e3e31;
-            i{
+            transition: .3s ease-out;
+
+            i {
                 margin-left: 5px;
                 color: #2c2e3e52;
+            }
+
+            &:hover {
+                border: 2px solid #2c2e3eb1;
+                color: #2c2e3eb1;
+
+                i {
+                    color: #2c2e3eb1;
+                }
             }
         }
     }
