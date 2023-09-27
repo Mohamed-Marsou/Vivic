@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Wishlist;
 use Illuminate\Http\Request;
+use App\Models\ProductVariant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,10 +28,10 @@ class ProductController extends Controller
 
     public function __construct()
     {
-        $this->baseUrl=env('WOO_URL');
-        $this->endpoint='/products';
-        $this->WOO_CK=env('WOOCOMMERCE_API_KEY');
-        $this->WOO_CS= env('WOOCOMMERCE_API_SECRET');
+        $this->baseUrl = env('WOO_URL');
+        $this->endpoint = '/products';
+        $this->WOO_CK = env('WOOCOMMERCE_API_KEY');
+        $this->WOO_CS = env('WOOCOMMERCE_API_SECRET');
     }
     public function index()
     {
@@ -77,10 +78,10 @@ class ProductController extends Controller
     {
         try {
             $onSaleProducts = Product::where('on_sale', true)->with('images')->take(10)->get();
-    
+
             // Count the number of products on sale
             $countOnSale = $onSaleProducts->count();
-    
+
             if ($countOnSale < 10) {
                 $remainingProductsCount = 10 - $countOnSale;
                 // Query the database to get unique regular products that are not already included
@@ -89,7 +90,7 @@ class ProductController extends Controller
                     ->with('images')
                     ->take($remainingProductsCount)
                     ->get();
-    
+
                 // Combine on-sale and unique regular products
                 $featuredProducts = $onSaleProducts->concat($regularProducts);
             } else {
@@ -123,11 +124,11 @@ class ProductController extends Controller
                 });
             })
             ->get();
-    
+
         if ($products->isEmpty()) {
             return response()->json(['response' => "No products found within the specified price range"], 404);
         }
-    
+
         return response()->json($products);
     }
     public function getFilteredProducts(Request $request)
@@ -138,7 +139,7 @@ class ProductController extends Controller
         $categoryId = $request->input('categoryId');
 
         // Filter by Category ID
-        if($categoryId ){
+        if ($categoryId) {
             $query->where('category_id', $categoryId);
         }
 
@@ -387,29 +388,29 @@ class ProductController extends Controller
     {
         // Find the product by its ID
         $product = Product::find($id);
-    
+
         // Check if the product exists
         if (!$product) {
             return response()->json(['error' => 'Product not found'], 404);
         }
-    
+
         // Retrieve the category associated with the product
         $category = $product->category;
-    
+
         // Delete the product
         $product->delete();
-    
+
         // * Delete product-related images
         $this->deleteDir('product-images', $product['slug']);
         $this->deleteDir('description-images', $product['slug']);
         $this->deleteDir('category-images', $category->name);
-    
+
         //! Check if the category  has no products
-        if ( $category->products->isEmpty()) {
+        if ($category->products->isEmpty()) {
             // Delete the category
             $category->delete();
         }
-    
+
         return response()->json(['response' => 'Product was deleted !!'], 201);
     }
 
@@ -420,7 +421,7 @@ class ProductController extends Controller
         $perPage = 50;
         $currentPage = 1;
         $successCount = 0;
-       
+
         do {
             try {
                 $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
@@ -463,6 +464,10 @@ class ProductController extends Controller
                                     $isFirstImage = false;
                                 }
                             }
+                        }
+                        // * - save Products Variation 
+                        if ($newProduct) {
+                            $this->handelVariant($newProduct['name'], $productData['id'] ,$newProduct['id'], $newProduct['slug']);
                         }
                     }
                 }
@@ -537,6 +542,10 @@ class ProductController extends Controller
                                     }
                                 }
                             }
+                            // * - save Products Variation 
+                            if ($newProduct) {
+                                $this->handelVariant($newProduct['name'], $productData['id'],$newProduct['id'], $newProduct['slug']);
+                            }
                         }
                     }
                 }
@@ -606,7 +615,7 @@ class ProductController extends Controller
     {
         $imageName = basename($src);
         // Check if the folder exists and the image file exists within it
-        $this->deleteDir('category-images',$slug);
+        $this->deleteDir('category-images', $slug);
         // Create a context with SSL certificate verification disabled
         $context = stream_context_create([
             'ssl' => [
@@ -696,7 +705,7 @@ class ProductController extends Controller
             'on_sale' => $productData['on_sale'],
             'date_on_sale_from' => $productData['date_on_sale_from'],
             'date_on_sale_to' =>  $productData['date_on_sale_to'],
-            
+
             'SKU' => $productData['sku'],
 
         ]);
@@ -743,6 +752,7 @@ class ProductController extends Controller
     }
     private function downloadAndSaveImage($src, $slug)
     {
+        $this->deleteDir('description-images', $slug);
         $imageName = basename($src);
         // Create a context with SSL certificate verification disabled
         $context = stream_context_create([
@@ -754,6 +764,65 @@ class ProductController extends Controller
         $imageData = file_get_contents($src, false, $context);
         $imagePath = '/storage/description-images/' . $slug . '/' . $imageName;
         Storage::put('public/description-images/' . $slug . '/' . $imageName, $imageData);
+        $imageUrl = url('/') . $imagePath;
+
+        return $imageUrl;
+    }
+    private function handelVariant($pName, $woPId,$productId, $slug)
+    {
+        $endpoint = '/products/' . $woPId . '/variations';
+        try {
+            $response = Http::withBasicAuth($this->WOO_CK, $this->WOO_CS)
+                ->get($this->baseUrl . $endpoint);
+
+            $variants = $response->json();
+            $this->deleteDir('variant-images', $slug);
+            // save each variant 
+            foreach ($variants as $variant) {
+                // Check if the folder exists and the image file exists within it
+                $newVariantImagePath = $this->downloadVariantImg($variant['image']['src'], $slug);
+
+                // Check if image download was successful
+                if ($newVariantImagePath) {
+                    // Create and save the ProductVariant
+                    ProductVariant::create([
+                        'product_id' => $productId,
+                        // adding product variant name 
+                        'name' => $pName,
+                        'sku' => $variant['sku'],
+                        'price' => $variant['price'],
+                        'attributes' => json_encode($variant['attributes']),
+                        'regular_price' => $variant['regular_price'],
+                        'sale_price' => $variant['sale_price'],
+                        'inStock' => $variant['stock_quantity'],
+                        'weight' => $variant['weight'],
+                        'dimensions' => json_encode($variant['dimensions']),
+                        'image' => $newVariantImagePath,
+                    ]);
+                } else {
+                    // Handle the case where image download failed
+                    Log::error('Image download failed for variant: ' . json_encode($variants));
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(['error at handelVariant() :  ' => $e->getMessage()], 500);
+        }
+    }
+    private function downloadVariantImg($src, $slug)
+    {
+        $imageName = basename($src);
+
+        // Create a context with SSL certificate verification disabled
+        $context = stream_context_create([
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+        $imageData = file_get_contents($src, false, $context);
+        $imagePath = '/storage/variant-images/' . $slug . '/' . $imageName;
+        Storage::put('public/variant-images/' . $slug . '/' . $imageName, $imageData);
         $imageUrl = url('/') . $imagePath;
 
         return $imageUrl;

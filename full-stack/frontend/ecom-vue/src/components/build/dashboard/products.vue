@@ -21,7 +21,7 @@ async function getProductsDATA() {
     // sett loading to false 
     loading.value = false
 }
-function toggoleImport() {
+function toggleImport() {
     overlay.value = !overlay.value
     showAdvanceOpt.value = false
 }
@@ -86,7 +86,7 @@ const advanceImport = async () => {
         count.value = res.data.successCount;
 
         // Toggle the import view
-        toggoleImport();
+        toggleImport();
 
         // Mark the import process as completed
         isImporting.value = false;
@@ -95,14 +95,14 @@ const advanceImport = async () => {
         await getProductsDATA();
 
         // Toggle the display of the synchronization response message
-        toggoleSyncResponse();
+        toggleSyncResponse();
 
         // Reset the input values
         restValue();
 
         // Hide the synchronization response message after 3 seconds
         setTimeout(() => {
-            toggoleSyncResponse();
+            toggleSyncResponse();
         }, 3500);
     } catch (error) {
         // Log any errors that occurred during the API request
@@ -110,7 +110,7 @@ const advanceImport = async () => {
     }
 };
 
-function toggoleSyncResponse() {
+function toggleSyncResponse() {
     showCount.value = !showCount.value
 }
 const validateAndFormatProductIds = (ids) => {
@@ -209,7 +209,7 @@ try {
                         Advance import
                     </button>
                 </div>
-                <i @click="toggoleImport" class="fa-solid fa-xmark"></i>
+                <i @click="toggleImport" class="fa-solid fa-xmark"></i>
 
                 <div class="advance-import" :class="{ show: showAdvanceOpt }">
                     <h4>Advnace Import </h4>
@@ -257,7 +257,7 @@ try {
         <header>
             <h1>Products</h1>
 
-            <button @click="toggoleImport">
+            <button @click="toggleImport">
                 import
             </button>
         </header>

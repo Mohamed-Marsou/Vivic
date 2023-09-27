@@ -14,8 +14,10 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->decimal('price', 8, 2);
             $table->string('slug');
+            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
+            $table->decimal('price', 8, 2);
+            $table->string('SKU')->nullable(); 
             $table->string('status')->default('publish');
             $table->decimal('regular_price', 8, 2)->nullable();
             $table->decimal('sale_price', 8, 2)->nullable();
@@ -24,13 +26,16 @@ return new class extends Migration
             $table->string('weight')->nullable();
             $table->json('specification')->nullable();
             $table->json('dimensions')->nullable();
+
+            $table->boolean('on_sale')->default(false);
+            $table->date('date_on_sale_from')->nullable();
+            $table->date('date_on_sale_to')->nullable();
+            
             $table->text('short_description');
             $table->text('description');
-
+            
             $table->unsignedBigInteger('category_id')->nullable();
-
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
-
+            
             $table->timestamps();
         });
     }
