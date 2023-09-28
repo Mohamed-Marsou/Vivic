@@ -15,6 +15,7 @@ const productStore = useProductStore()
 const authStore = useAuthtStore()
 const products = ref([])
 const loaded = ref(false)
+const isUpdatingCart = ref(false)
 const VITE_STRIPE_PUBLIC_KEY = import.meta.env.VITE_PK_STRIPE
 
 let stripe = {}
@@ -31,9 +32,10 @@ onMounted(async () => {
         cardElement = elements.create('card');
     });
     await getInCartProductsList()
-    getTotalAmount()
     loaded.value = true;
+    getTotalAmount()
     getUserData()
+    
     console.log(products.value);
 
 })
@@ -50,27 +52,43 @@ async function getInCartProductsList() {
     }
 }
 const getCoverImg = (p) => {
-    const coverImg = p.images.find(image => image.pivot.is_cover === true);
-    return coverImg.url
+    if(p.images){
+        const coverImg = p.images.find(image => image.pivot.is_cover === true);
+        return coverImg.url
+    }
+    if(p.image){
+        return p.image
+    }
 }
 
 
-const removeItem = async (pId) => {
-    await productStore.removeCartItem(pId)
-    await getInCartProductsList()
+const removeItem = async (pId , SKU) => {
+    isUpdatingCart.value = true
+    await productStore.removeCartItem(pId, SKU)
+    isUpdatingCart.value = false
+
+    const itemIndex =products.value.findIndex((item) => item.product.SKU === SKU);
+    if (itemIndex !== -1) {
+            products.value.splice(itemIndex, 1);
+    }
     getTotalAmount()
     if (couponAdded.value) {
         calcDiscount(discountType.value, amount.value)
     }
+
 }
 
 const decreaseCount = async (product) => {
+    isUpdatingCart.value = true
 
     if (authStore.isAuth) {
         const userId = JSON.parse(Cookies.get('auth-user')).id;
         const authToken = Cookies.get('auth-token');
+        const pId = product.product.id
+        const SKU = product.product.SKU
+
         try {
-            const response = await api.put(`/product/cart/decrease/${userId}/${product.product.id}`, {
+            const response = await api.put(`/product/cart/decrease/${userId}/${pId}/${SKU}`, {
                 quantity: product.quantity - 1
             }, {
                 headers: {
@@ -127,15 +145,19 @@ const decreaseCount = async (product) => {
             console.log('Cannot decrease quantity. Stock and quantity are equal or less than 1.');
         }
     }
+    isUpdatingCart.value = false
+
 };
 const increaseCount = async (product) => {
+    isUpdatingCart.value = true
 
     if (authStore.isAuth) {
         const authToken = Cookies.get('auth-token')
         const userId = JSON.parse(Cookies.get('auth-user')).id
         const pId = product.product.id
+        const SKU = product.product.SKU
 
-        const response = await api.put(`/product/cart/increase/${userId}/${pId}`, {
+        const response = await api.put(`/product/cart/increase/${userId}/${pId}/${SKU}`, {
             headers: {
                 Authorization: `Bearer ${authToken}`
             }
@@ -164,6 +186,8 @@ const increaseCount = async (product) => {
             console.log('Cannot increase quantity. Exceeds stock limit.');
         }
     }
+    isUpdatingCart.value = false
+
 }
 // helper func //
 const updateLocalStorage = (productId, quantityChange) => {
@@ -572,12 +596,15 @@ const amount = ref(0)
 function getTotalAmount() {
     let totalAmount = 0;
 
-    products.value.forEach(product => {
+    if(products.value.length > 0)
+    {
+        products.value.forEach(product => {
         const price = product.product.sale_price != '0.00' ? parseFloat(product.product.sale_price) : parseFloat(product.product.price);
         totalAmount += price * product.quantity;
     });
 
     cartSubTotal.value = cartTotalAmount.value = totalAmount.toFixed(2);
+    }
 }
 function calcDiscount(type, amount) {
 
@@ -663,11 +690,11 @@ const handleCouponSub = async () => {
             <Loading />
         </div>
         <div v-else-if="products && products.length > 0">
-            <div class="products-table">
+            <div class="products-table" :class="{'table-in-action' : isUpdatingCart}">
                 <div v-for="p in products " :key="p.id" class="cell">
                     <div class="left">
                         <div class="cancel">
-                            <span title="REMOVE ITEM" @click="removeItem(p.product.id)">X</span>
+                            <span title="REMOVE ITEM" @click="removeItem(p.product.id , p.product.SKU)">X</span>
                         </div>
                         <div class="product-image">
                             <img :src="getCoverImg(p.product)" alt="Product image">
@@ -700,15 +727,18 @@ const handleCouponSub = async () => {
                         </div>
                     </div>
                 </div>
+                <div v-if="isUpdatingCart" class="table-loader-box">
+                    <Loading />
+                </div>
             </div>
             <!-- * mob version  -->
-            <div id="product-table-mobile">
+            <div id="product-table-mobile"  :class="{'table-in-action' : isUpdatingCart}">
                 <div class="mb-slot" v-for="p in products " :key="p.id">
                     <img :src="getCoverImg(p.product)" alt="Product image">
                     <div class="prd">
                         <div class="p-header">
                             <h3>{{ p.product.name }}</h3>
-                            <span title="REMOVE ITEM" @click="removeItem(p.product.id)">X</span>
+                            <span title="REMOVE ITEM" @click="removeItem(p.product.id , p.product.SKU)">X</span>
                         </div>
                         <div class="full-box">
                             <p>Price</p>
@@ -732,6 +762,9 @@ const handleCouponSub = async () => {
                             }}</h6>
                         </div>
                     </div>
+                </div>
+                <div v-if="isUpdatingCart" class="table-loader-box">
+                    <Loading />
                 </div>
             </div>
             <!-- * mob version  -->
@@ -959,7 +992,6 @@ const handleCouponSub = async () => {
             display: flex;
             border-bottom: 1px solid rgba(102, 85, 85, 0.227);
             margin-top: 1rem;
-
             .left {
                 width: 20%;
                 height: 7rem;
@@ -1071,6 +1103,19 @@ const handleCouponSub = async () => {
                 }
 
             }
+        }
+      
+    }
+    .table-in-action{
+        position: relative;
+        >.table-loader-box{
+            width: 100%;
+            height: 100%;
+            background: #ffffffcf;
+            z-index: 5;
+            opacity: 1;
+            position: absolute;
+            top: 0;
         }
     }
 

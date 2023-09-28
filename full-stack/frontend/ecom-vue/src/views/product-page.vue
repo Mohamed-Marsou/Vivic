@@ -6,16 +6,14 @@ import api from '../http/api'
 import Loading from '../components/build/loading.vue';
 const route = useRoute();
 const router = useRouter();
+import { useProductStore } from '../stores/product'
 
 const product = ref([]);
 const productImages = ref([]);
 const productCover = ref('');
 
-// Props
-const props = defineProps({
-    slug: String,
-});
-const isloaded = ref(false)
+
+const isLoaded = ref(false)
 const currentDate = ref(new Date());
 let targetDate = ref(null);
 // Fetch product data before mount
@@ -23,12 +21,89 @@ onMounted(async () => {
     // Scroll to the top of the page
     scrollToTop()
     await getProductData();
-    quantity.value = product.value.inStock
-    isloaded.value = true
     await getSimilarProducts();
     showDiscount()
-    //------------------------------------------------------- discount count down
-    if (showDiscount()) {
+    console.log(product.value);
+    console.log(productVariation.value);
+})
+
+// Fetch product data
+async function getProductData() {
+    try {
+        const res = await api.get(`/product/${route.params.slug}`);
+        // Set the base product data to the 'product' ref
+        product.value = res.data.baseProduct;
+        // set 'productVariation'
+        productVariation.value = res.data.variants ?? null;
+
+        const coverImg = product.value.images.find(image => image.pivot.is_cover === true);
+        productCover.value = coverImg.url;
+        // Set 'quantity' to the product's in-stock quantity
+        quantity.value = product.value.inStock;
+        productImages.value = product.value.images;
+
+        // Parse the product specification and set it to 'specification'
+        specification.value = JSON.parse(product.value.specification);
+
+        isLoaded.value = true;
+    } catch (error) {
+        // Handle errors if the API request fails
+        console.error('Error fetching product data:', error);
+    }
+}
+
+//------------------------------------------------------- Product Variation 
+const specification = ref([])
+const productVariation = ref([])
+
+function selectVariant (e) {
+    const selected =  e.target.value;
+     // Filter productVariation.value to find variants with the desired attributes
+     const matchingVariants = productVariation.value.filter((variant) => {
+        const attributes = JSON.parse(variant.attributes);
+        return attributes.length === 1 && attributes[0].option === selected;
+    });
+    updateProductData(matchingVariants[0])
+    console.log(selected);
+    console.log(matchingVariants);
+}
+
+function updateProductData(DATA)
+{
+    product.value.SKU =DATA.SKU 
+    productCover.value = DATA.image 
+    productImages.value[0].url =  DATA.image 
+    product.value.price = DATA.price 
+    product.value.regular_price = DATA.regular_price
+    product.value.sale_price = DATA.sale_price
+    product.value.dimensions = DATA.dimensions
+    product.value.weight = DATA.weight
+    product.value.inStock = DATA.inStock
+}
+// //------------------------------------------------------- add to Cart
+const addToCart = async (Id) => {
+
+productStore.addToCart(Id , product.value.SKU)
+router.push({ name: 'cart' })
+}
+// add to wishlist
+const addProductToWishlist = async (Id) => {
+productStore.addToWishlist(Id , product.value.SKU)
+router.push({ name: 'wishlist' })
+}
+//------------------------------------------------------- discount count down
+const timeRemaining = computed(() => {
+    return targetDate.value || {
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+    };
+});
+
+function showDiscount() {
+    if (product.value && product.value.on_sale && product.value.date_on_sale_from <= currentDate.value.toISOString().split('T')[0] &&
+        product.value.date_on_sale_to >= currentDate.value.toISOString().split('T')[0]) {
         const endDate = new Date(product.value.date_on_sale_to + "T23:59:59");
         const countdownInterval = setInterval(() => {
             const currentTime = new Date();
@@ -45,28 +120,11 @@ onMounted(async () => {
                 minutes: remainingMinutes,
                 seconds: remainingSeconds,
             };
-
             // Check if the countdown has reached zero
             if (remainingTimeInSeconds <= 0) {
                 clearInterval(countdownInterval);
             }
         }, 1000); // Update every 1 second
-    }
-})
-
-const timeRemaining = computed(() => {
-    return targetDate.value || {
-        days: 0,
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
-    };
-
-});
-
-function showDiscount() {
-    if (product.value && product.value.on_sale && product.value.date_on_sale_from <= currentDate.value.toISOString().split('T')[0] &&
-        product.value.date_on_sale_to >= currentDate.value.toISOString().split('T')[0]) {
         return true
     } else {
         return false
@@ -77,39 +135,17 @@ function showDiscount() {
 
 watch(() => route.params.slug, async (newSlug) => {
     scrollToTop()
-    try {
-        const res = await api.get(`/product/${newSlug}`);
-        product.value = res.data;
-        const coverImg = product.value.images.find(image => image.pivot.is_cover === true);
-        productCover.value = coverImg.url;
-        productImages.value = product.value.images;
-    } catch (error) {
-        console.error('Error fetching product data:', error);
-    }
-    quantity.value = product.value.inStock
+    await getProductData();
     await getSimilarProducts();
-
 });
+
 function scrollToTop() {
     window.scrollTo({
         top: 0,
         behavior: 'smooth'
     });
 }
-// Function to fetch product data
-async function getProductData() {
-    try {
-        const res = await api.get(`/product/${props.slug}`);
-        product.value = res.data;
-        const coverImg = product.value.images.find(image => image.pivot.is_cover === true);
-        productCover.value = coverImg.url;
-        productImages.value = product.value.images;
-    } catch (error) {
-        console.error('Error fetching product data:', error);
-    }
-}
 
-import { useProductStore } from '../stores/product'
 const productStore = useProductStore()
 const similarProducts = ref([])
 async function getSimilarProducts() {
@@ -260,17 +296,7 @@ function getProductDiscount() {
     return discountPercentage.toFixed(0)
 }
 
-// add to Cart
-const addToCart = async (productId) => {
-    productStore.addToCart(productId)
-    router.push({ name: 'cart' })
-}
-// add to wishlist
-const addProductToWishlist = async (productId) => {
-    productStore.addToWishlist(productId)
-    router.push({ name: 'wishlist' })
 
-}
 
 function scrollToReviews() {
     const reviewsElement = document.querySelector('.product-reviews');
@@ -291,7 +317,7 @@ const toggleStickyProduct = () => {
 
 
 <template>
-    <div id="product-page-container" v-if="isloaded">
+    <div id="product-page-container" v-if="isLoaded">
 
         <div class="sticky_product" :class="{ showStickyProduct: showSticky }" @mouseenter="toggleStickyProduct"
             @mouseleave="toggleStickyProduct">
@@ -387,13 +413,30 @@ const toggleStickyProduct = () => {
                     <p>0 products in stock</p>
                 </div>
 
+                <div class="slot variantOpts">
+                    <div class="option" v-for="(spec, i) in specification" :key="i">
+                        <p>{{ spec.name }} :</p>
+                        <select @change="selectVariant($event)">
+                            <option value="CHOOSE AN OPTION" disabled selected>
+                                CHOOSE AN OPTION
+                            </option>
+                            <option v-for="(opt, i) in spec.options" :key="i">
+                                {{ opt }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="slot quantity_btn">
                     <div class="quantity">
                         <button @click="decreaseCount" :disabled="count == 1">-</button>
                         <p>{{ count }}</p>
                         <button @click="increaseCount" :disabled="quantity <= count">+</button>
                     </div>
-                    <button @click="addToCart(product.id)" :disabled="quantity === 0">ADD TO CART</button>
+                    <button @click="addToCart(product.id)" :disabled="quantity === 0">
+                        <i class="fa-solid fa-cart-arrow-down"></i>
+                        ADD TO CART
+                    </button>
                 </div>
 
                 <div class="slot wishlist">
@@ -917,9 +960,9 @@ const toggleStickyProduct = () => {
                 gap: 1vw;
 
                 .quantity {
-                    border: 1px solid #5555557d;
-                    width: 10rem;
-                    height: 2.5rem;
+                    border: 1px solid #00000025;
+                    width: 12rem;
+                    height: 2.8rem;
                     border-radius: 5px;
                     display: flex;
                     align-items: center;
@@ -933,8 +976,8 @@ const toggleStickyProduct = () => {
                     }
 
                     >p {
-                        border-right: 1px solid #5555557d;
-                        border-left: 1px solid #5555557d;
+                        border-right: 1px solid #00000025;
+                        border-left: 1px solid #00000025;
                         text-align: center;
                         user-select: none;
                     }
@@ -950,12 +993,29 @@ const toggleStickyProduct = () => {
 
                 >button {
                     width: 12rem;
-                    height: 2.5rem;
+                    height: 2.8rem;
                     color: white;
                     border: none;
                     background: #2e6bc6;
                     border-radius: 5px;
                     cursor: pointer;
+                    position: relative;
+                    transition: .3s ease-in-out;
+
+                    i {
+                        position: absolute;
+                        bottom: -100%;
+                        transition: .3s ease-in-out;
+                    }
+
+                    &:hover {
+                        background: #0d67ee;
+
+                        i {
+                            position: relative;
+                            bottom: 0;
+                        }
+                    }
 
                 }
 
@@ -1072,15 +1132,47 @@ const toggleStickyProduct = () => {
                 .icons {
                     width: 100%;
                     height: 3.5rem;
-                    margin-top: 10px;
                     display: flex;
                     justify-content: flex-end;
                     gap: 1vw;
 
                     >img {
-                        height: 80%;
+                        height: 70%;
                         object-fit: contain;
-                        margin-left: 1vw;
+                    }
+                }
+
+            }
+
+            .variantOpts {
+                flex-wrap: wrap;
+                gap: 1vw;
+
+                >div {
+
+                    p {
+                        color: #555;
+                        font-size: .85rem;
+                        padding: 15px 0;
+                    }
+
+                    select {
+                        width: 12rem;
+                        height: 2.8rem;
+                        border: #00000025 1px solid;
+                        padding: 5px;
+                        margin-bottom: 10px;
+                        color: #555;
+                        border-radius: 5px;
+
+                        &:focus {
+                            outline: #488ffa 1px solid;
+                        }
+
+                        >option {
+                            text-transform: capitalize;
+                        }
+
                     }
                 }
 
@@ -1798,6 +1890,32 @@ const toggleStickyProduct = () => {
         width: 100% !important;
         padding: 0 5px;
     }
+
+    .variantOpts {
+        >div {
+            margin: 0 auto !important;
+
+            &:not(&:first-child) {
+                margin: 0 auto !important;
+            }
+
+            p {
+                color: #555;
+                font-size: .85rem;
+                padding: 15px 0;
+            }
+
+            select {
+                width: 80vw !important;
+                height: 3rem;
+                border: #00000025 1px solid;
+                padding: 5px;
+                margin-bottom: 10px;
+                color: #555;
+            }
+        }
+
+    }
 }
 
 @media screen and (max-width:320px) {
@@ -1818,7 +1936,8 @@ const toggleStickyProduct = () => {
 .showStickyProduct {
     transform: translateY(0) !important;
     opacity: 1 !important;
-}</style>
+}
+</style>
 
 
 

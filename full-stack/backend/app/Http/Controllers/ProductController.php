@@ -105,13 +105,24 @@ class ProductController extends Controller
 
     public function getProduct($slug)
     {
-        $product =  Product::with('images')->where('slug', $slug)->first();
-
-        if (!$product) {
+        $baseProduct = Product::with('images')->where('slug', $slug)->first();
+    
+        if (!$baseProduct) {
             return response()->json(['response' => "Product not found!"], 404);
         }
-        return response()->json($product);
+    
+        $productVariants = ProductVariant::where('product_id', $baseProduct->id)->get();
+    
+        $productData = [
+            'baseProduct' => $baseProduct,
+        ];
+        if (!$productVariants->isEmpty()) {
+            $productData['variants'] = $productVariants;
+        }
+    
+        return response()->json($productData);
     }
+    
     public function getRange($minPrice)
     {
         $products = Product::with('images')
@@ -173,13 +184,15 @@ class ProductController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'productId' => 'required',
                 'userId' => 'required',
+                'Id' => 'required',
+                'SKU' => 'required',
             ]);
 
             // Check if the item is already in the wishlist
-            $existingWishlistItem = Wishlist::where('product_id', $validatedData['productId'])
+            $existingWishlistItem = Wishlist::where('product_id', $validatedData['Id'])
                 ->where('user_id', $validatedData['userId'])
+                ->where('SKU', $validatedData['SKU'])
                 ->first();
 
             if ($existingWishlistItem) {
@@ -188,8 +201,9 @@ class ProductController extends Controller
 
             // Create a new wishlist record
             $wishlist = new Wishlist();
-            $wishlist->product_id = $validatedData['productId'];
             $wishlist->user_id = $validatedData['userId'];
+            $wishlist->product_id = $validatedData['Id'];
+            $wishlist->SKU = $validatedData['SKU'];
             $wishlist->save();
 
             return response()->json(['message' => 'Item added to wishlist'], 201);
@@ -201,27 +215,29 @@ class ProductController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'productId' => 'required',
                 'userId' => 'required',
+                'productId' => 'required',
+                'SKU' => 'required',
             ]);
 
             // Check if the item is already in the Cart
-            $existinginCartItem = Cart::where('product_id', $validatedData['productId'])
-                ->where('user_id', $validatedData['userId'])
-                ->first();
+            $existingCartItem = Cart::where('product_id', $validatedData['productId'])
+            ->where('user_id', $validatedData['userId'])
+            ->where('SKU', $validatedData['SKU'])
+            ->first();
 
-            if ($existinginCartItem) {
+            if ($existingCartItem) {
                 // Increase the quantity by 1
-                $existinginCartItem->increment('quantity');
+                $existingCartItem->increment('quantity');
                 return response()->json(['message' => 'Quantity increased in the Cart'], 200);
             }
 
             // Create a new Cart record
             $cart = new Cart();
-            $cart->product_id = $validatedData['productId'];
             $cart->user_id = $validatedData['userId'];
+            $cart->product_id = $validatedData['productId'];
+            $cart->SKU = $validatedData['SKU'];
             $cart->save();
-
             return response()->json(['message' => 'Item added to Cart'], 201);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to add item to Cart', 'error' => $e->getMessage()], 500);
@@ -230,81 +246,116 @@ class ProductController extends Controller
     public function getProducts(Request $request)
     {
         try {
-            $productIds = $request->input('productIds');
+            $requestProducts = $request->input('products');
+    
+            $result = [];
+    
+            foreach ($requestProducts as $productInfo) {
+                $productId = $productInfo['productId'];
+                $SKU = $productInfo['SKU'];
+    
+                // Attempt to fetch the product by productId
+                $product = Product::with('images')->where('id', $productId)->first();
+    
+                if ($product && $product->SKU === $SKU) {
+                    $result[] = $product;
+                } else {
+                    // If no product by productId is found or SKU doesn't match, search in 'products_variant'
+                    $variant = ProductVariant::where('product_id', $productId)
+                        ->where('SKU', $SKU)
+                        ->first();
+                        
+                    if ($variant) {
+                        $variant->id = $variant->product_id;
+                        unset($variant->product_id);
 
-            // Fetch products based on the array of product IDs
-            $products = Product::whereIn('id', $productIds)->with('images')->get();
-
-            if ($products->isEmpty()) {
+                        $result[] = $variant;
+                    }
+                }
+            }
+    
+            if (empty($result)) {
                 return response()->json(['response' => "No products found."], 200);
             }
-            $count = count($productIds);
-            return response()->json(['products' => $products, 'count' => $count], 200);
+    
+            $count = count($result);
+            return response()->json(['products' => $result, 'count' => $count], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error retrieving products', 'error' => $e->getMessage()], 500);
         }
     }
+    
     public function getUserWishListProducts($id)
     {
-        $wishlistItems = Wishlist::where('user_id', $id)
-            ->with('product.images')
-            ->get();
-
+        $wishlistItems = Wishlist::where('user_id', $id)->get();
+    
         if ($wishlistItems->isEmpty()) {
             return response()->json(['response' => "No products in wishlist."], 200);
         }
-
-        $productsWithImages = $wishlistItems->map(function ($wishlistItem) {
-            $product = $wishlistItem->product;
-            $images = $product->images;
-            $product->images = $images;
+    
+        $products = $wishlistItems->map(function ($wishlistItem) {
+            // Check if the product exists in the Product table by ID
+            $product = Product::where('id', $wishlistItem->product_id)
+            ->where('SKU',$wishlistItem->SKU)
+            ->with('images')->first();
+    
+            // If the product doesn't exist by ID, check by SKU in the Product table
+            if (!$product) {
+                $product = ProductVariant::where('SKU', $wishlistItem->SKU)->first();
+                $product->id = $product->product_id;
+                unset($product->product_id);
+            }
             return $product;
         });
-
+    
         $wishlistCount = count($wishlistItems);
-
+    
         return response()->json([
             'wishlistCount' => $wishlistCount,
-            'products' => $productsWithImages
+            'products' => $products
         ], 200);
     }
+    
     public function getInCartProducts($id)
     {
-        $inCartItems = Cart::where('user_id', $id)
-            ->with('product.images')
-            ->get();
-
+        $inCartItems = Cart::where('user_id', $id)->get();
+    
         if ($inCartItems->isEmpty()) {
             return response()->json(['response' => "No products inCart."], 200);
         }
-
-        $productIds = $inCartItems->pluck('product_id');
-
-        $productsWithImages = Product::whereIn('id', $productIds)
-            ->with('images')
-            ->get();
-
-        // Combine cart items with corresponding products and images
-        $combinedItems = $inCartItems->map(function ($inCartItem) use ($productsWithImages) {
-            $product = $productsWithImages->firstWhere('id', $inCartItem->product_id);
+    
+        $combinedItems = $inCartItems->map(function ($inCartItem) {
+            // Check if the product exists in the Product table by ID
+            $product = Product::where('id', $inCartItem->product_id)
+            ->where('SKU',$inCartItem->SKU)
+            ->with('images')->first();
+    
+            // 
+            if (!$product) {
+                $product = ProductVariant::where('SKU', $inCartItem->SKU)->first();
+                $product->id = $product->product_id;
+                unset($product->product_id);
+            }
+    
             return [
                 'product' => $product,
                 'quantity' => $inCartItem->quantity
             ];
         });
-
+    
         $inCartlistCount = count($inCartItems);
-
+    
         return response()->json([
             'inCartlistCount' => $inCartlistCount,
             'products' => $combinedItems
         ], 200);
     }
-    public function decreaseCartProductQuantity($userId, $productId)
+    public function decreaseCartProductQuantity($userId, $productId, $SKU)
     {
         try {
             $cartItem = Cart::where('user_id', $userId)
                 ->where('product_id', $productId)
+                ->orWhere('SKU', $SKU)
                 ->firstOrFail();
 
             // Decrease the quantity by 1 if it's greater than 1
@@ -317,11 +368,12 @@ class ProductController extends Controller
             return response()->json(['error' => 'Error updating cart product quantity. ' . $e], 500);
         }
     }
-    public function increaseCartProductQuantity($userId, $productId)
+    public function increaseCartProductQuantity($userId, $productId,$SKU)
     {
         try {
             $cartItem = Cart::where('user_id', $userId)
                 ->where('product_id', $productId)
+                ->orWhere('SKU', $SKU)
                 ->firstOrFail();
 
             $product = $cartItem->product;
@@ -335,11 +387,11 @@ class ProductController extends Controller
             return response()->json(['error' => 'Error updating cart product quantity.'], 500);
         }
     }
-    public function removeWishlistProducts($userId, $productId)
+    public function removeWishlistProducts($userId, $SKU)
     {
         try {
             $cartItem = Wishlist::where('user_id', $userId)
-                ->where('product_id', $productId)
+                ->where('SKU', $SKU)
                 ->firstOrFail();
 
             $cartItem->delete();
@@ -351,20 +403,21 @@ class ProductController extends Controller
             return response()->json(['message' => 'Error removing product from Wishlist'], 500);
         }
     }
-    public function removeInCartProducts($userId, $productId)
+    public function removeInCartProducts($userId, $productId ,$SKU)
     {
         try {
             $cartItem = Cart::where('user_id', $userId)
                 ->where('product_id', $productId)
+                ->orWhere('SKU', $SKU)
                 ->firstOrFail();
 
             $cartItem->delete();
 
             return response()->json(['message' => 'Product removed from cart'], 200);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Product not found in cart'], 404);
+            return response()->json(['message' => 'Product not found in cart ' . $e ], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error removing product from cart'], 500);
+            return response()->json(['message' => 'Error removing product from cart ' . $e], 404);
         }
     }
     public function clearUserCart($id)
@@ -404,7 +457,7 @@ class ProductController extends Controller
         $this->deleteDir('product-images', $product['slug']);
         $this->deleteDir('description-images', $product['slug']);
         $this->deleteDir('category-images', $category->name);
-
+        
         //! Check if the category  has no products
         if ($category->products->isEmpty()) {
             // Delete the category
@@ -789,7 +842,7 @@ class ProductController extends Controller
                         'product_id' => $productId,
                         // adding product variant name 
                         'name' => $pName,
-                        'sku' => $variant['sku'],
+                        'SKU' => $variant['sku'],
                         'price' => $variant['price'],
                         'attributes' => json_encode($variant['attributes']),
                         'regular_price' => $variant['regular_price'],

@@ -1,42 +1,68 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useProductStore } from '../stores/product';
-import { RouterLink , useRouter } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import Loading from '../components/build/loading.vue';
 const productStore = useProductStore()
 const router = useRouter()
 const products = ref([])
 const loaded = ref(false)
+
 onMounted(async () => {
     window.scrollTo({
         top: 0,
         behavior: 'smooth'
     });
-    await getWishlistItems()
+    
+    const res = await productStore.getWishlistProducts()
+    if (res && res.products ) {
+        products.value = res.products
+    }
     loaded.value = true
 })
+
+
+
 const getCoverImg = (p) => {
-    const coverImg = p.images.find(image => image.pivot.is_cover === true);
-    return coverImg.url
-}
-const getWishlistItems =async ()=>{
-    const res = await productStore.getWishlistProducts()
-    if (res && res.products !== undefined && res.products !== null) {
-        products.value = res.products
+    console.log(p);
+    if (p.images) {
+        const img =  p.images.find(image => image.pivot.is_cover === true);
+        return img.url
     } else {
-        products.value = []
+        return p.image
     }
 }
-const  addToCart =async  (productId) =>
-{
-    await productStore.addToCart(productId)
-    await productStore.removeWishlistItem(productId)
-    router.push({name : 'cart'})
+
+const addToCart = async (productId, SKU) => {
+    await productStore.addToCart(productId, SKU)
+
+    removeFromWishList(SKU)
+    router.push({ name: 'cart' })
 }
-const removeFromWishList = async (productId)=>{
-    await productStore.removeWishlistItem(productId)
-    await getWishlistItems()
-    
+
+const removeFromWishList = async (SKU) => {
+    await productStore.removeWishlistItem(SKU)
+    const itemIndex = products.value.findIndex((item) => item.SKU === SKU);
+    if (itemIndex !== -1) {
+            products.value.splice(itemIndex, 1);
+    }
+    console.log(products.value);
+
+}
+
+function getProductSlug(p) {
+    if (!p.slug) {
+        // If the product doesn't have a slug, generate one from the name
+        const slug = p.name
+            .toLowerCase() 
+            .replace(/[^\w\s-]/g, '') 
+            .replace(/\s+/g, '-') 
+            .trim(); 
+        return slug;
+    } else {
+        // If the product already has a slug, return it
+        return p.slug;
+    }
 }
 </script>
 
@@ -58,13 +84,14 @@ const removeFromWishList = async (productId)=>{
         </div>
 
         <div v-else>
-            <div v-if="products.length == 0" class="emptyWhishlist">
+
+            <div v-if="products.length === 0" class="emptyWhishlist">
                 <i class="fa-regular fa-heart"></i>
                 <h4>This wishlist is empty.</h4>
                 <p>You don't have any products in the wishlist yet.<br />
                     You will find a lot of interesting products on our "Shop" page.
                 </p>
-                <RouterLink :to="{ name: 'new' }">
+                <RouterLink :to="{ name: 'home' }">
                     RETURN TO SHOP
                 </RouterLink>
             </div>
@@ -74,20 +101,20 @@ const removeFromWishList = async (productId)=>{
                 <div class="wishList-items-box">
 
                     <div class="item" v-for="p in products" :key="p.id">
-                        <RouterLink :to="{ name: 'product-page', params: { slug: p.slug }}" >
+                        <RouterLink :to="{ name: 'product-page', params: { slug: getProductSlug(p) } }">
                             <img :src="getCoverImg(p)" alt="Product image">
                         </RouterLink>
                         <div>
                             <small v-if="p.inStock">InStock</small>
                             <small class="outOfStock" v-else>Out of Stock</small>
                             <p>{{ p.name }}</p>
-                            <span>
+                            <span v-if="p.average_rating && p.average_rating != '0.00' ">
                                 {{ (+p.average_rating).toFixed(1) }}
                                 <i class="fa-solid fa-star"></i>
                             </span>
-                            <h4>${{ p.sale_price ? p.sale_price : p.price }}</h4>
-                            <button :disabled="!p.inStock" @click="addToCart(p.id)">ADD TO CART</button>
-                            <i @click="removeFromWishList(p.id)" class="fa-solid fa-trash-can"></i>
+                            <h4>${{ p.sale_price != '0.00' ? p.sale_price : p.price }}</h4>
+                            <button :disabled="!p.inStock" @click="addToCart(p.id,p.SKU)">ADD TO CART</button>
+                            <i @click="removeFromWishList(p.SKU)" class="fa-solid fa-trash-can"></i>
                         </div>
                     </div>
 
@@ -205,7 +232,7 @@ $ff: 'Poppins', sans-serif;
                 border-bottom: 1px solid #0000001a;
                 padding: 6px 0;
 
-                > a img {
+                >a img {
                     width: 9rem;
                     height: 9rem;
                     object-fit: contain;
@@ -254,13 +281,13 @@ $ff: 'Poppins', sans-serif;
 
                     >button {
                         width: 8rem;
-                        height: 3rem;
+                        height: 2.8rem;
                         background: #2E6BC6;
                         color: #fff;
                         border: none;
                         border-radius: 50px;
                         position: absolute;
-                        bottom: 5px;
+                        bottom: 25px;
                         right: 5px;
                         transition: .3s ease-in-out;
                         cursor: pointer;
@@ -308,7 +335,7 @@ $ff: 'Poppins', sans-serif;
         width: 98% !important;
 
         >div {
-            > a img {
+            >a img {
                 width: 7rem !important;
                 height: 7rem !important;
             }
@@ -319,19 +346,22 @@ $ff: 'Poppins', sans-serif;
         }
     }
 }
+
 @media screen and (max-width : 500px) {
     .wishList-items-box {
         width: 98% !important;
 
         >div {
             padding: 0 2vw !important;
-            > a img {
+
+            >a img {
                 display: none;
             }
 
             >div {
                 width: 100% !important;
-                >button{
+
+                >button {
                     width: 7rem !important;
                     font-size: .75rem !important;
                 }

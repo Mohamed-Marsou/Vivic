@@ -90,115 +90,7 @@ export const useProductStore = defineStore('product', {
         throw error
       }
     },
-    async addToWishlist(pId) {
-      const productId = pId
-      if (this.authStore.isAuth) {
-        const userId = JSON.parse(Cookies.get('auth-user')).id
-        // AUTH USER
-        const payload = {
-          userId,
-          productId
-        }
-        try {
-          const res = await api.post(`product/wishlist`, payload)
-          this.router.push({ name: 'wishlist' })
-          this.whishListCount++
-        } catch (error) {
-          console.log(error)
-        }
-      } else {
-        // GUEST USER
-        let localStorageWishlist = JSON.parse(localStorage.getItem('wishlist')) || []
 
-        // Check if the product is already in the wishlist
-        if (!localStorageWishlist.includes(pId)) {
-          // Add the product to the wishlist
-          localStorageWishlist.push(pId)
-
-          // Update the localStorage with the new wishlist
-          localStorage.setItem('wishlist', JSON.stringify(localStorageWishlist))
-          this.whishListCount++
-          console.log('Product added to local storage wishlist.')
-        } else {
-          console.log('Product already in local storage wishlist.')
-        }
-      }
-    },
-    async getWishlistProducts() {
-      try {
-        if (this.authStore.isAuth) {
-          const authToken = Cookies.get('auth-token')
-          const userId = JSON.parse(Cookies.get('auth-user')).id
-          // User is authenticated, call the API to get wishlist products
-          const response = await api.get(`/get/wishlist-products/${userId}`, {
-            headers: {
-              Authorization: `Bearer ${authToken}`
-            }
-          })
-
-          this.whishListCount = response.data.wishlistCount || 0
-          return response.data
-        } else {
-          // GUEST USER
-          const ids = JSON.parse(localStorage.getItem('wishlist'))
-          if (ids && ids.length > 0) {
-            try {
-              const response = await api.get('/get/products', { params: { productIds: ids } })
-              this.whishListCount = response.data.count
-              return response.data
-            } catch (error) {
-              console.error('Error fetching wishlist products for guest user:', error)
-            }
-          } else {
-            this.whishListCount = 0
-          }
-        }
-      } catch (error) {
-        console.error('Error getting wishlist products:', error)
-      }
-    },
-    async addToCart(pId) {
-      const productId = pId
-      if (this.authStore.isAuth) {
-        const userId = JSON.parse(Cookies.get('auth-user')).id
-        // AUTH USER
-        const payload = {
-          userId,
-          productId
-        }
-        try {
-          const res = await api.post(`product/cart`, payload)
-          this.router.push({ name: 'cart' })
-          this.inCartCount++
-        } catch (error) {
-          console.log(error)
-        }
-      } else {
-        // GUEST USER
-        let localStorageInCart = JSON.parse(localStorage.getItem('inCart')) || []
-        let updated = false
-
-        // Check if the product is already in the inCart
-        for (let i = 0; i < localStorageInCart.length; i++) {
-          if (localStorageInCart[i].productId === pId) {
-            // Increment the quantity for the existing product
-            localStorageInCart[i].quantity += 1
-            updated = true
-            break
-          }
-        }
-
-        if (!updated) {
-          // If the product was not found, add it with quantity 1
-          localStorageInCart.push({ productId: pId, quantity: 1 })
-        }
-
-        // Update the localStorage with the new inCart
-        localStorage.setItem('inCart', JSON.stringify(localStorageInCart))
-        this.inCartCount++
-        console.log('Product added to local storage inCart.')
-      }
-    },
     async getInCartProducts() {
       try {
         if (this.authStore.isAuth) {
@@ -216,40 +108,84 @@ export const useProductStore = defineStore('product', {
           // GUEST USER
           let localStorageInCart = JSON.parse(localStorage.getItem('inCart')) || []
 
-          // Extract only productId values and create a new array
-          const productIdsInCart = localStorageInCart.map((item) => item.productId)
+          if (localStorageInCart.length > 0) {
+            // Extract only productId values and create a new array
+            const productsInCart = localStorageInCart.map((item) => ({
+              productId: item.productId,
+              SKU: item.SKU
+            }))
 
-          if (productIdsInCart && productIdsInCart.length > 0) {
-            try {
-              const response = await api.get('/get/products', {
-                params: { productIds: productIdsInCart }
-              })
-              this.inCartCount = response.data.count
-              let products = response.data.products.map((product) => {
-                const quantityObj = localStorageInCart.find((item) => item.productId === product.id)
-                return {
-                  product: product,
-                  quantity: quantityObj.quantity
-                }
-              })
+            if (productsInCart && productsInCart.length > 0) {
+              try {
+                const response = await api.get('/get/products', {
+                  params: { products: productsInCart }
+                })
+                this.inCartCount = response.data.count
+                let products = response.data.products.map((product) => {
+                  const quantityObj = localStorageInCart.find((item) => item.SKU === product.SKU)
+                  return {
+                    product: product,
+                    quantity: quantityObj.quantity
+                  }
+                })
 
-              return products
-            } catch (error) {
-              console.error('Error fetching inCart products for guest user:', error)
+                return products
+              } catch (error) {
+                console.error('Error fetching inCart products for guest user:', error)
+              }
+            } else {
+              this.inCartCount = 0
             }
-          } else {
-            this.inCartCount = 0
           }
         }
       } catch (error) {
         console.error('Error getting inCart products:', error)
       }
     },
-    async removeCartItem(pId) {
+    async addToCart(productId, SKU) {
+      if (this.authStore.isAuth) {
+        const userId = JSON.parse(Cookies.get('auth-user')).id
+        // AUTH USER
+        const payload = {
+          userId,
+          productId,
+          SKU
+        }
+        try {
+          const res = await api.post(`product/cart`, payload)
+          this.router.push({ name: 'cart' })
+          this.inCartCount++
+        } catch (error) {
+          console.log(error)
+        }
+      } else {
+        // GUEST USER
+        let localStorageInCart = JSON.parse(localStorage.getItem('inCart')) || []
+        let updated = false
+
+        // Check if the product is already in the inCart
+
+        for (let i = 0; i < localStorageInCart.length; i++) {
+          if (localStorageInCart[i].SKU === SKU) {
+            // Increment the quantity for the existing product
+            localStorageInCart[i].quantity += 1
+            updated = true
+            break
+          }
+        }
+        if (!updated) {
+          localStorageInCart.push({ productId: productId, SKU: SKU, quantity: 1 })
+        }
+        // Update the localStorage with the new inCart
+        localStorage.setItem('inCart', JSON.stringify(localStorageInCart))
+        this.inCartCount++
+      }
+    },
+    async removeCartItem(pId, SKU) {
       if (this.authStore.isAuth) {
         const userId = JSON.parse(Cookies.get('auth-user')).id
         try {
-          await api.delete(`/product/cart/${userId}/${pId}`)
+          await api.delete(`/product/cart/${userId}/${pId}/${SKU}`)
           this.inCartCount = this.inCartCount - 1
           return true
         } catch (error) {
@@ -257,8 +193,11 @@ export const useProductStore = defineStore('product', {
           return false
         }
       } else {
+        // Guest User
         let localStorageInCart = JSON.parse(localStorage.getItem('inCart')) || []
-        const itemIndex = localStorageInCart.findIndex((item) => item.productId === pId)
+        const itemIndex = localStorageInCart.findIndex(
+          (item) => item.productId === pId || item.SKU === SKU
+        )
 
         if (itemIndex !== -1) {
           localStorageInCart.splice(itemIndex, 1)
@@ -269,11 +208,91 @@ export const useProductStore = defineStore('product', {
         return false
       }
     },
-    async removeWishlistItem(pId) {
+    async addToWishlist(Id, SKU) {
+      if (this.authStore.isAuth) {
+        const userId = JSON.parse(Cookies.get('auth-user')).id
+        // AUTH USER
+        const payload = {
+          userId,
+          Id,
+          SKU
+        }
+        try {
+          const res = await api.post(`product/wishlist`, payload)
+          this.whishListCount++
+        } catch (error) {
+          console.log(error)
+        }
+      } else {
+        // GUEST USER
+        let localStorageWishlist = JSON.parse(localStorage.getItem('wishlist')) || []
+        let isProductInWishlist = false // Flag to check if the product is already in the wishlist
+
+        // Check if the SKU exists in the wishlist
+        for (let i = 0; i < localStorageWishlist.length; i++) {
+          if (localStorageWishlist[i].SKU === SKU) {
+            isProductInWishlist = true
+            alert('Product already in Wishlist.')
+            break // Exit the loop as we found a match
+          }
+        }
+
+        // If the product is not in the wishlist, add it
+        if (!isProductInWishlist) {
+          localStorageWishlist.push({ productId: Id, SKU: SKU })
+          this.wishListCount++
+          // Update the wishlist in localStorage here
+          localStorage.setItem('wishlist', JSON.stringify(localStorageWishlist))
+        }
+      }
+    },
+    async getWishlistProducts() {
+      try {
+        if (this.authStore.isAuth) {
+          const authToken = Cookies.get('auth-token')
+          const userId = JSON.parse(Cookies.get('auth-user')).id
+          // User is authenticated
+          const response = await api.get(`/get/wishlist-products/${userId}`, {
+            headers: {
+              Authorization: `Bearer ${authToken}`
+            }
+          })
+
+          this.whishListCount = response.data.wishlistCount || 0
+          return response.data
+        } else {
+          // GUEST USER
+          const productsWishlist = JSON.parse(localStorage.getItem('wishlist')) || []
+
+            if (productsWishlist.length > 0) {
+              const productsInWishlist = productsWishlist.map((item) => ({
+                productId: item.productId,
+                SKU: item.SKU
+              }))
+              console.log(productsInWishlist);
+              try {
+                const response = await api.get('/get/products', {
+                  params: { products: productsInWishlist }
+                })
+                this.whishListCount = response.data.count
+                let products = response.data
+                return products
+              } catch (error) {
+                console.error('Error fetching inCart products for guest user:', error)
+              }
+            } else {
+              this.inCartCount = 0
+            }
+        }
+      } catch (error) {
+        console.error('Error getting wishlist products:', error)
+      }
+    },
+    async removeWishlistItem(SKU) {
       if (this.authStore.isAuth) {
         const userId = JSON.parse(Cookies.get('auth-user')).id
         try {
-          await api.delete(`/product/wishlist/${userId}/${pId}`)
+          await api.delete(`/product/wishlist/${userId}/${SKU}`)
           this.whishListCount = this.whishListCount - 1
           return true
         } catch (error) {
@@ -282,7 +301,7 @@ export const useProductStore = defineStore('product', {
         }
       } else {
         let localStorageInCart = JSON.parse(localStorage.getItem('wishlist')) || []
-        const itemIndex = localStorageInCart.findIndex((item) => item === pId)
+        const itemIndex = localStorageInCart.findIndex((item) => item.SKU === SKU)
 
         if (itemIndex !== -1) {
           localStorageInCart.splice(itemIndex, 1)
@@ -292,6 +311,7 @@ export const useProductStore = defineStore('product', {
         }
         return false
       }
-    },
-  }
+    }
+  },
+
 })

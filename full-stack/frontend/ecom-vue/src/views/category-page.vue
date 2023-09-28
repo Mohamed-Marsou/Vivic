@@ -170,14 +170,14 @@ const sendCheckedCheckboxes = async () => {
         console.error('Error sending checked checkboxes:', error);
     }
 };
-// toggoleFilters
+// toggleFilters
 const visibleFilters = ref(false)
-const toggoleFilters = () => {
+const toggleFilters = () => {
     visibleFilters.value = !visibleFilters.value
 }
 // add to Cart
-const addToCart = async (productId) => {
-    productStore.addToCart(productId)
+const addToCart = async (productId, SKU) => {
+    productStore.addToCart(productId, SKU)
     router.push({ name: 'cart' })
 }
 </script>
@@ -198,7 +198,7 @@ const addToCart = async (productId) => {
             <div class="filter" :class="{ showFilters: visibleFilters }">
 
                 <div class="filterToggle">
-                    <p title="Show Filters" @click="toggoleFilters">Filters
+                    <p title="Show Filters" @click="toggleFilters">Filters
                         <i v-if="!visibleFilters" class="fa-solid fa-filter"></i>
                         <i v-else class="fa-regular fa-circle-xmark"></i>
                     </p>
@@ -276,7 +276,7 @@ const addToCart = async (productId) => {
                             <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
                                 <img :src="getCoverImg(p)" alt="Product image">
                             </RouterLink>
-                            <div class="prd-link" @click="addToCart(p.id)">
+                            <div class="prd-link" @click="addToCart(p.id,p.SKU)">
                                 <i class="fa-solid fa-cart-plus"></i>
                             </div>
 

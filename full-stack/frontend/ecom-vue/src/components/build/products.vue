@@ -28,13 +28,13 @@ function getProductDiscount(product) {
     return discountPercentage.toFixed(0)
 }
 
-const addProductToWishlist = async (productId) => {
-    productStore.addToWishlist(productId)
+const addProductToWishlist = async (productId , SKU) => {
+    productStore.addToWishlist(productId, SKU)
     router.push({ name: 'wishlist' })
 
 }
-const addToCart = async (productId) => {
-    productStore.addToCart(productId)
+const addToCart = async (productId, SKU) => {
+    productStore.addToCart(productId, SKU)
 
     router.push({ name: 'cart' })
 
@@ -60,11 +60,11 @@ const addToCart = async (productId) => {
                         <i class="fa-solid fa-shop-slash"></i>
                     </div>
                     <div class="actions">
-                        <i class="fa-solid fa-cart-shopping" v-if="!p.inStock == 0" @click="addToCart(p.id)"></i>
+                        <i class="fa-solid fa-cart-shopping" v-if="!p.inStock == 0" @click="addToCart(p.id,p.SKU)"></i>
+                        <i class="fa-regular fa-heart" @click="addProductToWishlist(p.id , p.SKU)"></i>
                         <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
                             <i class="fa-regular fa-eye"></i>
                         </RouterLink>
-                        <i class="fa-regular fa-heart" @click="addProductToWishlist(p.id)"></i>
                     </div>
                 </div>
                 <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
