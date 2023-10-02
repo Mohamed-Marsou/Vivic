@@ -20,7 +20,7 @@ const generalInfo = reactive({
 });
 const recentOrders = ref([])
 const dataLoaded = ref(false);
-async function getstatistic() {
+async function getStatistic() {
     try {
         const res = await api.get('/dashboard/info')
         const data = res.data.data;
@@ -46,7 +46,7 @@ async function getRecentOrders() {
     }
 }
 onMounted(async () => {
-    getstatistic()
+    getStatistic()
     getRecentOrders()
 });
 </script>

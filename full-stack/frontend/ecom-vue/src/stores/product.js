@@ -269,7 +269,6 @@ export const useProductStore = defineStore('product', {
                 productId: item.productId,
                 SKU: item.SKU
               }))
-              console.log(productsInWishlist);
               try {
                 const response = await api.get('/get/products', {
                   params: { products: productsInWishlist }

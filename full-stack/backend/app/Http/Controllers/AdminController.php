@@ -173,7 +173,7 @@ class AdminController extends Controller
                     // If the product exists, add the relevant information to the data array
                     $data[] = [
                         'product_name' => $product->name,
-                        'product_price' => $product->sale_price ?$product->sale_price : $product->price ,
+                        'product_price' => $product->sale_price != '0.00' ? $product->sale_price : $product->price ,
                         'quantity' => $orderProduct->quantity,
                         'cover_image' => $coverImage,
                         'slug' => $product->slug

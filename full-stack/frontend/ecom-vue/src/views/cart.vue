@@ -39,6 +39,20 @@ onMounted(async () => {
     console.log(products.value);
 
 })
+function getAttr(attributes) {
+    try {
+        const parsedAttributes = JSON.parse(attributes);
+        
+        // Extract the options from each attribute
+        const attributeOptions = parsedAttributes.map((attribute) => attribute.option);
+        // Join the options with a comma and return as a string
+        return attributeOptions.join(', ');
+    } catch (error) {
+        // Handle JSON parsing errors if necessary
+        console.error('Error parsing attributes:', error);
+        return '';
+    }
+}
 async function getInCartProductsList() {
     const res = await productStore.getInCartProducts()
     if (res) {
@@ -343,13 +357,6 @@ const saveUser = () => {
                 country: userCountry.value,
                 address: userAddress.value,
                 city: userCity.value,
-            },
-            'shipment':
-            {
-                name: shipmentFname.value + ' ' + shipmentLname.value,
-                country: shipmentCountry.value,
-                city: shipmentCity.value,
-                address: shipmentAddress.value,
             }
         }
         // Store user data in localStorage
@@ -366,7 +373,7 @@ const getUserData = async () => {
         const storedData = localStorage.getItem('userData');
         if (storedData) {
             const userData = JSON.parse(storedData);
-            assignUserData(userData.user, userData.shipment);
+            assignUserData(userData.user);
         }
     }
 };
@@ -379,15 +386,6 @@ const assignUserData = (userData, shipmentData) => {
         userCountry.value = userData.country;
         userAddress.value = userData.address;
         userCity.value = userData.city;
-    }
-
-    if (shipmentData) {
-        // Shipment Data
-        shipmentFname.value = shipmentData.firstName;
-        shipmentLname.value = shipmentData.lastName;
-        shipmentCountry.value = shipmentData.country;
-        shipmentCity.value = shipmentData.city;
-        shipmentAddress.value = shipmentData.address;
     }
 };
 ///////////////////////////// 
@@ -703,7 +701,7 @@ const handleCouponSub = async () => {
                     <div class="right">
                         <div class="product-name">
                             <h4>Product</h4>
-                            <p>{{ p.product.name }}</p>
+                            <p>{{ p.product.name +',' + getAttr(p.product.attributes )}}</p>
                         </div>
                         <div class="price">
                             <h4>Price</h4>
@@ -737,7 +735,7 @@ const handleCouponSub = async () => {
                     <img :src="getCoverImg(p.product)" alt="Product image">
                     <div class="prd">
                         <div class="p-header">
-                            <h3>{{ p.product.name }}</h3>
+                            <h3>{{ p.product.name +',' + getAttr(p.product.attributes )}}</h3>
                             <span title="REMOVE ITEM" @click="removeItem(p.product.id , p.product.SKU)">X</span>
                         </div>
                         <div class="full-box">

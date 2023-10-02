@@ -23,16 +23,16 @@ onMounted(async () => {
     await getProductData();
     await getSimilarProducts();
     showDiscount()
-    console.log(product.value);
-    console.log(productVariation.value);
+    specificationCopy.value = specification.value
 })
 
-// Fetch product data
+//------------------------------------------------------- Fetch product data
 async function getProductData() {
     try {
         const res = await api.get(`/product/${route.params.slug}`);
         // Set the base product data to the 'product' ref
         product.value = res.data.baseProduct;
+        document.title = product.value.name ?? 'Product Name'
         // set 'productVariation'
         productVariation.value = res.data.variants ?? null;
 
@@ -52,44 +52,182 @@ async function getProductData() {
     }
 }
 
-//------------------------------------------------------- Product Variation 
-const specification = ref([])
-const productVariation = ref([])
+// Initialize an array to store selected options
+const specification = ref([]);
+const specificationCopy = ref([]);
+const productVariation = ref([]);
 
-function selectVariant (e) {
-    const selected =  e.target.value;
-     // Filter productVariation.value to find variants with the desired attributes
-     const matchingVariants = productVariation.value.filter((variant) => {
+let optionsArr = []; // Stores selected option values
+let chosenOpt = 0
+
+const handleVariantOptions = (e, optionName) => {
+    // Get the value of the currently selected option
+    const selected = e.target.value;
+
+    // Get the select element that triggered the event
+    const selectElement = e.target;
+
+    // Check if optionsArr includes any values from the current selectElement
+    const valuesInOptionsArr = optionsArr.filter((opt) =>
+        Array.from(selectElement.options).map((option) => option.value).includes(opt)
+    );
+
+    if (valuesInOptionsArr.length === 0) {
+        // If none of the values are in optionsArr, simply push the selected value
+        optionsArr.push(selected);
+        chosenOpt++
+    } else {
+        // If some values are in optionsArr, replace them with the selected value
+        valuesInOptionsArr.forEach((value) => {
+            optionsArr[optionsArr.indexOf(value)] = selected;
+        });
+        chosenOpt++
+    }
+    const variants = getProductMatchVariant(optionsArr)
+
+    if (chosenOpt < specification.value.length) {
+        updateSpecifications(variants, optionName)
+    } else {
+        if (variants[0]) {
+            updateProductData(variants[0])
+        } else {
+            const bestMatch = findBestMatchingVariant(optionsArr);
+            updateProductData(bestMatch)
+        }
+    }
+
+}
+function findBestMatchingVariant(optionsArr) {
+    // Find the variant with the most matching options in optionsArr
+    let bestMatch = null;
+    let bestMatchCount = 0;
+
+    productVariation.value.forEach((variant) => {
         const attributes = JSON.parse(variant.attributes);
-        return attributes.length === 1 && attributes[0].option === selected;
+
+        // Count the number of matching options
+        const matchCount = attributes.filter((attribute) =>
+            optionsArr.includes(attribute.option)
+        ).length;
+
+        if (matchCount > bestMatchCount) {
+            bestMatch = variant;
+            bestMatchCount = matchCount;
+        }
     });
-    updateProductData(matchingVariants[0])
-    console.log(selected);
-    console.log(matchingVariants);
+
+    return bestMatch;
+}
+function getProductMatchVariant(Arr) {
+    //  Filter productVariation.value to find variants with matching attributes
+    const matchingVariation = productVariation.value.filter((variant) => {
+        const attributes = JSON.parse(variant.attributes);
+
+        // Check if all values in Arr are present in attributes
+        return Arr.every((selectedOption) =>
+            attributes.some((attribute) => attribute.option === selectedOption)
+        );
+    });
+
+    return matchingVariation
+
+}
+function updateSpecifications(variants, optName) {
+    // Check if there are no matching variants
+    if (variants.length === 0) {
+        return;
+    }
+
+    // Create a map to store specifications
+    const specMap = new Map();
+
+    // Iterate through variants
+    variants.forEach((variant) => {
+        const attributes = JSON.parse(variant.attributes);
+
+        // Find the attribute with the specified optName
+        const matchingAttribute = attributes.find((attribute) => attribute.name === optName);
+
+        if (!matchingAttribute) {
+            return; // If the optName doesn't exist in this variant, skip it
+        }
+
+        // Iterate through all attributes in the variant
+        attributes.forEach((attribute) => {
+            const { name, option } = attribute;
+
+            // Check if the specification already exists in the map
+            if (!specMap.has(name)) {
+                specMap.set(name, { name, options: [] });
+            }
+
+            const spec = specMap.get(name);
+
+            // Add the option to the specification if it's not already there
+            if (!spec.options.includes(option)) {
+                spec.options.push(option);
+            }
+        });
+    });
+
+    // Convert the map to an array of specifications
+    const updatedSpecifications = Array.from(specMap.values());
+
+    // Check if the length of updatedSpecifications is not equal to the original specificationCopy
+    if (updatedSpecifications.length !== specificationCopy.value.length) {
+        // Find the missing specifications and add them
+        specificationCopy.value.forEach((originalSpec) => {
+            if (!updatedSpecifications.some((updatedSpec) => updatedSpec.name === originalSpec.name)) {
+                updatedSpecifications.push(originalSpec);
+            }
+        });
+    }
+
+    // Update specificationCopy with the updatedSpecifications
+    specificationCopy.value = updatedSpecifications;
+
+    console.log(specificationCopy.value);
 }
 
-function updateProductData(DATA)
-{
-    product.value.SKU =DATA.SKU 
-    productCover.value = DATA.image 
-    productImages.value[0].url =  DATA.image 
-    product.value.price = DATA.price 
-    product.value.regular_price = DATA.regular_price
-    product.value.sale_price = DATA.sale_price
-    product.value.dimensions = DATA.dimensions
-    product.value.weight = DATA.weight
-    product.value.inStock = DATA.inStock
+function updateProductData(DATA) {
+    if (DATA) {
+        console.log(DATA);
+        product.value.SKU = DATA.SKU
+        productCover.value = DATA.image
+        productImages.value[0].url = DATA.image
+        product.value.price = DATA.price
+        product.value.regular_price = DATA.regular_price
+        product.value.sale_price = DATA.sale_price
+        product.value.dimensions = DATA.dimensions
+        product.value.weight = DATA.weight
+        product.value.inStock = DATA.inStock
+        quantity.value = product.value.inStock;
+    }
+
+}
+
+function restSpecification() {
+    // Get all select elements
+    const selectElements = document.querySelectorAll(" .variantOpts .option select");
+
+    // Reset the selected values of all select elements
+    selectElements.forEach((select) => {
+        select.selectedIndex = 0;
+    });
+    specificationCopy.value = specification.value
+    optionsArr = []
+    chosenOpt = 0
 }
 // //------------------------------------------------------- add to Cart
 const addToCart = async (Id) => {
 
-productStore.addToCart(Id , product.value.SKU)
-router.push({ name: 'cart' })
+    productStore.addToCart(Id, product.value.SKU)
+    router.push({ name: 'cart' })
 }
 // add to wishlist
 const addProductToWishlist = async (Id) => {
-productStore.addToWishlist(Id , product.value.SKU)
-router.push({ name: 'wishlist' })
+    productStore.addToWishlist(Id, product.value.SKU)
+    router.push({ name: 'wishlist' })
 }
 //------------------------------------------------------- discount count down
 const timeRemaining = computed(() => {
@@ -180,7 +318,6 @@ function updateCoverImage(src) {
 }
 /// ------------------------------------------------------- overlay images
 
-const currentIndex = 0
 const isVisible = ref(false)
 const ShowOverLay = () => {
     isVisible.value = !isVisible.value
@@ -414,9 +551,9 @@ const toggleStickyProduct = () => {
                 </div>
 
                 <div class="slot variantOpts">
-                    <div class="option" v-for="(spec, i) in specification" :key="i">
+                    <div class="option" v-for="(spec, i) in specificationCopy" :key="i">
                         <p>{{ spec.name }} :</p>
-                        <select @change="selectVariant($event)">
+                        <select @change="handleVariantOptions($event, spec.name)">
                             <option value="CHOOSE AN OPTION" disabled selected>
                                 CHOOSE AN OPTION
                             </option>
@@ -425,6 +562,10 @@ const toggleStickyProduct = () => {
                             </option>
                         </select>
                     </div>
+                    <span @click="restSpecification" :class="{ show: chosenOpt }">
+                        <i class="fa-solid fa-repeat"></i>
+                        Clear
+                    </span>
                 </div>
 
                 <div class="slot quantity_btn">
@@ -1022,6 +1163,10 @@ const toggleStickyProduct = () => {
                 button:disabled {
                     cursor: default;
                     opacity: .5;
+
+                    i {
+                        display: none;
+                    }
                 }
             }
 
@@ -1149,7 +1294,6 @@ const toggleStickyProduct = () => {
                 gap: 1vw;
 
                 >div {
-
                     p {
                         color: #555;
                         font-size: .85rem;
@@ -1174,6 +1318,15 @@ const toggleStickyProduct = () => {
                         }
 
                     }
+                }
+
+                >span {
+                    align-self: flex-end;
+                    font-size: .8rem;
+                    color: #0065fc;
+                    cursor: pointer;
+                    padding-bottom: 1rem;
+                    display: none;
                 }
 
             }
@@ -1232,7 +1385,8 @@ const toggleStickyProduct = () => {
 
             >img {
                 object-fit: contain;
-                max-width: 80%;
+                max-width: 95%;
+                height: fit-content;
             }
 
         }
@@ -1916,6 +2070,12 @@ const toggleStickyProduct = () => {
         }
 
     }
+
+    .images-overlay {
+        >.image-box {
+            width: 100% !important;
+        }
+    }
 }
 
 @media screen and (max-width:320px) {
@@ -1925,6 +2085,17 @@ const toggleStickyProduct = () => {
 
     #product-page-container .product-details-box .product-images {
         height: 33rem !important;
+    }
+
+    .variantOpts {
+        >div {
+            select {
+                height: 3.2rem !important;
+                width: 86vw !important;
+                margin: 0 !important;
+            }
+        }
+
     }
 }
 
@@ -1936,6 +2107,10 @@ const toggleStickyProduct = () => {
 .showStickyProduct {
     transform: translateY(0) !important;
     opacity: 1 !important;
+}
+
+.show {
+    display: block !important;
 }
 </style>
 

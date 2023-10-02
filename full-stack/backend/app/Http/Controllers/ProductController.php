@@ -449,18 +449,18 @@ class ProductController extends Controller
 
         // Retrieve the category associated with the product
         $category = $product->category;
-
         // Delete the product
         $product->delete();
 
         // * Delete product-related images
         $this->deleteDir('product-images', $product['slug']);
         $this->deleteDir('description-images', $product['slug']);
-        $this->deleteDir('category-images', $category->name);
+        $this->deleteDir('variant-images', $product['slug']);
         
         //! Check if the category  has no products
         if ($category->products->isEmpty()) {
             // Delete the category
+            $this->deleteDir('category-images', $category->name);
             $category->delete();
         }
 
