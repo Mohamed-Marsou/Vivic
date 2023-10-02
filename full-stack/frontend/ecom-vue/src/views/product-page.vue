@@ -23,7 +23,7 @@ onMounted(async () => {
     await getProductData();
     await getSimilarProducts();
     showDiscount()
-    specificationCopy.value = specification.value
+    console.log(product.value);
 })
 
 //------------------------------------------------------- Fetch product data
@@ -44,6 +44,7 @@ async function getProductData() {
 
         // Parse the product specification and set it to 'specification'
         specification.value = JSON.parse(product.value.specification);
+        specificationCopy.value = specification.value
 
         isLoaded.value = true;
     } catch (error) {
@@ -458,6 +459,7 @@ const toggleStickyProduct = () => {
 
         <div class="sticky_product" :class="{ showStickyProduct: showSticky }" @mouseenter="toggleStickyProduct"
             @mouseleave="toggleStickyProduct">
+            
             <div class="img">
                 <img :src="productCover" alt="product-image">
             </div>
@@ -471,10 +473,10 @@ const toggleStickyProduct = () => {
             </div>
             <div class="actions">
                 <span>
-                    <small>
-                        ${{ product.regular_price ?? product.regular_price }}
+                    <small v-if="product.regular_price != '0.00' ">
+                        ${{product.regular_price }}
                     </small>
-                    ${{ product.sale_price ? product.sale_price : product.price }}
+                    ${{ product.sale_price != '0.00' ? product.sale_price : product.price }}
                 </span>
                 <button @click="addToCart(product.id)" :disabled="quantity === 0">ADD TO CART</button>
                 <button @click="addProductToWishlist(product.id)">
@@ -482,10 +484,6 @@ const toggleStickyProduct = () => {
                     Add to wishlist
                 </button>
             </div>
-            <button id="mobileBtn" @click="scrollToTop">
-                <i class="fa-solid fa-angles-up"></i>
-                Select Options
-            </button>
         </div>
 
         <div @click="ShowOverLay" class="images-overlay" :class="{ ShowOverLay: isVisible }">
@@ -550,7 +548,7 @@ const toggleStickyProduct = () => {
                     <p>0 products in stock</p>
                 </div>
 
-                <div class="slot variantOpts">
+                <div class="slot variantOpts" v-if="specificationCopy.length > 1">
                     <div class="option" v-for="(spec, i) in specificationCopy" :key="i">
                         <p>{{ spec.name }} :</p>
                         <select @change="handleVariantOptions($event, spec.name)">
@@ -1325,8 +1323,9 @@ const toggleStickyProduct = () => {
                     font-size: .8rem;
                     color: #0065fc;
                     cursor: pointer;
-                    padding-bottom: 1rem;
+                    padding: 1rem .5rem;
                     display: none;
+
                 }
 
             }
@@ -1422,7 +1421,10 @@ const toggleStickyProduct = () => {
 }
 
 .product-reviews {
-
+    .section-header {
+    width: 90%;
+    margin: 2rem auto;
+    }
     width: 100%;
     min-height: 50vh;
     margin-top: 1rem;
@@ -1665,9 +1667,13 @@ const toggleStickyProduct = () => {
                     height: 3rem;
                     border: none;
                     border-radius: 50px;
-                    background: #0065fc;
+                    background: #2e6bc6;
                     color: #fff;
                     cursor: pointer;
+                    transition: .3s ease-in;
+                    &:hover{
+                        background: #0d6eff;
+                    }
                 }
             }
 
@@ -1967,30 +1973,21 @@ const toggleStickyProduct = () => {
         }
 
         .actions {
-            display: none !important;
-        }
-
-        #mobileBtn {
-            display: block !important;
-            width: 100%;
-            text-transform: uppercase;
-            border: none;
-            background: #0065fc;
-            color: #fff;
-            font-weight: bold;
-            cursor: pointer;
-
-            >i {
-                transition: .3s ease-in-out;
-                transform: translateY(300%);
-                font-size: 1.2rem;
-                margin-right: 5px;
+            >span{
+                display: none  !important;
             }
-
-            &:hover>i {
-                transform: translateY(0);
+            >button {
+                &:nth-child(3){
+                    display: none  !important;
+                }
+                &:nth-child(2){
+                    height:95% !important;
+                    width: 100% !important;
+                    border-radius: 0 !important;
+                }
             }
         }
+
     }
 }
 
@@ -2113,7 +2110,3 @@ const toggleStickyProduct = () => {
     display: block !important;
 }
 </style>
-
-
-
- 
