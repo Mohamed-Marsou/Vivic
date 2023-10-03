@@ -24,4 +24,10 @@ Route::get('/dashboard/orders/recent', [AdminController::class, 'getRecentOrders
 
 Route::get('/dashboard/product/search', [AdminController::class, 'ProductSearch'])->name('admin.ProductSearch');
 
+Route::post('/reviews/upload-csv', [AdminController::class, 'uploadReviewsCsv'])->name('admin.uploadReviewsCsv');
+
+Route::get('/reviews', [AdminController::class, 'getProductsReviews'])->name('admin.getProductsReviews');
+
+Route::delete('/reviews/{slug}', [AdminController::class, 'deleteProductsReviews'])->name('admin.deleteProductsReviews');
+
 // Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');

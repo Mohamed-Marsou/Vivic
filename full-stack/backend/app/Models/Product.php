@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Cart;
 use App\Models\Image;
 use App\Models\Order;
+use App\Models\Review;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -34,5 +35,8 @@ class Product extends Model
         return $this->belongsToMany(Image::class, 'product_image')
             ->withPivot('is_cover');
     }
-    
+    public function reviews()
+    {
+        return $this->hasMany(Review::class, 'slug', 'slug');
+    }
 }

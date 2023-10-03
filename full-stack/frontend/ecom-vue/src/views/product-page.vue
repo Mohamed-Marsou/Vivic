@@ -23,7 +23,7 @@ onMounted(async () => {
     await getProductData();
     await getSimilarProducts();
     showDiscount()
-    console.log(product.value);
+    reviewsData.value = product.value.reviews ?? null
 })
 
 //------------------------------------------------------- Fetch product data
@@ -324,26 +324,27 @@ const ShowOverLay = () => {
     isVisible.value = !isVisible.value
 }
 
-//* ----------------------------------------------------  Reviews ---------------------------------------------------- 
-import reviews from '../assets/products-reviews.json'
+// * ----------------------------------------------------  Reviews ---------------------------------------------------- 
 
-const reviewsData = ref(reviews.reviews);
-const averageRating = computed(() => {
-    // Calculate the average rating
-    if (!Array.isArray(reviewsData.value) || reviewsData.value.length === 0) {
-        return 0;
-    }
+const reviewsData = ref([]);
+const calculateAverageRating = () => {
+  // Calculate the average rating
+  if (!Array.isArray(reviewsData.value) || reviewsData.value.length === 0) {
+    return 0;
+  }
 
-    const totalRatings = reviewsData.value.reduce((acc, review) => acc + review.rating, 0);
-    const averageRating = totalRatings / reviewsData.value.length;
+  const totalRatings = reviewsData.value.reduce((acc, review) => acc + parseFloat(review.average_rating), 0);
+  const averageRating = totalRatings / reviewsData.value.length;
 
-    // Round to 1 decimal place
-    return parseFloat(averageRating.toFixed(1));
-});
+  // Limit the result to be less than or equal to 5
+  return Math.min(averageRating, 5).toFixed(1);
+};
+
+const averageRating = computed(() => calculateAverageRating());
 
 // Functions to analyze review data
 function getReviewCountByRating(rating) {
-    return reviewsData.value.filter(review => Math.round(review.rating) === rating).length;
+    return reviewsData.value.filter(review => Math.round(review.average_rating) === rating).length;
 }
 
 function getPercentageByRating(rating) {
@@ -359,8 +360,8 @@ const filterReviews = () => {
     switch (reviewsFilter.value) {
         case 'With Images':
             // Separate reviews into two arrays: reviews with images and reviews without images
-            const reviewsWithImages = reviewsData.value.filter((review) => review.body_urls !== '');
-            const reviewsWithoutImages = reviewsData.value.filter((review) => review.body_urls === '');
+            const reviewsWithImages = reviewsData.value.filter((review) => review.body_url !== '');
+            const reviewsWithoutImages = reviewsData.value.filter((review) => review.body_url === '');
 
             // Combine the two arrays to show reviews with images first
             reviewsData.value = [...reviewsWithImages, ...reviewsWithoutImages];
@@ -371,7 +372,7 @@ const filterReviews = () => {
             break;
         case 'High Rating':
             // Apply your sorting logic to show reviews based on rating
-            reviewsData.value.sort((a, b) => b.rating - a.rating);
+            reviewsData.value.sort((a, b) => b.average_rating - a.average_rating);
             break;
         default:
             // If no filter is selected or the filter is not recognized, show the original order of reviews
@@ -403,7 +404,7 @@ const initialsBackgroundColors = [
 function getColor(index) {
     return initialsBackgroundColors[index % initialsBackgroundColors.length];
 }
-const currentReviewsLen = ref(4)
+const currentReviewsLen = ref(10)
 const loading = ref(false)
 
 const visibleReviews = computed(() => {
@@ -414,7 +415,7 @@ const showMoreReviews = () => {
         loading.value = true
 
         setTimeout(() => {
-            currentReviewsLen.value = currentReviewsLen.value + 4
+            currentReviewsLen.value = currentReviewsLen.value + 5
             loading.value = false
         }, 1500)
     }
@@ -431,6 +432,9 @@ function getProductDiscount() {
     const salePrice = parseFloat(product.value.sale_price);
 
     const discountPercentage = ((regularPrice - salePrice) / regularPrice) * 100;
+    if(discountPercentage >= 99){
+        return discountPercentage.toFixed(2)
+    }
     return discountPercentage.toFixed(0)
 }
 
@@ -663,7 +667,7 @@ const toggleStickyProduct = () => {
                                 <i v-for="star, i in fullStars" :key="i" class="fa-solid fa-star"></i>
                                 <i v-if="hasHalfStar" class="fa-solid fa-star-half"></i>
                             </div>
-                            <p>{{ reviewsData.length }} Reviws</p>
+                            <p>{{ reviewsData.length }} Reviews</p>
                             <small> Only customers who have purchased the product are eligible to write a review</small>
                         </div>
                         <div>
@@ -685,17 +689,17 @@ const toggleStickyProduct = () => {
                         <select @click="filterReviews" v-model="reviewsFilter">
                             <option disabled> Filter reviews</option>
                             <option>With Images</option>
-                            <option>Newset</option>
+                            <option>Newest</option>
                             <option>High Rating</option>
                         </select>
                     </div>
 
                     <div class="review-container">
 
-                        <div class="review__box" :class="{ 'no-img-review': !reviewData.body_urls }"
+                        <div class="review__box" :class="{ 'no-img-review': !reviewData.body_url }"
                             v-for="(reviewData, index) in visibleReviews" :key="index">
                             <div class="review-img-box">
-                                <img v-if="reviewData.body_urls" :src="reviewData.body_urls" alt="review-image">
+                                <img v-if="reviewData.body_url" :src="reviewData.body_url" alt="review-image">
 
                                 <div class="author">
                                     <div :style="{ backgroundColor: getColor(index) }">{{ reviewData.author.charAt(0) }}
@@ -708,7 +712,7 @@ const toggleStickyProduct = () => {
                             <div class="review-txt-box">
                                 <div class="r-text">
                                     <div class="reviews_starts">
-                                        <i v-for="(star, index) in Math.round(reviewData.rating)" :key="index"
+                                        <i v-for="(star, index) in Math.round(reviewData.average_rating)" :key="index"
                                             class="fa-solid fa-star">
                                         </i>
                                         <i class="fa-solid fa-circle-check"></i>
@@ -738,7 +742,7 @@ const toggleStickyProduct = () => {
 
                 </div>
             </div>
-        </div>
+        </div> 
 
         <ProductsCarousel smallHeader="Exploring Similar Delights? Start Here!" headerText="SIMILAR PRODUCTS"
             :productList="similarProducts" />

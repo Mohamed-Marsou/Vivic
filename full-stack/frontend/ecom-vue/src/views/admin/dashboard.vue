@@ -2,6 +2,7 @@
 import DashVue from '../../components/build/dashboard/dash.vue'
 import ProductVue from '../../components/build/dashboard/products.vue'
 import AdminVue from '../../components/build/dashboard/admin.vue'
+import ProductReview from '../../components/build/dashboard/reviews.vue'
 import Cookies from 'js-cookie';
 
 import {useAdminStore} from '../../stores/admin'
@@ -17,7 +18,7 @@ onMounted(()=>{
 })
 
 const view = ref('Home')
-const OpendSideBar = ref(true);
+const OpenedSideBar = ref(true);
 
 
 function getFormattedDateTime() {
@@ -34,7 +35,7 @@ function getFormattedDateTime() {
     return `${formattedDate}`;
 }
 const OpenAside = () => {
-    OpendSideBar.value = !OpendSideBar.value
+    OpenedSideBar.value = !OpenedSideBar.value
 }
 const changeView = (v) => {
     view.value = v
@@ -46,11 +47,11 @@ const logOut =()=>{
 </script>
 <template>
     <section>
-        <aside :class="{ closedAside: OpendSideBar }">
+        <aside :class="{ closedAside: OpenedSideBar }">
             <header>
                 <RouterLink to="/">
-                    <h2 v-if="!OpendSideBar">Vivic</h2>
-                    <i v-if="OpendSideBar" title="Visit website" class="fa-brands fa-hashnode"></i>
+                    <h2 v-if="!OpenedSideBar">Vivic</h2>
+                    <i v-if="OpenedSideBar" title="Visit website" class="fa-brands fa-hashnode"></i>
                 </RouterLink>
             </header>
 
@@ -65,6 +66,12 @@ const logOut =()=>{
                     <a>
                         <i title="Products" class="fa-solid fa-box-open"></i>
                         <p>Products</p>
+                    </a>
+                </li>
+                <li :class="{ activeLink: view === 'ProductReviewVue' }" @click="changeView('ProductReviewVue')">
+                    <a>
+                        <i title="Reviews" class="fa-solid fa-ranking-star"></i>
+                        <p>Reviews</p>
                     </a>
                 </li>
                 <li :class="{ activeLink: view === 'AdminVue' }" @click="changeView('AdminVue')">
@@ -82,11 +89,11 @@ const logOut =()=>{
                 </a>
             </li>
         </aside>
-        <main :class="{ mainFullWidth: OpendSideBar }">
+        <main :class="{ mainFullWidth: OpenedSideBar }">
             <header>
                 <div class="headerBox">
                         <i class="fa-solid fa-bars" @click="OpenAside"></i>
-                    <h2>Welecome back , {{ adminName }}</h2>
+                    <h2>Welcome back , {{ adminName }}</h2>
                 </div>
                 <div class="headerBox TandN">
                     <h1>Dashboard</h1>
@@ -106,13 +113,14 @@ const logOut =()=>{
             <div class="dash-view">
                 <DashVue v-if="view === 'Home'" />
                 <ProductVue v-if="view === 'ProductVue'" />
+                <ProductReview v-if="view === 'ProductReviewVue'" />
                 <AdminVue v-if="view === 'AdminVue'" />
             </div>
         </main>
     </section>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 @import '@/style/_global.scss';
 
 @import url('https://fonts.googleapis.com/css2?family=Racing+Sans+One&display=swap');

@@ -36,17 +36,19 @@ onMounted(async () => {
     getTotalAmount()
     getUserData()
     
-    console.log(products.value);
-
 })
 function getAttr(attributes) {
+    if(!attributes) 
+    {
+        return ''
+    }
     try {
         const parsedAttributes = JSON.parse(attributes);
         
         // Extract the options from each attribute
         const attributeOptions = parsedAttributes.map((attribute) => attribute.option);
         // Join the options with a comma and return as a string
-        return attributeOptions.join(', ');
+        return ' ,' +  attributeOptions.join(', ');
     } catch (error) {
         // Handle JSON parsing errors if necessary
         console.error('Error parsing attributes:', error);
@@ -701,7 +703,7 @@ const handleCouponSub = async () => {
                     <div class="right">
                         <div class="product-name">
                             <h4>Product</h4>
-                            <p>{{ p.product.name +',' + getAttr(p.product.attributes )}}</p>
+                            <p>{{ p.product.name + getAttr(p.product.attributes )}}</p>
                         </div>
                         <div class="price">
                             <h4>Price</h4>
@@ -735,7 +737,7 @@ const handleCouponSub = async () => {
                     <img :src="getCoverImg(p.product)" alt="Product image">
                     <div class="prd">
                         <div class="p-header">
-                            <h3>{{ p.product.name +',' + getAttr(p.product.attributes )}}</h3>
+                            <h3>{{ p.product.name  + getAttr(p.product.attributes )}}</h3>
                             <span title="REMOVE ITEM" @click="removeItem(p.product.id , p.product.SKU)">X</span>
                         </div>
                         <div class="full-box">

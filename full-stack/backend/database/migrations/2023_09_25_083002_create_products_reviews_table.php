@@ -6,22 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
+    public function up()
     {
-        Schema::create('products_reviews', function (Blueprint $table) {
+        Schema::create('reviews', function (Blueprint $table) {
             $table->id();
+            $table->string('slug');
+            $table->string('average_rating');
+            $table->string('title')->nullable();
+            $table->string('author');
+            $table->string('email')->nullable();
+            $table->text('body_text');
+            $table->text('body_url')->nullable();
+            $table->string('country_code')->nullable();
+            $table->string('status')->default('enable');
+            $table->string('feature')->default('0');
             $table->timestamps();
+
+            $table->foreign('slug')->references('slug')->on('products');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
-        Schema::dropIfExists('products_reviews');
+        Schema::dropIfExists('reviews');
     }
 };

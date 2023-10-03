@@ -89,7 +89,6 @@ const login = async () => {
             // Redirect
             router.push('/')
         }
-        console.log(res);
     } catch (error) {
         console.log(error);
         errMsg.value = error.response.data.message

@@ -49,12 +49,12 @@ class ProductController extends Controller
 
     public function newProducts()
     {
-        $perPage = 5;
-        $products = Product::with('images')
-            ->orderBy('created_at', 'desc')
+        $perPage = 10;
+        $products = Product::with(['images','reviews'])
+            ->orderBy('created_at', 'asc')
             ->paginate($perPage);
 
-        // Retrieve the maximum price using a subquery
+        // Retrieve the maximum price using a sub-query
         $maxPrice = DB::table('products')
             ->max('price');
         if ($products->isEmpty()) {
@@ -62,6 +62,7 @@ class ProductController extends Controller
         }
         return response()->json([$products, $maxPrice]);
     }
+
     public function getHighRating()
     {
         $perPage = 5;
@@ -105,7 +106,7 @@ class ProductController extends Controller
 
     public function getProduct($slug)
     {
-        $baseProduct = Product::with('images')->where('slug', $slug)->first();
+        $baseProduct = Product::with(['images', 'reviews'])->where('slug', $slug)->first();
     
         if (!$baseProduct) {
             return response()->json(['response' => "Product not found!"], 404);

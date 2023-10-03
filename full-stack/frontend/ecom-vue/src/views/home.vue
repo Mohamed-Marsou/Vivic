@@ -26,10 +26,12 @@ onMounted(async () => {
     await getHighRatedProducts()
     await getFeaturedProducts()
     isLoaded.value = true
+
 })
 
 async function getNewArrivals() {
     const res = await productStore.getNewArrivals()
+    console.log(res);
     newArrivals.value = res[0].data
 }
 async function getCategories() {
