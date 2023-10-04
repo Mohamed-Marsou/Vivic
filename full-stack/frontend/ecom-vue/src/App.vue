@@ -20,6 +20,7 @@ const router = useRouter();
 <Footer v-if="router.currentRoute.value.name  !== 'admin-auth' && router.currentRoute.value.name  !== 'dashboard'"/>
 
 </main>
+
 </template>
 
 <style lang="scss">

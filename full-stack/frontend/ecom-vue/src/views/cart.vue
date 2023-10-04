@@ -263,7 +263,7 @@ const shipmentCityError = ref('');
 const shipmentAddress = ref('');
 const shipmentAddressError = ref('');
 
-// --------- payInit
+// --------- Paypal payInit
 const paymentInit = ref(false)
 let cardElement = {}
 
@@ -281,7 +281,7 @@ const payInit = async (e) => {
             .Buttons({
                 style: {
                     layout: 'horizontal',
-                    tagline: 'true',
+                    tagline: 'false',
                     color: 'black'
                 },
                 createOrder: (data, actions) => {
@@ -395,6 +395,7 @@ const assignUserData = (userData, shipmentData) => {
 ///////////////////////////// ///////////////////////////// /////////////////////////////
 const isProcessing = ref(false)
 const costumerOrder = ref({})
+
 // handling Stripe payment
 const stripePaymentSubmit = async () => {
 
@@ -465,7 +466,7 @@ const stripePaymentSubmit = async () => {
         },
     ];
     }
-    console.log(wordpressPayload);
+
     try {
         // Post order details to the WordPress API.
         const wordpressResponse = await axios.post(`${import.meta.env.VITE_WOO_URL}/orders`, wordpressPayload
@@ -576,7 +577,6 @@ const handlePaypalSubmission = async (res) => {
     //         }
     //     });  
 }
-
 
 // * COUPON ------------------------
 // ------------------------ ------------------------

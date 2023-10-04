@@ -249,12 +249,11 @@ class AdminController extends Controller
         if ($request->hasFile('csv_file')) {
             $file = $request->file('csv_file');
 
-            // Validate the file if needed
-
             // Process and insert CSV data into the 'reviews' table
             $csvData = array_map('str_getcsv', file($file->getRealPath()));
             // Remove the first row (header) from the CSV data
             array_shift($csvData);
+
             foreach ($csvData as $row) {
                 DB::table('reviews')->insert([
                     'slug' => $row[0],
@@ -286,7 +285,6 @@ class AdminController extends Controller
             $slug = $row[0];
             $averageRatings[$slug][] = $row[1];
         }
-
 
         // Update the products' average ratings
         foreach ($averageRatings as $slug => $ratings) {

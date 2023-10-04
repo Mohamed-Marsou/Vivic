@@ -33,32 +33,26 @@ Route::get('/products/filtered', [ProductController::class, 'getFilteredProducts
 // Get Wishlist Products
 Route::get('/get/products', [ProductController::class, 'getProducts'])->name('products.getProducts');
 
-Route::middleware('auth:user')->group(function () {
 
-    // Add Product to User Cart
-    Route::post('product/cart', [ProductController::class, 'addToCart'])->name('products.addToCart');
-    // Add Product to Wishlist
-    Route::post('/product/wishlist', [ProductController::class, 'addToWishlist'])->name('products.addToWishlist');
-    // Get User Wishlist Products
-    Route::get('/get/wishlist-products/{id}', [ProductController::class, 'getUserWishListProducts'])->name('products.getUserWishListProducts');
-    // Get User InCart Products
-    Route::get('/get/cart-products/{id}', [ProductController::class, 'getInCartProducts'])->name('products.getInCartProducts');
-    
-    // decrease User InCart Product quantity
-    Route::put('/product/cart/decrease/{userId}/{id}/{SKU}', [ProductController::class, 'decreaseCartProductQuantity'])->name('products.decreaseCartProductQuantity');
-    // increase User InCart Product quantity
-    Route::put('/product/cart/increase/{userId}/{id}/{SKU}', [ProductController::class, 'increaseCartProductQuantity'])->name('products.increaseCartProductQuantity');
-    // Remove User InCart Product
-    Route::delete('/product/cart/{userId}/{productId}/{SKU}', [ProductController::class, 'removeInCartProducts'])->name('products.removeInCartProducts');
-    // Remove User wishlist Product
-    Route::delete('/product/wishlist/{userId}/{SKU}', [ProductController::class, 'removeWishlistProducts'])->name('products.removeWishlistProducts');
-    // clear user Cart 
-    Route::delete('/user/cart/clear/{id}', [ProductController::class, 'clearUserCart'])->name('Cart.clearUserCart');
-    
-});
+// Add Product to User Cart
+Route::post('product/cart', [ProductController::class, 'addToCart'])->name('products.addToCart');
+// Add Product to Wishlist
+Route::post('/product/wishlist', [ProductController::class, 'addToWishlist'])->name('products.addToWishlist');
+// Get User Wishlist Products
+Route::get('/get/wishlist-products/{id}', [ProductController::class, 'getUserWishListProducts'])->name('products.getUserWishListProducts');
+// Get User InCart Products
+Route::get('/get/cart-products/{id}', [ProductController::class, 'getInCartProducts'])->name('products.getInCartProducts');
+
+// decrease User InCart Product quantity
+Route::put('/product/cart/decrease/{userId}/{id}/{SKU}', [ProductController::class, 'decreaseCartProductQuantity'])->name('products.decreaseCartProductQuantity');
+// increase User InCart Product quantity
+Route::put('/product/cart/increase/{userId}/{id}/{SKU}', [ProductController::class, 'increaseCartProductQuantity'])->name('products.increaseCartProductQuantity');
+// Remove User InCart Product
+Route::delete('/product/cart/{userId}/{productId}/{SKU}', [ProductController::class, 'removeInCartProducts'])->name('products.removeInCartProducts');
+// Remove User wishlist Product
+Route::delete('/product/wishlist/{userId}/{SKU}', [ProductController::class, 'removeWishlistProducts'])->name('products.removeWishlistProducts');
+// clear user Cart 
+Route::delete('/user/cart/clear/{id}', [ProductController::class, 'clearUserCart'])->name('Cart.clearUserCart');
+
 //! DELETE PRODUCT 
 Route::delete('product/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
-
-
-
-

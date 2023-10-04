@@ -7,7 +7,16 @@ const showResponse = ref(false)
 const loading = ref(false)
 const response = ref('')
 
+const emailValidationRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i
 const submit = async () => {
+    if (!email.value || !emailValidationRegex.test(email.value)) {
+        response.value = 'Please Enter a valid Email address'
+        showResponse.value = true
+        setTimeout(() => {
+            showResponse.value = false
+        }, 3000)
+        return
+    }
     loading.value = true
 
     try {
@@ -16,7 +25,7 @@ const submit = async () => {
         if (res.status === 200 || res.status === 201) {
 
             email.value = ''
-            response.value = 'Thank you for joining our family, we will be concted'
+            response.value = 'Thank you for joining our family; we look forward to staying connected.'
             showResponse.value = true
             loading.value = false
 
@@ -38,16 +47,16 @@ const submit = async () => {
 
 </script>
 <template>
-    <div class="mail-caontainer">
+    <div class="mail-container">
         <div class="input">
             <h2>
                 Be the First to Know! Subscribe for updates, deals, and more straight to your inbox
             </h2>
-            <p v-if="showResponse">{{ response }}.</p>
             <div class="inptCont">
                 <i class="fa-solid fa-paper-plane" @click="submit"></i>
                 <input type="text" placeholder="Enter Email address" @keyup.enter="submit" v-model="email">
             </div>
+            <p v-if="showResponse">{{ response }}</p>
         </div>
 
         <div class="loading" v-if="loading">
@@ -57,7 +66,7 @@ const submit = async () => {
 </template>
 
 <style lang="scss">
-.mail-caontainer {
+.mail-container {
     width: 100%;
     height: 40vh;
     background: rgb(47, 112, 210);
@@ -202,7 +211,7 @@ const submit = async () => {
 }
 
 @media screen and (max-width: 1024px) {
-    .mail-caontainer {
+    .mail-container {
         .inptCont {
             width: 90%;
         }
@@ -210,7 +219,7 @@ const submit = async () => {
 }
 
 @media screen and (max-width: 768px) {
-    .mail-caontainer {
+    .mail-container {
         gap: 2rem;
 
         >h2 {
@@ -234,7 +243,7 @@ const submit = async () => {
 }
 
 @media screen and (max-width: 550px) {
-    .mail-caontainer {
+    .mail-container {
         gap: .5rem;
 
         >h2 {
@@ -256,7 +265,7 @@ const submit = async () => {
 }
 
 @media screen and (max-width: 450px) {
-    .mail-caontainer {
+    .mail-container {
         height: 35vh;
         gap: 1rem;
 

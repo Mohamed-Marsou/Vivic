@@ -1,12 +1,12 @@
 <script setup>
 import ProductsCarousel from '../components/build/products-carousel.vue';
-import { ref, onMounted, watch, computed, onUnmounted } from 'vue'
+import { ref, onMounted, watch, computed} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../http/api'
 import Loading from '../components/build/loading.vue';
 const route = useRoute();
 const router = useRouter();
-import { useProductStore } from '../stores/product'
+import { useProductStore } from '../stores/product.js'
 
 const product = ref([]);
 const productImages = ref([]);
@@ -438,8 +438,6 @@ function getProductDiscount() {
     return discountPercentage.toFixed(0)
 }
 
-
-
 function scrollToReviews() {
     const reviewsElement = document.querySelector('.product-reviews');
 
@@ -538,7 +536,7 @@ const toggleStickyProduct = () => {
                     <div class="stars-box">
                         <i @click="scrollToReviews" v-for="( index) in 5" :key="index" class="fa-solid fa-star"></i>
                     </div>
-                    <p>({{ reviewsData.length }} Reviews)</p>
+                    <p v-if="reviewsData.length > 0">({{ reviewsData.length }} Reviews)</p>
                 </div>
 
                 <div class="slot small_description">
@@ -638,6 +636,7 @@ const toggleStickyProduct = () => {
                 </div>
             </div>
         </div>
+        
         <!-- // Description  -->
         <div class="product-description" @mouseenter="toggleStickyProduct" @mouseleave="toggleStickyProduct">
             <header class="section-header">
@@ -683,7 +682,7 @@ const toggleStickyProduct = () => {
                     </div>
                 </div>
 
-                <div class="reviews-box">
+                <div class="reviews-box"  v-if="reviews">
                     <div class="reviews-filters">
                         <p>Showing {{ currentReviewsLen }} out of {{ reviewsData.length }}</p>
                         <select @click="filterReviews" v-model="reviewsFilter">
@@ -694,7 +693,7 @@ const toggleStickyProduct = () => {
                         </select>
                     </div>
 
-                    <div class="review-container">
+                    <div class="review-container"  v-if="reviews">
 
                         <div class="review__box" :class="{ 'no-img-review': !reviewData.body_url }"
                             v-for="(reviewData, index) in visibleReviews" :key="index">
@@ -745,7 +744,7 @@ const toggleStickyProduct = () => {
         </div> 
 
         <ProductsCarousel smallHeader="Exploring Similar Delights? Start Here!" headerText="SIMILAR PRODUCTS"
-            :productList="similarProducts" />
+        :productList="similarProducts" />
     </div>
 
     <div v-else class="Loader-container">
@@ -908,7 +907,7 @@ const toggleStickyProduct = () => {
         }
 
         .image-box {
-            width: 35rem;
+            width: 45rem;
             height: 75vh;
             background: #fff;
             @include flex();
@@ -950,7 +949,7 @@ const toggleStickyProduct = () => {
 
             .main {
                 width: 100%;
-                height: 80%;
+                height: 70%;
                 @include flex();
                 position: relative;
 
@@ -998,6 +997,7 @@ const toggleStickyProduct = () => {
                 width: 100%;
                 height: 20%;
                 display: flex;
+                margin-top: 2rem;
 
                 >div {
                     width: 25%;

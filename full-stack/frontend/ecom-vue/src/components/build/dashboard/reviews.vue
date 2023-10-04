@@ -34,6 +34,8 @@ const handleFileInputChange = (event) => {
 async function postFile() {
 
     if (selectedFile.value) {
+        loaded.value = false
+
         const formData = new FormData();
         formData.append('csv_file', selectedFile.value);
 
@@ -42,11 +44,12 @@ async function postFile() {
 
             await importReviews()
             toggleOverlayImp()
+
             })
             .catch(error => {
                 console.error(error);
             });
-
+            loaded.value = true
     } else {
         alert('Please Select a file first !! ')
     }
@@ -62,6 +65,8 @@ const deleteReviews = async (slug) => {
     const confirmation = window.confirm(`Are you sure you want to DELETE: ${slug}`);
 
     if (confirmation) {
+        loaded.value = false
+
         try {
             // Send the delete request
             const res = await api.delete(`reviews/${slug}`);
@@ -79,6 +84,8 @@ const deleteReviews = async (slug) => {
             console.error('An error occurred:', error);
         }
     }
+    loaded.value = true
+
 }; 
 </script>
 <template>
@@ -186,7 +193,7 @@ const deleteReviews = async (slug) => {
             display: block;
             margin: 20px auto;
             position: relative;
-            background: radial-gradient(ellipse at center, #339bea 69%, rgba(0, 0, 0, 0) 70%), linear-gradient(to right, rgba(0, 0, 0, 0) 47%, #339bea 48%, #339bea 52%, rgba(0, 0, 0, 0) 53%);
+            background: radial-gradient(ellipse at center, #2c2e3e 69%, rgba(0, 0, 0, 0) 70%), linear-gradient(to right, rgba(0, 0, 0, 0) 47%, #2c2e3e 48%, #2c2e3e 52%, rgba(0, 0, 0, 0) 53%);
             background-size: 20px 20px, 20px auto;
             background-repeat: repeat-x;
             background-position: center bottom, center -5px;
@@ -202,7 +209,7 @@ const deleteReviews = async (slug) => {
             top: 0;
             width: 20px;
             height: 60px;
-            background: radial-gradient(ellipse at center, #339bea 69%, rgba(0, 0, 0, 0) 70%), linear-gradient(to right, rgba(0, 0, 0, 0) 47%, #339bea 48%, #339bea 52%, rgba(0, 0, 0, 0) 53%);
+            background: radial-gradient(ellipse at center, #2c2e3e 69%, rgba(0, 0, 0, 0) 70%), linear-gradient(to right, rgba(0, 0, 0, 0) 47%, #2c2e3e 48%, #2c2e3e 52%, rgba(0, 0, 0, 0) 53%);
             background-size: 20px 20px, 20px auto;
             background-repeat: no-repeat;
             background-position: center bottom, center -5px;

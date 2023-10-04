@@ -54,7 +54,7 @@ const logOut =()=>{
                     <i v-if="OpenedSideBar" title="Visit website" class="fa-brands fa-hashnode"></i>
                 </RouterLink>
             </header>
-
+            
             <ul>
                 <li :class="{ activeLink: view === 'Home' }" @click="changeView('Home')">
                     <a>
@@ -183,7 +183,7 @@ section {
                 font-size: 2.2rem;
                 transition: .3s ease-in-out;
                 &:hover{
-                    color: #2563EB;
+                    color: #04a0fa;
                 }
             }
         }
@@ -338,7 +338,9 @@ section {
         h2 {
             display: none;
         }
-
+        i{
+            display: block !important;
+        }
         img {
             display: block !important;
             width: 3rem;
@@ -387,7 +389,6 @@ section {
             }
         }
     }
-
     .mainFullWidth {
         width: 94vw !important;
     }

@@ -2,8 +2,8 @@
 import categoryCarousel from '../components/build/category-carousel.vue';
 import Mail from "../components/build/mail-container.vue";
 import { ref, onMounted } from "vue";
-import { useProductStore } from '../stores/product'
 import { useRouter } from 'vue-router';
+import { useProductStore } from '../stores/product'
  
 import Loading from '../components/build/loading.vue';
 const loaded = ref(false)

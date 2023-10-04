@@ -33,6 +33,7 @@ class ProductController extends Controller
         $this->WOO_CK = env('WOOCOMMERCE_API_KEY');
         $this->WOO_CS = env('WOOCOMMERCE_API_SECRET');
     }
+
     public function index()
     {
         $perPage = 8;
@@ -65,7 +66,7 @@ class ProductController extends Controller
 
     public function getHighRating()
     {
-        $perPage = 5;
+        $perPage = 10;
         $products = Product::with('images')
             ->orderBy('average_rating', 'desc')
             ->paginate($perPage);

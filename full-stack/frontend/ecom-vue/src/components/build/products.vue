@@ -128,7 +128,7 @@ const addToCart = async (productId, SKU) => {
                 }
 
                 &:hover .badge {
-                    background: #fe0303df;
+                    background: #fe0303;
                     font-weight: bold;
 
                 }
