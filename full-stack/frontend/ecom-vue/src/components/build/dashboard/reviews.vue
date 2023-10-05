@@ -44,6 +44,7 @@ async function postFile() {
 
             await importReviews()
             toggleOverlayImp()
+            console.log(response);
 
             })
             .catch(error => {

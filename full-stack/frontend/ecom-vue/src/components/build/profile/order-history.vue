@@ -33,47 +33,54 @@ function getProductPrice(p) {
 </script>
 
 <template>
-    <div v-if="isLoading" class="OrderHistory">
-        <h2>Your recent orders</h2>
-        <div class="order-slot" v-for="order in ordersData" :key="order.id">
-            <header>
-                <p>
-                    <small>
-                        Order
-                    </small>
-                    #{{ order.wp_order_id }}
-                </p>
-                <i title="Expand" class="fa-solid fa-angles-down" @click="expandOrder($event)"></i>
-            </header>
+    <div  v-if="isLoading ">
+        <div v-if="ordersData.length >  0" class="OrderHistory">
+            <h2>Your recent orders</h2>
 
-            <div class="order__details">
-                <p>Order details : </p>
-                <div class="slot">
-                    <div class="img-name">
-                        <p>Item(s)</p>
+            <div class="order-slot" v-for="order in ordersData" :key="order.id">
+                <header>
+                    <p>
+                        <small>
+                            Order
+                        </small>
+                        #{{ order.wp_order_id }}
+                    </p>
+                    <i title="Expand" class="fa-solid fa-angles-down" @click="expandOrder($event)"></i>
+                </header>
+
+                <div class="order__details">
+                    <p>Order details : </p>
+                    <div class="slot">
+                        <div class="img-name">
+                            <p>Item(s)</p>
+                        </div>
+                        <div class="quantity">
+                            <p>Quantity</p>
+                        </div>
+                        <div class="price">
+                            <p>Price</p>
+                        </div>
                     </div>
-                    <div class="quantity">
-                        <p>Quantity</p>
+
+                    <div class="slot data" v-for="product in order.products" :key="product.id">
+                        <div class="img-name">
+                            <img :src="product.images[0].url" alt="">
+                            <p>{{ product.name.length > 15 ? (product.name.slice(0, 15) + '...') : product.name }}</p>
+                        </div>
+                        <div class="quantity">
+                            <p>{{ product.pivot.quantity }}</p>
+                        </div>
+                        <div class="price">
+                            ${{ getProductPrice(product) }}
+                        </div>
                     </div>
-                    <div class="price">
-                        <p>Price</p>
-                    </div>
+
                 </div>
-
-                <div class="slot data" v-for="product in order.products" :key="product.id">
-                    <div class="img-name">
-                        <img :src="product.images[0].url" alt="">
-                        <p>{{ product.name.length > 15 ? (product.name.slice(0,15) + '...')  :  product.name}}</p>
-                    </div>
-                    <div class="quantity">
-                        <p>{{ product.pivot.quantity }}</p>
-                    </div>
-                    <div class="price">
-                        ${{ getProductPrice(product) }}
-                    </div>
-                </div>
-
             </div>
+
+        </div>
+        <div class="noOrders" v-else>
+            <h2>No Orders placed Yet !!</h2>
         </div>
     </div>
 
@@ -210,13 +217,20 @@ function getProductPrice(p) {
     width: 100%;
     height: 50vh;
 }
-
+.noOrders{
+    width: 100%;
+    text-align: center;
+    padding: 4rem 0;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+}
 @media screen and (max-width : 768px) {
     .order__details {
 
         >.data {
             display: flex !important;
             flex-wrap: wrap;
+
             .img-name {
                 width: 100% !important;
             }
@@ -231,4 +245,5 @@ function getProductPrice(p) {
             }
         }
     }
-}</style>
+}
+</style>

@@ -13,8 +13,8 @@ const props = defineProps({
 });
 
 
-const getCover = (p) => {
-    const coverImg = p.images.find(image => image.pivot.is_cover === true);
+const getCover = (images) => {
+    const coverImg = images.find(image => image.pivot.is_cover === true);
     return coverImg.url
 }
 
@@ -23,7 +23,6 @@ function getProductDiscount(p) {
     if (!p.sale_price && p.sale_price !== '0.00' ) {
         return;
     }
-
     const regularPrice = parseFloat(p.regular_price);
     const salePrice = parseFloat(p.sale_price);
 
@@ -59,7 +58,7 @@ function getProductDiscount(p) {
                 <div class="prd-slide">
                     <div class="image-ctx">
                         <RouterLink :to="{ name: 'product-page',  params: { slug: p.slug } }">
-                            <img :src="getCover(p)" alt="Product image">
+                            <img :src="getCover(p.images)" alt="Product image">
                         </RouterLink>
                         <RouterLink :to="{ name: 'product-page',  params: { slug: p.slug } }">
                             <div class="prd-link">
@@ -77,8 +76,11 @@ function getProductDiscount(p) {
                         <RouterLink :to="{ name: 'product-page' ,  params: { slug: p.slug }}">
                             {{  p.name  }}
                         </RouterLink>
-                        <div class="stars">
-                            <i v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
+                        <div v-if="p.average_rating != '0.00'" class="stars">
+                            <i v-for="( r , i ) in Math.round(p.average_rating)" :key="i" class="fa-solid fa-star"></i>
+                        </div>
+                        <div v-else class="stars">
+                            <i v-for="i in 5"  :key="i" class="fa-regular fa-star"></i>
                         </div>
 
                     </div>

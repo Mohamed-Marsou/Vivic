@@ -19,8 +19,8 @@ class StripeController extends Controller
         $amount = $request->input('amount');
         $userId = $request->input('userId');
         $wpOrderID = $request->input('wp_order_id');
-        
-        
+
+
         $userName = $request->input('costumerName');
         $userEmail = $request->input('costumerEmail');
         $userAddress = $request->input('costumerAddress');
@@ -48,7 +48,7 @@ class StripeController extends Controller
             if ($userId === null) {
                 // Check if a user with this email already exists
                 $existingUser = User::where('email', $userEmail)->first();
-            
+
                 if ($existingUser) {
                     // User with the same email exists, assign the existing user's ID
                     $userId = $existingUser->id;
@@ -69,7 +69,7 @@ class StripeController extends Controller
             //Create a new order
             $order = new Order();
             $order->user_id = $userId;
-            $order->amount = $amount; 
+            $order->amount = $amount;
             $order->transaction_id = $paymentMethodId;
             $order->wp_order_id = $wpOrderID;
             // Save the order
@@ -78,7 +78,7 @@ class StripeController extends Controller
             // Handle the success response
             return response()->json([
                 'success' => true,
-                'order_id'=> $order->id                
+                'order_id'=> $order->id
             ], 200);
         } catch (\Exception $e) {
             // Handle the error response

@@ -51,8 +51,8 @@ Route::put('/product/cart/increase/{userId}/{id}/{SKU}', [ProductController::cla
 Route::delete('/product/cart/{userId}/{productId}/{SKU}', [ProductController::class, 'removeInCartProducts'])->name('products.removeInCartProducts');
 // Remove User wishlist Product
 Route::delete('/product/wishlist/{userId}/{SKU}', [ProductController::class, 'removeWishlistProducts'])->name('products.removeWishlistProducts');
-// clear user Cart 
+// clear user Cart
 Route::delete('/user/cart/clear/{id}', [ProductController::class, 'clearUserCart'])->name('Cart.clearUserCart');
 
-//! DELETE PRODUCT 
+//! DELETE PRODUCT
 Route::delete('product/{id}', [ProductController::class, 'destroy'])->name('products.destroy');

@@ -276,6 +276,8 @@ watch(() => route.params.slug, async (newSlug) => {
     scrollToTop()
     await getProductData();
     await getSimilarProducts();
+    showDiscount()
+    reviewsData.value = product.value.reviews ?? null
 });
 
 function scrollToTop() {
@@ -348,11 +350,10 @@ function getReviewCountByRating(rating) {
 }
 
 function getPercentageByRating(rating) {
-    const totalReviews = reviewsData.value.length;
-    const reviewsWithRating = getReviewCountByRating(rating);
-    const percentage = (reviewsWithRating / totalReviews) * 100;
-
-    return percentage.toFixed(2);
+        const totalReviews = reviewsData.value.length;
+        const reviewsWithRating = getReviewCountByRating(rating);
+        const percentage = (reviewsWithRating / totalReviews) * 100;
+        return percentage.toFixed(2);
 }
 // Reviews Filters
 const reviewsFilter = ref('Filter reviews')
@@ -674,7 +675,8 @@ const toggleStickyProduct = () => {
                                 <i class="fa-solid fa-star"></i>
                                 <span>{{ i }}</span>
                                 <div>
-                                    <div :style="{ width: getPercentageByRating(i) + '%' }"></div>
+                                    <div  v-if="reviewsData.length > 0"  :style="{ width: getPercentageByRating(i) + '%' }"></div>
+                                    <div v-else></div>
                                 </div>
                                 <h5>{{ getReviewCountByRating(i) }}</h5>
                             </div>
@@ -682,7 +684,7 @@ const toggleStickyProduct = () => {
                     </div>
                 </div>
 
-                <div class="reviews-box"  v-if="reviews">
+                <div class="reviews-box"  v-if="reviewsData.length > 0">
                     <div class="reviews-filters">
                         <p>Showing {{ currentReviewsLen }} out of {{ reviewsData.length }}</p>
                         <select @click="filterReviews" v-model="reviewsFilter">
@@ -693,7 +695,7 @@ const toggleStickyProduct = () => {
                         </select>
                     </div>
 
-                    <div class="review-container"  v-if="reviews">
+                    <div class="review-container">
 
                         <div class="review__box" :class="{ 'no-img-review': !reviewData.body_url }"
                             v-for="(reviewData, index) in visibleReviews" :key="index">

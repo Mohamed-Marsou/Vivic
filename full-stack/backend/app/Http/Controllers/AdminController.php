@@ -286,6 +286,7 @@ class AdminController extends Controller
             $averageRatings[$slug][] = $row[1];
         }
 
+
         // Update the products' average ratings
         foreach ($averageRatings as $slug => $ratings) {
             $product = Product::where('slug', $slug)->first();

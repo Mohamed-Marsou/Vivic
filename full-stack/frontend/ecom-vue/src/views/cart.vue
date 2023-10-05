@@ -631,7 +631,6 @@ const handleCouponSub = async () => {
         const res = await axios.get(`${import.meta.env.VITE_WOO_URL}/coupons?code=${couponCode.value}`, {
             headers: { "Authorization": basicAuth(import.meta.env.VITE_WOO_CK, import.meta.env.VITE_WOO_CS) }
         });
-        console.log(res);
         //* check for valid response 
         if (res.status === 200 && res.data.length > 0) {
             // Get the current date

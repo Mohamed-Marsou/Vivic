@@ -11,7 +11,7 @@ const goTop = () => {
 <template>
     <footer>
         <div class="box">
-            <div class="conatiner-rw">
+            <div class="container-rw">
                 <div class="con-rw">
                     <h1 class="logo">
                         Ecommerce
@@ -36,12 +36,12 @@ const goTop = () => {
                 <div class="con-rw quick-nav">
                     <h2>QUICK NAVIGATION</h2>
                     <RouterLink to="/">Home</RouterLink>
-                    <RouterLink to="/">Shop</RouterLink>
-                    <RouterLink to="/">Account</RouterLink>
-                    <RouterLink to="/cart">Cart</RouterLink>
+                    <RouterLink :to="{ name : 'new'}">Shop</RouterLink>
+                    <RouterLink :to="{ name : 'profile'}">Account</RouterLink>
+                    <RouterLink  :to="{ name : 'cart'}">Cart</RouterLink>
                 </div>
             </div>
-            <div class="conatiner-rw">
+            <div class="container-rw">
                 <div class="con-rw">
                     <h2>INFORMATION</h2>
                     <RouterLink to="/">Pravicy policy</RouterLink>
@@ -64,8 +64,8 @@ const goTop = () => {
             </div>
         </div>
 
-        <div class="conatiner-cm">
-            <p>&copy;Ecommerce 2023. All rights reserved</p>
+        <div class="container-cm">
+            <p>&copy; Vivic 2023. All rights reserved </p>
             <div>
                 <img src="../../assets/icons/800px-PayPal.svg.jpg" alt="icon">
                 <img src="../../assets/icons/visa-classic-svgrepo-com.svg" alt="icon">
@@ -118,7 +118,7 @@ footer {
                 background: rgba(255, 255, 255, 0.945);
             }
         }
-        .conatiner-rw {
+        .container-rw {
             width: 45%;
             min-height: 100%;
             display: flex;
@@ -197,7 +197,7 @@ footer {
         }
     }
 
-    .conatiner-cm {
+    .container-cm {
         width: 100%;
         height: 8vh;
         display: flex;
@@ -214,7 +214,7 @@ footer {
             gap: 2vw;
 
             >img {
-                height: 60%;
+                height: 1.72rem;
                 filter: grayscale(100%);
                 transition: .5s ease;
 
@@ -233,7 +233,7 @@ footer {
             width: 100%;
             min-height: 35vh;
 
-            .conatiner-rw {
+            .container-rw {
                 width: 48%;
 
                 .con-rw {
@@ -244,7 +244,7 @@ footer {
             }
         }
 
-        .conatiner-cm {
+        .container-cm {
             width: 100%;
             min-height: 8vh;
         }
@@ -257,7 +257,7 @@ footer {
             width: 100%;
             min-height: 35vh o !important;
 
-            .conatiner-rw {
+            .container-rw {
                 width: 90%;
                 height: fit-content !important;
                 flex-direction: column;
@@ -277,7 +277,7 @@ footer {
             }
         }
 
-        .conatiner-cm {
+        .container-cm {
             width: 100%;
             min-height: 8vh;
         }
@@ -294,7 +294,7 @@ footer {
         align-items: center;
     }
 
-    .conatiner-rw {
+    .container-rw {
         width: 90%;
         height: fit-content !important;
         flex-direction: column;
@@ -309,13 +309,13 @@ footer {
         width: 100%;
     }
 
-    footer .box .conatiner-rw .form input {
+    footer .box .container-rw .form input {
         width: 70vw !important;
     }
 }
 
 @media screen and (max-width:450px) {
-    .conatiner-cm {
+    .container-cm {
         flex-direction: column;
         height: fit-content !important;
         padding: 1rem !important;
@@ -326,7 +326,7 @@ footer {
         }
     }
 
-    footer .box .conatiner-rw .con-rw {
+    footer .box .container-rw .con-rw {
         margin-bottom: 1rem !important;
     }
 }

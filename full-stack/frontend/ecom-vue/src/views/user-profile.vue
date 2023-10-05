@@ -94,7 +94,7 @@ const changeView = (v) => {
 
     aside {
         width: 15%;
-        min-height: calc(100vh - 4.5rem);
+        height: 90vh;
         position: relative;
         border-right: 1px solid #5555550f;
         color: #555;
@@ -184,7 +184,7 @@ const changeView = (v) => {
 }
 
 .active {
-    border-bottom: 2px solid #2e6bc692 !important;
+    border-right: 3px solid #0468ffeb !important;
 }
 @media screen and (max-width : 1024px) {
     .user-profile {

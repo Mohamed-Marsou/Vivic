@@ -29,18 +29,18 @@ class OrderController extends Controller
     {
         // Retrieve the user by ID
         $user = User::find($id);
-    
+
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
-    
+
         // Retrieve the user's orders, paginated, with products and cover images
         $orders = $user->orders()
             ->with(['products.images' => function ($query) {
                 $query->wherePivot('is_cover', true);
-            }])->orderBy('created_at', 'desc') 
+            }])->orderBy('created_at', 'desc')
             ->paginate(7);
-    
+
         return response()->json(['orders' => $orders]);
     }
 

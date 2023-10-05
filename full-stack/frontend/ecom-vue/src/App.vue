@@ -39,7 +39,6 @@ const router = useRouter();
 /* Handle */
 ::-webkit-scrollbar-thumb {
   background: #2e6bc6;
-  border-radius: 0 0 
 }
 
 </style>

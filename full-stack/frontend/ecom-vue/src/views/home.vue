@@ -31,7 +31,6 @@ onMounted(async () => {
 
 async function getNewArrivals() {
     const res = await productStore.getNewArrivals()
-    console.log(res);
     newArrivals.value = res[0].data
 }
 async function getCategories() {

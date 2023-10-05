@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+
 class UserController extends Controller
 {
 
@@ -18,10 +20,10 @@ class UserController extends Controller
                 'email' => ['required', 'email', 'max:255', 'unique:users'],
                 'password' => ['required', 'string', 'min:8', 'confirmed'],
             ]);
-    
+
             // Check if a user with this email already exists
             $existingUser = User::where('email', $validatedData['email'])->first();
-    
+
             if ($existingUser) {
                 if ($existingUser->is_guest) {
                     // User with the same email is a guest, update the user's data
@@ -50,13 +52,13 @@ class UserController extends Controller
                 $user->password = Hash::make($validatedData['password']);
                 $user->is_guest = false;
                 $user->save();
-    
+
                 // Authenticate the new user
                 Auth::login($user);
-    
+
                 // Generate and return an API token for the new user
                 $token = $user->createToken('api-token')->plainTextToken;
-    
+
                 return response()->json([
                     'message' => 'Registration successful',
                     'user' => $user->only(['id', 'name']),
@@ -68,8 +70,8 @@ class UserController extends Controller
             return response()->json(['error' => $e], 500);
         }
     }
-    
-    public function login(Request $request)
+
+    public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],

@@ -108,23 +108,23 @@ class ProductController extends Controller
     public function getProduct($slug)
     {
         $baseProduct = Product::with(['images', 'reviews'])->where('slug', $slug)->first();
-    
+
         if (!$baseProduct) {
             return response()->json(['response' => "Product not found!"], 404);
         }
-    
+
         $productVariants = ProductVariant::where('product_id', $baseProduct->id)->get();
-    
+
         $productData = [
             'baseProduct' => $baseProduct,
         ];
         if (!$productVariants->isEmpty()) {
             $productData['variants'] = $productVariants;
         }
-    
+
         return response()->json($productData);
     }
-    
+
     public function getRange($minPrice)
     {
         $products = Product::with('images')
@@ -249,16 +249,16 @@ class ProductController extends Controller
     {
         try {
             $requestProducts = $request->input('products');
-    
+
             $result = [];
-    
+
             foreach ($requestProducts as $productInfo) {
                 $productId = $productInfo['productId'];
                 $SKU = $productInfo['SKU'];
-    
+
                 // Attempt to fetch the product by productId
                 $product = Product::with('images')->where('id', $productId)->first();
-    
+
                 if ($product && $product->SKU === $SKU) {
                     $result[] = $product;
                 } else {
@@ -266,7 +266,7 @@ class ProductController extends Controller
                     $variant = ProductVariant::where('product_id', $productId)
                         ->where('SKU', $SKU)
                         ->first();
-                        
+
                     if ($variant) {
                         $variant->id = $variant->product_id;
                         unset($variant->product_id);
@@ -275,32 +275,32 @@ class ProductController extends Controller
                     }
                 }
             }
-    
+
             if (empty($result)) {
                 return response()->json(['response' => "No products found."], 200);
             }
-    
+
             $count = count($result);
             return response()->json(['products' => $result, 'count' => $count], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error retrieving products', 'error' => $e->getMessage()], 500);
         }
     }
-    
+
     public function getUserWishListProducts($id)
     {
         $wishlistItems = Wishlist::where('user_id', $id)->get();
-    
+
         if ($wishlistItems->isEmpty()) {
             return response()->json(['response' => "No products in wishlist."], 200);
         }
-    
+
         $products = $wishlistItems->map(function ($wishlistItem) {
             // Check if the product exists in the Product table by ID
             $product = Product::where('id', $wishlistItem->product_id)
             ->where('SKU',$wishlistItem->SKU)
             ->with('images')->first();
-    
+
             // If the product doesn't exist by ID, check by SKU in the Product table
             if (!$product) {
                 $product = ProductVariant::where('SKU', $wishlistItem->SKU)->first();
@@ -309,44 +309,44 @@ class ProductController extends Controller
             }
             return $product;
         });
-    
+
         $wishlistCount = count($wishlistItems);
-    
+
         return response()->json([
             'wishlistCount' => $wishlistCount,
             'products' => $products
         ], 200);
     }
-    
+
     public function getInCartProducts($id)
     {
         $inCartItems = Cart::where('user_id', $id)->get();
-    
+
         if ($inCartItems->isEmpty()) {
             return response()->json(['response' => "No products inCart."], 200);
         }
-    
+
         $combinedItems = $inCartItems->map(function ($inCartItem) {
             // Check if the product exists in the Product table by ID
             $product = Product::where('id', $inCartItem->product_id)
             ->where('SKU',$inCartItem->SKU)
             ->with('images')->first();
-    
-            // 
+
+            //
             if (!$product) {
                 $product = ProductVariant::where('SKU', $inCartItem->SKU)->first();
                 $product->id = $product->product_id;
                 unset($product->product_id);
             }
-    
+
             return [
                 'product' => $product,
                 'quantity' => $inCartItem->quantity
             ];
         });
-    
+
         $inCartlistCount = count($inCartItems);
-    
+
         return response()->json([
             'inCartlistCount' => $inCartlistCount,
             'products' => $combinedItems
@@ -458,7 +458,7 @@ class ProductController extends Controller
         $this->deleteDir('product-images', $product['slug']);
         $this->deleteDir('description-images', $product['slug']);
         $this->deleteDir('variant-images', $product['slug']);
-        
+
         //! Check if the category  has no products
         if ($category->products->isEmpty()) {
             // Delete the category
@@ -469,11 +469,11 @@ class ProductController extends Controller
         return response()->json(['response' => 'Product was deleted !!'], 201);
     }
 
-    //* ********************************* import Woo Products to DATABASE 
+    //* ********************************* import Woo Products to DATABASE
 
     public function syncAllProductsFromWooCommerce(): JsonResponse
     {
-        $perPage = 50;
+        $perPage = 30;
         $currentPage = 1;
         $successCount = 0;
 
@@ -503,7 +503,7 @@ class ProductController extends Controller
                         $isFirstImage = true;
 
                         if ($newProduct->id) {
-                            // Check if the folder exists 
+                            // Check if the folder exists
                             $this->deleteDir('product-images', $productData['slug']);
                             foreach ($productData['images'] as $image) {
                                 $imageInfo = $this->DownloadProductImages(
@@ -519,11 +519,10 @@ class ProductController extends Controller
                                     $isFirstImage = false;
                                 }
                             }
-                        }
-                        // * - save Products Variation 
-                        if ($newProduct) {
+                            // * - save Products Variation
                             $this->handelVariant($newProduct['name'], $productData['id'] ,$newProduct['id'], $newProduct['slug']);
                         }
+
                     }
                 }
                 $currentPage++;
@@ -545,7 +544,7 @@ class ProductController extends Controller
     // ********************************* *********************************
     public function syncProductsFromWooCommerce(Request $request): JsonResponse
     {
-        $perPage = 35;
+        $perPage = 20;
         $currentPage = 1;
         $successCount = 0;
         do {
@@ -579,7 +578,7 @@ class ProductController extends Controller
 
                             if ($newProduct->id) {
 
-                                // Check if the folder exists 
+                                // Check if the folder exists
                                 $this->deleteDir('product-images', $productData['slug']);
 
                                 foreach ($productData['images'] as $image) {
@@ -596,9 +595,7 @@ class ProductController extends Controller
                                         $isFirstImage = false;
                                     }
                                 }
-                            }
-                            // * - save Products Variation 
-                            if ($newProduct) {
+                                // * - save Products Variation
                                 $this->handelVariant($newProduct['name'], $productData['id'],$newProduct['id'], $newProduct['slug']);
                             }
                         }
@@ -621,8 +618,8 @@ class ProductController extends Controller
     }
 
     // *********************************
-    //? checks if image dir already exist and deleting it 
-    private function deleteDir($folderName, $slug)
+    //? checks if image dir already exist and deleting it
+    private function deleteDir($folderName, $slug): void
     {
         $folderPath = 'public/' . $folderName . '/' . $slug;
         if (Storage::exists($folderPath)) {
@@ -649,7 +646,7 @@ class ProductController extends Controller
                 // ? Handle image download and storage
                 $imgPath = $this->downloadCategoryImages($categoryDATA['image']['src'], $categoryDATA['slug']);
 
-                // save category 
+                // save category
                 $newCategory = new Category([
                     'name' => $categoryDATA['name'],
                     'description' => $categoryDATA['description'],
@@ -666,7 +663,7 @@ class ProductController extends Controller
         return $id;
     }
 
-    private function downloadCategoryImages($src, $slug)
+    private function downloadCategoryImages($src, $slug): string
     {
         $imageName = basename($src);
         // Check if the folder exists and the image file exists within it
@@ -681,9 +678,7 @@ class ProductController extends Controller
         $imageData = file_get_contents($src, false, $context);
         $imagePath = '/storage/category-images/' . $slug . '/' . $imageName;
         Storage::put('public/category-images/' . $slug . '/' . $imageName, $imageData);
-        $imageUrl = url('/') . $imagePath;
-
-        return $imageUrl;
+        return url('/') . $imagePath;
     }
     private function DownloadProductImages($src, $slug): array
     {
@@ -769,7 +764,7 @@ class ProductController extends Controller
         $newProduct->save();
         return  $newProduct;
     }
-    private function saveDescriptionImages($description, $slug)
+    private function saveDescriptionImages($description, $slug): false|string
     {
         // Create a new DOMDocument
         $dom = new DOMDocument();
@@ -805,7 +800,7 @@ class ProductController extends Controller
 
         return $modifiedDescription;
     }
-    private function downloadAndSaveImage($src, $slug)
+    private function downloadAndSaveImage($src, $slug): string
     {
         $this->deleteDir('description-images', $slug);
         $imageName = basename($src);
@@ -819,11 +814,9 @@ class ProductController extends Controller
         $imageData = file_get_contents($src, false, $context);
         $imagePath = '/storage/description-images/' . $slug . '/' . $imageName;
         Storage::put('public/description-images/' . $slug . '/' . $imageName, $imageData);
-        $imageUrl = url('/') . $imagePath;
-
-        return $imageUrl;
+        return url('/') . $imagePath;
     }
-    private function handelVariant($pName, $woPId,$productId, $slug)
+    private function handelVariant($pName, $woPId,$productId, $slug): void
     {
         $endpoint = '/products/' . $woPId . '/variations';
         try {
@@ -832,7 +825,7 @@ class ProductController extends Controller
 
             $variants = $response->json();
             $this->deleteDir('variant-images', $slug);
-            // save each variant 
+            // save each variant
             foreach ($variants as $variant) {
                 // Check if the folder exists and the image file exists within it
                 $newVariantImagePath = $this->downloadVariantImg($variant['image']['src'], $slug);
@@ -842,7 +835,7 @@ class ProductController extends Controller
                     // Create and save the ProductVariant
                     ProductVariant::create([
                         'product_id' => $productId,
-                        // adding product variant name 
+                        // adding product variant name
                         'name' => $pName,
                         'SKU' => $variant['sku'],
                         'price' => $variant['price'],
@@ -861,10 +854,9 @@ class ProductController extends Controller
             }
         } catch (\Exception $e) {
             Log::error($e);
-            return response()->json(['error at handelVariant() :  ' => $e->getMessage()], 500);
         }
     }
-    private function downloadVariantImg($src, $slug)
+    private function downloadVariantImg($src, $slug): string
     {
         $imageName = basename($src);
 
@@ -878,8 +870,6 @@ class ProductController extends Controller
         $imageData = file_get_contents($src, false, $context);
         $imagePath = '/storage/variant-images/' . $slug . '/' . $imageName;
         Storage::put('public/variant-images/' . $slug . '/' . $imageName, $imageData);
-        $imageUrl = url('/') . $imagePath;
-
-        return $imageUrl;
+        return url('/') . $imagePath;
     }
 }
