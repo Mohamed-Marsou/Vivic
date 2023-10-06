@@ -27,9 +27,7 @@ const expandOrder = (e) => {
         orderDetails.classList.toggle('showOrderDetails');
     }
 };
-function getProductPrice(p) {
-    return p.sale_prcie && p.sale_prcie != '0.00' ? (p.sale_price * p.pivot.quantity) : (p.price * p.pivot.quantity)
-}
+
 </script>
 
 <template>
@@ -57,21 +55,21 @@ function getProductPrice(p) {
                         <div class="quantity">
                             <p>Quantity</p>
                         </div>
-                        <div class="price">
-                            <p>Price</p>
+                        <div class="total">
+                            <p>Total</p>
                         </div>
                     </div>
 
                     <div class="slot data" v-for="product in order.products" :key="product.id">
                         <div class="img-name">
-                            <img :src="product.images[0].url" alt="">
+                            <img :src="product.images[0].url" alt="product image">
                             <p>{{ product.name.length > 15 ? (product.name.slice(0, 15) + '...') : product.name }}</p>
                         </div>
                         <div class="quantity">
                             <p>{{ product.pivot.quantity }}</p>
                         </div>
                         <div class="price">
-                            ${{ getProductPrice(product) }}
+                            ${{ order.amount }}
                         </div>
                     </div>
 
@@ -96,8 +94,6 @@ function getProductPrice(p) {
     color: #555;
     display: flex;
     flex-direction: column;
-    background: #f1f1f1;
-    box-shadow: 1px 1px 6px 1px #00000007;
     padding: 1rem 0;
     border-radius: 5px;
     margin-bottom: 3rem;
@@ -119,8 +115,7 @@ function getProductPrice(p) {
         flex-direction: column;
         overflow-x: hidden;
         transition: .3s ease-in-out;
-        background: #f1f1f1cd;
-
+        border: 1px solid rgba(59, 59, 59, 0.089);
 
         header {
             width: 100%;
@@ -129,7 +124,6 @@ function getProductPrice(p) {
             justify-content: space-between;
             align-items: center;
             padding: 0 15px;
-            background: #fff;
             border-radius: 5px;
 
 

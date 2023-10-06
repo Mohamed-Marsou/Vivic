@@ -87,8 +87,8 @@ const generateSlug = (name) => {
         flex-direction: column;
         gap: 5px;
         >a div {
-            width: 7rem;
-            height: 7rem;
+            width: 8rem;
+            height: 8rem;
             border-radius: 50%;
             border: 1px solid #5555553f;
             overflow: hidden;

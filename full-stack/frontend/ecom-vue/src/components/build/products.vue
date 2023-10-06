@@ -28,7 +28,7 @@ function getProductDiscount(product) {
     return discountPercentage.toFixed(0)
 }
 
-const addProductToWishlist = async (productId , SKU) => {
+const addProductToWishlist = async (productId, SKU) => {
     productStore.addToWishlist(productId, SKU)
     router.push({ name: 'wishlist' })
 
@@ -41,16 +41,14 @@ const addToCart = async (productId, SKU) => {
 }
 
 
-function changeCover(e , imgs)
-{
+function changeCover(e, imgs) {
     const imgEl = e.target.parentNode.querySelector('img');
     imgEl.src = imgs[1].url
 }
-function RecoverCover( e , p)
-{
+function RecoverCover(e, p) {
     const imgEl = e.target.parentNode.querySelector('img');
     imgEl.src = getCoverImg(p)
-    
+
 }
 </script>
 <template>
@@ -59,7 +57,7 @@ function RecoverCover( e , p)
         <h1>{{ headerText }}</h1>
         <div class="prods-container">
             <div v-for="p in productList" :key="p.id" class="product-box" :class="{ 'product-outOfStock': p.inStock == 0 }">
-                <div class="img-box" @mouseenter="changeCover($event , p.images)" @mouseleave="RecoverCover($event ,p)">
+                <div class="img-box" @mouseenter="changeCover($event, p.images)" @mouseleave="RecoverCover($event, p)">
 
                     <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
                         <img :src="getCoverImg(p)" alt="Product image">
@@ -72,8 +70,8 @@ function RecoverCover( e , p)
                         <i class="fa-solid fa-shop-slash"></i>
                     </div>
                     <div class="actions">
-                        <i class="fa-solid fa-cart-shopping" v-if="!p.inStock == 0" @click="addToCart(p.id,p.SKU)"></i>
-                        <i class="fa-regular fa-heart" @click="addProductToWishlist(p.id , p.SKU)"></i>
+                        <i class="fa-solid fa-cart-shopping" v-if="!p.inStock == 0" @click="addToCart(p.id, p.SKU)"></i>
+                        <i class="fa-regular fa-heart" @click="addProductToWishlist(p.id, p.SKU)"></i>
                         <RouterLink :to="{ name: 'product-page', params: { slug: p.slug } }">
                             <i class="fa-regular fa-eye"></i>
                         </RouterLink>
@@ -83,11 +81,11 @@ function RecoverCover( e , p)
                     <p>{{ p.name }}</p>
                 </RouterLink>
 
-                <div v-if="p.average_rating != '0.00' " class="reviews">
-                    <i  v-for="(r , i) in Math.round(p.average_rating) " :key="i" class="fa-solid fa-star"></i>
-                </div>
-                <div v-else  class="reviews">
-                    <i v-for="i in 5"  :key="i" class="fa-regular fa-star"></i>
+                <div class="reviews">
+                    <i v-for="i in 5" :key="i" :class="{
+                        'fa-solid fa-star': i <= Math.round(p.average_rating),
+                        'fa-regular fa-star': i > Math.round(p.average_rating)
+                    }"></i>
                 </div>
 
                 <h4>${{ p.price }}</h4>
@@ -118,50 +116,51 @@ function RecoverCover( e , p)
     }
 
     .prods-container {
-        width: 95%;
+        width: 100%;
         min-height: 40vh;
         margin: 1rem auto;
         display: flex;
         justify-content: center;
-        gap: 2rem;
-        padding: 1rem 0;
+        padding: 3rem 0;
         flex-wrap: wrap;
 
         .product-box {
-            width: 20rem;
-            height: 22rem;
-            margin: 1rem 0;
+            width: 18rem;
+            height: 22.5rem;
+            margin: .5rem 2rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow: hidden;
 
             .img-box {
                 width: 100%;
-                height: 14rem;
+                height: 16rem;
                 position: relative;
+                overflow: hidden;
+
                 &:hover .actions {
                     transform: translateX(0);
                 }
-                
+
                 &:hover .badge {
                     background: #fe0303;
                     font-weight: bold;
 
                 }
 
-                a{
+                a {
                     @include flex();
                     overflow: hidden;
                     width: 100%;
                     height: 100%;
+
                     img {
                         width: 90%;
                         height: 90%;
                         object-fit: contain;
                         margin: auto;
                         transition: .3s ease-in-out;
-                        
+
                         &:hover {
                             transform: scale(1.08);
                         }
@@ -217,9 +216,6 @@ function RecoverCover( e , p)
 
                     }
 
-                    a {
-                        color: #555;
-                    }
 
                     >a i,
                     >i {
@@ -227,6 +223,7 @@ function RecoverCover( e , p)
                         cursor: pointer;
                         z-index: 2;
                         transition: .3s ease-in;
+                        color: #555;
 
                         &:hover {
                             color: #2E6BC6;
@@ -273,6 +270,7 @@ function RecoverCover( e , p)
         }
     }
 }
+
 @media screen and (max-width:630px) {
     .bg-box {
         .prods-container {
@@ -284,6 +282,7 @@ function RecoverCover( e , p)
         }
     }
 }
+
 @media screen and (max-width:350px) {
     .bg-box {
         .prods-container {

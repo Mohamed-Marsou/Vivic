@@ -473,7 +473,10 @@ class ProductController extends Controller
 
     public function syncAllProductsFromWooCommerce(): JsonResponse
     {
-        $perPage = 30;
+        // ! made the script execution time 5min to handle products Data  
+        set_time_limit(300);
+
+        $perPage = 80;
         $currentPage = 1;
         $successCount = 0;
 
@@ -484,8 +487,7 @@ class ProductController extends Controller
                         'per_page' => $perPage,
                         'page' => $currentPage,
                     ]);
-
-                $products = $response->json();
+                    $products = $response->json();
                 foreach ($products as $productData) {
                     // Check if the product already exists in the database by slug
                     $existingProduct = Product::where('slug', $productData['slug'])
@@ -500,6 +502,7 @@ class ProductController extends Controller
                         $newProduct = $this->saveProduct($productData, $categoryId);
                         // Increment the successful count
                         $successCount++;
+
                         $isFirstImage = true;
 
                         if ($newProduct->id) {
@@ -544,6 +547,9 @@ class ProductController extends Controller
     // ********************************* *********************************
     public function syncProductsFromWooCommerce(Request $request): JsonResponse
     {
+        // ! made the script execution time 5min to handle products Data  
+        set_time_limit(300);
+
         $perPage = 20;
         $currentPage = 1;
         $successCount = 0;

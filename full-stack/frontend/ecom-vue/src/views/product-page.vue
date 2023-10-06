@@ -24,6 +24,7 @@ onMounted(async () => {
     await getSimilarProducts();
     showDiscount()
     reviewsData.value = product.value.reviews ?? null
+    console.log(product.value);
 })
 
 //------------------------------------------------------- Fetch product data
@@ -506,16 +507,16 @@ const toggleStickyProduct = () => {
                     </div>
                 </div>
                 <div class="options" v-if="productImages && productImages.length > 0">
-                    <div>
+                    <div v-if="productImages[0]">
                         <img :src="productImages[0].url" @click="updateCoverImage(productImages[0])" alt="product-image">
                     </div>
-                    <div>
+                    <div v-if="productImages[1]">
                         <img :src="productImages[1].url" @click="updateCoverImage(productImages[1])" alt="product-image">
                     </div>
-                    <div>
+                    <div v-if="productImages[2]">
                         <img :src="productImages[2].url" @click="updateCoverImage(productImages[2])" alt="product-image">
                     </div>
-                    <div>
+                    <div v-if="productImages[3]">
                         <img :src="productImages[3].url" @click="updateCoverImage(productImages[3])" alt="product-image">
                     </div>
                 </div>
