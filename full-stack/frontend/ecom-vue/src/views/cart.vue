@@ -268,7 +268,7 @@ const paymentInit = ref(false)
 let cardElement = {}
 
 const payInit = async (e) => {
-
+    // Loading Stripe and Paypal to page 
     if (validateUserData() && (!isShowingShippingFields.value || validateShipmentData())) {
         // Hide PAY NOW BTN 
         e.target.parentNode.style.display = 'none';
@@ -379,7 +379,7 @@ const getUserData = async () => {
         }
     }
 };
-const assignUserData = (userData, shipmentData) => {
+const assignUserData = (userData) => {
     if (userData) {
         // User Data
         userFname.value = userData.name.split(' ')[0];
@@ -506,6 +506,7 @@ const stripePaymentSubmit = async () => {
         const DB_PAYLOAD = products.value.map(item => ({
             quantity: item.quantity,
             name: item.product.name,
+            SKU: item.product.SKU,
             product_id: item.product.id,
             price: item.product.sale_price ? (item.product.sale_price).toString() : (item.product.price).toString(),
             total: item.product.sale_price != '0.00' ?

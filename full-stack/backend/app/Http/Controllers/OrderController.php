@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderProduct;
 use Illuminate\Http\Request;
+use App\Models\ProductVariant;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 
@@ -43,18 +44,39 @@ class OrderController extends Controller
 
         return response()->json(['orders' => $orders]);
     }
-
-
     public function getOrderProducts($order_id): JsonResponse
     {
-        $order = Order::with('products')->where('wp_order_id', $order_id)->first();
-
+        $order = Order::with(['orderProducts'])->where('wp_order_id', $order_id)->first();
+    
         if (!$order) {
             return response()->json(['error' => 'Order not found'], 404);
         }
-
+    
+        // Initialize an array to store the product data
+        $products = [];
+    
+        // Loop through the order products and add product data
+        foreach ($order->orderProducts as $orderProduct) {
+            // Try to find the product by SKU in the Product table
+            $product = Product::where('SKU', $orderProduct->SKU)->first();
+    
+            if (!$product) {
+                // If not found in Product table, try to find in ProductVariant table
+                $product = ProductVariant::where('SKU', $orderProduct->SKU)->first();
+            }
+    
+            // Add the product to the array
+            if ($product) {
+                $products[] = $product;
+            }
+        }
+    
+        // Add the products array to the order object
+        $order->products = $products;
+    
         return response()->json($order, 200);
     }
+
     public function addOrderProducts(Request $request): JsonResponse
     {
         // Retrieve the order ID and products data from the request
@@ -63,14 +85,17 @@ class OrderController extends Controller
 
         // Loop through the products and process each one
         foreach ($products as $productData) {
-            $quantity = $productData['quantity'];
             $productId = $productData['product_id'];
+            $quantity = $productData['quantity'];
+            $SKU = $productData['SKU'];
 
             // Create a new order_product record
             $orderProduct = new OrderProduct();
             $orderProduct->order_id = $orderId;
+
             $orderProduct->product_id = $productId;
             $orderProduct->quantity = $quantity;
+            $orderProduct->SKU = $SKU;
             $orderProduct->save();
 
             // Decrease the quantity of the product in the product table

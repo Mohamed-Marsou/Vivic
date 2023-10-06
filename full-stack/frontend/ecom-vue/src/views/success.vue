@@ -7,9 +7,10 @@ import api from '../http/api';
 // Create a ref for the table element
 const myTable = ref(null);
 
-const storeUrl = 'www.commerce-store.com'
+const storeUrl = 'www.Vivic-store.com'
 const route = useRoute();
 const orderInfo = ref([]);
+const products = ref([]);
 const loading = ref(true);
 const tableData = ref([]);
 
@@ -22,33 +23,44 @@ onMounted(async () => {
         const orderId = route.query.orderId;
         const response = await api.get(`/order/products/${orderId}`);
         orderInfo.value = response.data;
-        console.log(orderInfo.value);
+        products.value = orderInfo.value.products
+        addQuantityToProducts(orderInfo.value.order_products) 
         loading.value = false;
     } catch (error) {
         console.error(error);
         loading.value = false;
     }
     // Define table data
-    tableData.value = orderInfo.value.products ? orderInfo.value.products.map((product) => [
+    tableData.value = products.value ? products.value.map((product) => [
         product.name,
-        `$${product.sale_price != '0.00' ? product.sale_price : product.price}`,
-        product.pivot.quantity.toString(),
-        `$${((product.sale_price!= '0.00' ? product.sale_price : product.price) * product.pivot.quantity).toFixed(2)}`,
+        `$${product.sale_price !== '0.00' ? product.sale_price : product.price}`,
+        product.quantity.toString(),
+        `$${(product.quantity * parseFloat(product.sale_price !== '0.00' ? product.sale_price : product.price)).toFixed(2)}`,
     ]) : [];
 
 
+
 });
+function addQuantityToProducts(orderProducts) {
+    // Loop through products and add quantity from orderProducts
+    products.value.forEach((product) => {
+        const matchingOrderProduct = orderProducts.find(
+            (orderProduct) => orderProduct.product_id === product.id || orderProduct.product_id === product.product_id
+        );
+        if (matchingOrderProduct) {
+            product.quantity = matchingOrderProduct.quantity;
+        }
+    });
+}
 
 const calculateTotal = (product) => {
-    return product.pivot.quantity * parseFloat(product.sale_price!= '0.00' ? product.sale_price : product.price);
+    return product.quantity * parseFloat(product.sale_price !== '0.00' ? product.sale_price : product.price);
 };
+
 
 const generatePdf = () => {
     const doc = new jsPDF();
     const table = myTable.value;
-
-    // Convert the table element to HTML string
-    const tableHtml = table.outerHTML;
 
     // Add title, transaction ID, and date to the PDF
     const title = 'Purchase Details';
@@ -56,10 +68,6 @@ const generatePdf = () => {
     const date = 'Date : ' + new Date().toLocaleDateString();
 
     // Set the font size for title, transaction ID, and date
-    doc.setFontSize(8);
-    // TODO CHANGE
-    doc.text(storeUrl, 15, 10);
-
     doc.setFontSize(20);
     doc.text(title, 15, 30);
 
@@ -98,7 +106,7 @@ const generatePdf = () => {
             0: { cellWidth: 50 },
         },
         // Add a hook to calculate and display the grand total
-        didDrawPage : function (data) {
+        didDrawPage: function (data) {
             const grandTotal = orderInfo.value.amount;
             doc.text(`Grand Total: $${grandTotal}`, 15, doc.internal.pageSize.height - 15);
         },
@@ -107,7 +115,6 @@ const generatePdf = () => {
     // Save the PDF
     doc.save('document.pdf');
 }
-
 
 function copyOrderID() {
     const orderIdElement = document.getElementById('orderId');
@@ -155,11 +162,11 @@ function copyOrderID() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="product in orderInfo.products" :key="product.id">
+                            <tr v-for="product in products" :key="product.id">
                                 <td>{{ product.name }}</td>
-                                <td>${{ product.sale_price != '0.00' ? product.sale_price : product.price }}</td>
-                                <td>{{ product.pivot.quantity }}</td>
-                                <td>${{ calculateTotal(product) }}</td>
+                                <td>${{ product.sale_price =! '0.00' ? product.sale_price : product.price }}</td>
+                                <td>{{ product.quantity }}</td>
+                                <td>${{calculateTotal(product)}}</td>
                             </tr>
                         </tbody>
                         <tfoot>

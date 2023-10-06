@@ -1647,6 +1647,7 @@ function getFlagImageSrc (countryCode)
 
                     .r-text {
                         height: 75%;
+                        border: 1px solid rgb(255, 255, 255);
 
                         .reviews_starts {
                             width: 90%;
@@ -2161,6 +2162,10 @@ function getFlagImageSrc (countryCode)
         >.image-box {
             width: 100% !important;
         }
+    }
+
+    .review__box {
+        min-width: 18rem !important;
     }
 }
 
