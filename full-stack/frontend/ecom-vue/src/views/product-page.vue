@@ -1,6 +1,6 @@
 <script setup>
 import ProductsCarousel from '../components/build/products-carousel.vue';
-import { ref, onMounted, watch, computed} from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../http/api'
 import Loading from '../components/build/loading.vue';
@@ -16,6 +16,7 @@ const productCover = ref('');
 const isLoaded = ref(false)
 const currentDate = ref(new Date());
 let targetDate = ref(null);
+
 // Fetch product data before mount
 onMounted(async () => {
     // Scroll to the top of the page
@@ -24,9 +25,36 @@ onMounted(async () => {
     await getSimilarProducts();
     showDiscount()
     reviewsData.value = product.value.reviews ?? null
-    console.log(product.value);
+    pushReviewsWithImages()
 })
 
+
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+watch(() => route.params.slug, async (newSlug) => {
+    scrollToTop()
+    await getProductData();
+    await getSimilarProducts();
+    showDiscount()
+    reviewsData.value = product.value.reviews ?? null
+});
+
+const productStore = useProductStore()
+const similarProducts = ref([])
+async function getSimilarProducts() {
+    const id = product.value.category_id
+    try {
+        const res = await productStore.getCategoryProducts(id)
+        similarProducts.value = res.data.products.data
+    } catch (error) {
+        console.log(error);
+    }
+}
 //------------------------------------------------------- Fetch product data
 async function getProductData() {
     try {
@@ -54,11 +82,11 @@ async function getProductData() {
     }
 }
 
+//------------------------------------------------------- handling Variant Product Data
 // Initialize an array to store selected options
 const specification = ref([]);
 const specificationCopy = ref([]);
 const productVariation = ref([]);
-
 let optionsArr = []; // Stores selected option values
 let chosenOpt = 0
 
@@ -273,37 +301,6 @@ function showDiscount() {
 
 // ------------------------------------------------------- discount count down
 
-watch(() => route.params.slug, async (newSlug) => {
-    scrollToTop()
-    await getProductData();
-    await getSimilarProducts();
-    showDiscount()
-    reviewsData.value = product.value.reviews ?? null
-});
-
-function scrollToTop() {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-}
-
-const productStore = useProductStore()
-const similarProducts = ref([])
-async function getSimilarProducts() {
-    const id = product.value.category_id
-    try {
-        // todo Change to the comment line 
-        // const res = await productStore.getCategoryProducts(id)
-        // similarProducts.value = res.data.products.data
-
-        // todo DELETE -----------
-        const res = await productStore.getHighRated()
-        similarProducts.value = res.data.data
-    } catch (error) {
-        console.log(error);
-    }
-}
 
 // Product Quantity Controllers 
 const count = ref(1)
@@ -327,34 +324,42 @@ const ShowOverLay = () => {
     isVisible.value = !isVisible.value
 }
 
-// * ----------------------------------------------------  Reviews ---------------------------------------------------- 
+// * ----------------------------------------------------  Reviews 
 
 const reviewsData = ref([]);
+
+// Functions to analyze review data
+
+// Using the filterReviews to put reviews with url in front
+function pushReviewsWithImages() {
+    reviewsFilter.value = 'With Images'
+    filterReviews()
+    reviewsFilter.value = 'Filter reviews'
+}
 const calculateAverageRating = () => {
-  // Calculate the average rating
-  if (!Array.isArray(reviewsData.value) || reviewsData.value.length === 0) {
-    return 0;
-  }
+    // Calculate the average rating
+    if (!Array.isArray(reviewsData.value) || reviewsData.value.length === 0) {
+        return 0;
+    }
 
-  const totalRatings = reviewsData.value.reduce((acc, review) => acc + parseFloat(review.average_rating), 0);
-  const averageRating = totalRatings / reviewsData.value.length;
+    const totalRatings = reviewsData.value.reduce((acc, review) => acc + parseFloat(review.average_rating), 0);
+    const averageRating = totalRatings / reviewsData.value.length;
 
-  // Limit the result to be less than or equal to 5
-  return Math.min(averageRating, 5).toFixed(1);
+    // Limit the result to be less than or equal to 5
+    return Math.min(averageRating, 5).toFixed(1);
 };
 
 const averageRating = computed(() => calculateAverageRating());
 
-// Functions to analyze review data
 function getReviewCountByRating(rating) {
     return reviewsData.value.filter(review => Math.round(review.average_rating) === rating).length;
 }
 
 function getPercentageByRating(rating) {
-        const totalReviews = reviewsData.value.length;
-        const reviewsWithRating = getReviewCountByRating(rating);
-        const percentage = (reviewsWithRating / totalReviews) * 100;
-        return percentage.toFixed(2);
+    const totalReviews = reviewsData.value.length;
+    const reviewsWithRating = getReviewCountByRating(rating);
+    const percentage = (reviewsWithRating / totalReviews) * 100;
+    return percentage.toFixed(2);
 }
 // Reviews Filters
 const reviewsFilter = ref('Filter reviews')
@@ -375,10 +380,6 @@ const filterReviews = () => {
         case 'High Rating':
             // Apply your sorting logic to show reviews based on rating
             reviewsData.value.sort((a, b) => b.average_rating - a.average_rating);
-            break;
-        default:
-            // If no filter is selected or the filter is not recognized, show the original order of reviews
-            reviewsData.value = reviews.reviews;
             break;
     }
 
@@ -406,7 +407,7 @@ const initialsBackgroundColors = [
 function getColor(index) {
     return initialsBackgroundColors[index % initialsBackgroundColors.length];
 }
-const currentReviewsLen = ref(10)
+const currentReviewsLen = ref(8)
 const loading = ref(false)
 
 const visibleReviews = computed(() => {
@@ -434,7 +435,7 @@ function getProductDiscount() {
     const salePrice = parseFloat(product.value.sale_price);
 
     const discountPercentage = ((regularPrice - salePrice) / regularPrice) * 100;
-    if(discountPercentage >= 99){
+    if (discountPercentage >= 99) {
         return discountPercentage.toFixed(2)
     }
     return discountPercentage.toFixed(0)
@@ -455,6 +456,11 @@ const showSticky = ref(false);
 const toggleStickyProduct = () => {
     showSticky.value = !showSticky.value
 }
+
+function getFlagImageSrc (countryCode)
+    {
+        return `../assets/icons/${countryCode}-flag.png`
+    }
 </script>
 
 
@@ -463,7 +469,7 @@ const toggleStickyProduct = () => {
 
         <div class="sticky_product" :class="{ showStickyProduct: showSticky }" @mouseenter="toggleStickyProduct"
             @mouseleave="toggleStickyProduct">
-            
+
             <div class="img">
                 <img :src="productCover" alt="product-image">
             </div>
@@ -477,8 +483,8 @@ const toggleStickyProduct = () => {
             </div>
             <div class="actions">
                 <span>
-                    <small v-if="product.regular_price != '0.00' ">
-                        ${{product.regular_price }}
+                    <small v-if="product.regular_price != '0.00'">
+                        ${{ product.regular_price }}
                     </small>
                     ${{ product.sale_price != '0.00' ? product.sale_price : product.price }}
                 </span>
@@ -497,6 +503,7 @@ const toggleStickyProduct = () => {
             </div>
         </div>
 
+        <!-- *  Product Details  -->
         <div class="product-details-box">
 
             <div class="product-images">
@@ -536,8 +543,12 @@ const toggleStickyProduct = () => {
                         ${{ product.sale_price && product.sale_price != '0.00' ? product.sale_price : product.price }}
                     </h4>
                     <div class="stars-box">
-                        <i @click="scrollToReviews" v-for="( index) in 5" :key="index" class="fa-solid fa-star"></i>
+                        <i @click="scrollToReviews" v-for="i in 5" :key="i" :class="{
+                            'fa-solid fa-star': i <= Math.round(product.average_rating),
+                            'fa-regular fa-star': i > Math.round(product.average_rating)
+                        }"></i>
                     </div>
+
                     <p v-if="reviewsData.length > 0">({{ reviewsData.length }} Reviews)</p>
                 </div>
 
@@ -638,8 +649,8 @@ const toggleStickyProduct = () => {
                 </div>
             </div>
         </div>
-        
-        <!-- // Description  -->
+
+        <!-- *  Description  -->
         <div class="product-description" @mouseenter="toggleStickyProduct" @mouseleave="toggleStickyProduct">
             <header class="section-header">
                 <h3>
@@ -649,7 +660,7 @@ const toggleStickyProduct = () => {
             <div v-html="product.description"></div>
         </div>
 
-        <!-- // Reviews  -->
+        <!-- *  Reviews  -->
         <div class="product-reviews" @mouseenter="toggleStickyProduct" @mouseleave="toggleStickyProduct">
             <header class="section-header">
                 <h3>
@@ -676,7 +687,8 @@ const toggleStickyProduct = () => {
                                 <i class="fa-solid fa-star"></i>
                                 <span>{{ i }}</span>
                                 <div>
-                                    <div  v-if="reviewsData.length > 0"  :style="{ width: getPercentageByRating(i) + '%' }"></div>
+                                    <div v-if="reviewsData.length > 0" :style="{ width: getPercentageByRating(i) + '%' }">
+                                    </div>
                                     <div v-else></div>
                                 </div>
                                 <h5>{{ getReviewCountByRating(i) }}</h5>
@@ -685,7 +697,7 @@ const toggleStickyProduct = () => {
                     </div>
                 </div>
 
-                <div class="reviews-box"  v-if="reviewsData.length > 0">
+                <div class="reviews-box" v-if="reviewsData.length > 0">
                     <div class="reviews-filters">
                         <p>Showing {{ currentReviewsLen }} out of {{ reviewsData.length }}</p>
                         <select @click="filterReviews" v-model="reviewsFilter">
@@ -714,10 +726,21 @@ const toggleStickyProduct = () => {
                             <div class="review-txt-box">
                                 <div class="r-text">
                                     <div class="reviews_starts">
-                                        <i v-for="(star, index) in Math.round(reviewData.average_rating)" :key="index"
-                                            class="fa-solid fa-star">
+                                    
+                                        <i v-for="i in 5" :key="i" :class="{
+                                            'fa-solid fa-star': i <= Math.round(reviewData.average_rating),
+                                            'fa-regular fa-star': i > Math.round(reviewData.average_rating)}">
                                         </i>
-                                        <i class="fa-solid fa-circle-check"></i>
+
+                                        <div v-if="reviewData.country_code === 'US'">
+                                            <img src="../assets/icons/US-flag.png" alt="FLAG ICON">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        </div>
+                                        <div v-else>
+                                            <img src="../assets/icons/UK-flag.png" alt="FLAG ICON">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        </div>
+
                                     </div>
                                     <p> {{ reviewData.body_text.length > 100 ? reviewData.body_text.slice(0, 100) + '...' :
                                         reviewData.body_text
@@ -744,10 +767,10 @@ const toggleStickyProduct = () => {
 
                 </div>
             </div>
-        </div> 
+        </div>
 
         <ProductsCarousel smallHeader="Exploring Similar Delights? Start Here!" headerText="SIMILAR PRODUCTS"
-        :productList="similarProducts" />
+            :productList="similarProducts" />
     </div>
 
     <div v-else class="Loader-container">
@@ -1429,9 +1452,10 @@ const toggleStickyProduct = () => {
 
 .product-reviews {
     .section-header {
-    width: 90%;
-    margin: 2rem auto;
+        width: 90%;
+        margin: 2rem auto;
     }
+
     width: 100%;
     min-height: 50vh;
     margin-top: 1rem;
@@ -1524,6 +1548,7 @@ const toggleStickyProduct = () => {
             justify-content: center;
             flex-wrap: wrap;
             padding: 1rem 0;
+            width: 90%;
 
             .review-container {
                 display: flex;
@@ -1564,7 +1589,10 @@ const toggleStickyProduct = () => {
                 border-radius: 10px;
                 overflow: hidden;
                 border: 1px solid #0000000e;
-
+                transition: .3s ease-in-out;
+                &:hover{
+                    transform: scale(1.03);
+                }
                 >div {
                     width: 100%;
                 }
@@ -1624,15 +1652,28 @@ const toggleStickyProduct = () => {
                             width: 90%;
                             color: gold;
                             margin-left: 5px;
-                            margin-top: 5px;
+                            margin-top: 15px;
                             font-size: 1rem;
-
+                            display: flex;
+                            align-items: center;
+                            >div{
+                                display: flex;
+                                align-items: center;
+                                margin-left: 5px;
+                            }
+                            img{
+                                height: 25px;
+                                width: 25px;
+                            }
                             i {
+                                margin-left: 1px;
                                 &:first-child {
                                     margin-left: 5px;
                                 }
                             }
-
+                            .fa-regular{
+                                color: rgba(255, 217, 0, 0.659);
+                            }
                             .fa-circle-check {
                                 color: rgb(9, 228, 9);
                                 margin-left: 5px;
@@ -1678,7 +1719,8 @@ const toggleStickyProduct = () => {
                     color: #fff;
                     cursor: pointer;
                     transition: .3s ease-in;
-                    &:hover{
+
+                    &:hover {
                         background: #0d6eff;
                     }
                 }
@@ -1795,6 +1837,44 @@ const toggleStickyProduct = () => {
 
     .product-description {
         width: 90% !important;
+    }
+}
+
+@media screen and (max-width :815px) {
+    .review-container{
+        max-width: 99% !important;
+        padding-top: 2rem;
+    }
+    .reviews-box {
+        width: 99% !important;
+        //* --- Review filters ---
+        .reviews-filters {
+            width: 95% !important;
+        }
+
+        //* --- Review box ---
+        .review__box {
+            width: 15rem !important;
+            height: 21rem !important;
+
+            .review-img-box {
+                .author {
+                    p {
+                        font-size: .8rem !important;
+                    }
+
+                }
+
+            }
+            .review-txt-box {
+
+                .r-text {
+                    >p {
+                        font-size: .8rem !important;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1980,15 +2060,17 @@ const toggleStickyProduct = () => {
         }
 
         .actions {
-            >span{
-                display: none  !important;
+            >span {
+                display: none !important;
             }
+
             >button {
-                &:nth-child(3){
-                    display: none  !important;
+                &:nth-child(3) {
+                    display: none !important;
                 }
-                &:nth-child(2){
-                    height:95% !important;
+
+                &:nth-child(2) {
+                    height: 95% !important;
                     width: 100% !important;
                     border-radius: 0 !important;
                 }
@@ -2115,5 +2197,4 @@ const toggleStickyProduct = () => {
 
 .show {
     display: block !important;
-}
-</style>
+}</style>

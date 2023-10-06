@@ -206,9 +206,8 @@ const addToCart = async (productId, SKU) => {
 
                 <div class="price-filter">
                     <p>filter by Price</p>
-                    <div class="controlers">
+                    <div class="controllers">
                         <input type="range" :min="0" :max="maxPrice" :value="minPrice" @input="updateMinPrice">
-
                     </div>
                     <div class="output">
                         <span>
@@ -294,7 +293,10 @@ const addToCart = async (productId, SKU) => {
                             ${{ p.price }}
                         </p>
                         <div class="stars">
-                            <i v-for="i in 5" :key="i" class="fa-solid fa-star"></i>
+                            <i @click="scrollToReviews" v-for="i in 5" :key="i" :class="{
+                            'fa-solid fa-star': i <= Math.round(p.average_rating),
+                            'fa-regular fa-star': i > Math.round(p.average_rating)
+                        }"></i>
                         </div>
                     </div>
 
@@ -431,7 +433,7 @@ const addToCart = async (productId, SKU) => {
 
             .price-filter {
 
-                .controlers {
+                .controllers {
                     width: 100%;
                     height: 2rem;
                     @include flex();

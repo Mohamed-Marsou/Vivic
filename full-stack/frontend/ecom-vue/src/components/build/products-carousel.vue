@@ -77,7 +77,10 @@ function getProductDiscount(p) {
                             {{  p.name  }}
                         </RouterLink>
                         <div v-if="p.average_rating != '0.00'" class="stars">
-                            <i v-for="( r , i ) in Math.round(p.average_rating)" :key="i" class="fa-solid fa-star"></i>
+                            <i  v-for="i in 5" :key="i" :class="{
+                            'fa-solid fa-star': i <= Math.round(p.average_rating),
+                            'fa-regular fa-star': i > Math.round(p.average_rating)
+                        }"></i>
                         </div>
                         <div v-else class="stars">
                             <i v-for="i in 5"  :key="i" class="fa-regular fa-star"></i>
