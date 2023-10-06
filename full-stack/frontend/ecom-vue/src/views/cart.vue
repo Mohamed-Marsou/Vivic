@@ -607,14 +607,30 @@ function getTotalAmount() {
     cartSubTotal.value = cartTotalAmount.value = totalAmount.toFixed(2);
     }
 }
+
 function calcDiscount(type, amount) {
 
     if (!isNaN(amount) && !isNaN(cartTotalAmount.value)) {
         if (type === 'percent') {
-
             const discountPercent = amount / 100;
             discount.value = (cartTotalAmount.value * discountPercent).toFixed(2);
 
+            // Subtract the discount amount from the cart total
+            cartTotalAmount.value = (cartTotalAmount.value - Number(discount.value)).toFixed(2);
+            showDiscountLabel.value = true
+            ProcessingCoupon.value = false
+            couponAdded.value = true
+        }
+        if (type === "fixed_cart") {
+            discount.value =  amount ;
+            // Subtract the discount amount from the cart total
+            cartTotalAmount.value = (cartTotalAmount.value - Number(discount.value)).toFixed(2);
+            showDiscountLabel.value = true
+            ProcessingCoupon.value = false
+            couponAdded.value = true
+        }
+        if (type === "fixed_product") {
+            discount.value =  amount * products.value.length ;
             // Subtract the discount amount from the cart total
             cartTotalAmount.value = (cartTotalAmount.value - Number(discount.value)).toFixed(2);
             showDiscountLabel.value = true
@@ -634,6 +650,7 @@ const handleCouponSub = async () => {
         });
         //* check for valid response 
         if (res.status === 200 && res.data.length > 0) {
+            console.log(res);
             // Get the current date
             const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
 
@@ -1292,6 +1309,8 @@ const handleCouponSub = async () => {
 
                 #discountNumber {
                     color: red;
+                    font-size: 1.3rem !important;
+
                 }
 
                 >img {

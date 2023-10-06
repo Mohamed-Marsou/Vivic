@@ -96,7 +96,7 @@ const generateSlug = (name) => {
             position: relative;
 
             &:hover>img {
-                transform: scale(1.1);
+                transform: scale(1.2);
             }
 
             &::after {
@@ -129,8 +129,8 @@ const generateSlug = (name) => {
             }
 
             >img {
-                width: 90%;
-                height: 90%;
+                width: 100%;
+                height: 100%;
                 object-fit: cover;
                 transition: .2s ease-in;
             }
